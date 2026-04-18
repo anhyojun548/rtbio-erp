@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * 주문 상태 전이 버튼 패널 (Phase 3D-2b).
+ * 주문 상태 전이 버튼 패널 (Phase 3D-2b / 3D-2c).
  *
  * 3D-2b-1 ✅ SUBMIT
  * 3D-2b-2 ✅ REJECT · HOLD · RESUME · CANCEL (SUBMITTED/HOLD)
- * 3D-2b-3 (이번): CONFIRM (RESERVE) + CANCEL CONFIRMED (RELEASE)
+ * 3D-2b-3 ✅ CONFIRM (RESERVE) + CANCEL CONFIRMED (RELEASE)
+ * 3D-2c (이번): CONFIRMED → startShipment (출고 시작 — 칸반 진입)
  */
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -18,6 +19,7 @@ import {
   cancelOrder,
   confirmOrder,
 } from "@/lib/actions/order";
+import { startShipment } from "@/lib/actions/shipment";
 
 type ReasonTransition = "reject" | "hold" | "cancel";
 
@@ -34,9 +36,9 @@ export function StatusActions({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // 단순 확인(사유 없음) — SUBMIT, RESUME, CONFIRM
+  // 단순 확인(사유 없음) — SUBMIT, RESUME, CONFIRM, START_SHIPMENT
   const [simpleConfirm, setSimpleConfirm] = useState<
-    "submit" | "resume" | "confirm" | null
+    "submit" | "resume" | "confirm" | "startShipment" | null
   >(null);
 
   // 사유 필요 — REJECT, HOLD, CANCEL
@@ -74,6 +76,14 @@ export function StatusActions({
       router.refresh();
     });
   }
+  function runStartShipment() {
+    start(async () => {
+      const res = await startShipment(orderId, {});
+      if (!res.ok) return setError(res.error);
+      close();
+      router.refresh();
+    });
+  }
   function runReasonAction() {
     if (!reasonModal) return;
     const trimmed = reason.trim();
@@ -102,6 +112,7 @@ export function StatusActions({
   const canResume = status === "HOLD";
   const canCancel =
     status === "SUBMITTED" || status === "HOLD" || status === "CONFIRMED";
+  const canStartShipment = status === "CONFIRMED";
 
   const anyAction =
     canSubmit ||
@@ -109,7 +120,8 @@ export function StatusActions({
     canReject ||
     canHold ||
     canResume ||
-    canCancel;
+    canCancel ||
+    canStartShipment;
 
   if (!anyAction) {
     return (
@@ -117,7 +129,11 @@ export function StatusActions({
         <p className="text-xs text-slate-500">
           현재 상태:{" "}
           <span className="font-semibold text-slate-800">{status}</span>.
-          추가 전이는 다음 Phase 에서 제공됩니다 (CONFIRM / SHIP 등).
+          {status === "SHIPPING" &&
+            " 칸반 보드(/admin/shipments) 에서 단계를 이동하세요."}
+          {status === "COMPLETED" && " 이 주문은 이미 완료되었습니다."}
+          {(status === "CANCELLED" || status === "REJECTED") &&
+            " 이 주문은 종결 상태입니다."}
         </p>
       </div>
     );
@@ -140,7 +156,7 @@ export function StatusActions({
             "SUBMITTED 입니다. 확정하면 각 라인 재고가 예약(availableStock 차감)됩니다."}
           {canResume && "HOLD 입니다. 재개하면 다시 SUBMITTED 로 돌아갑니다."}
           {status === "CONFIRMED" &&
-            "CONFIRMED 입니다. 취소 시 예약된 재고가 복원(RELEASE)됩니다."}
+            "CONFIRMED 입니다. 출고를 시작하면 칸반에 진입하고, 마지막 단계 도달 시 실재고가 차감됩니다."}
           {!canSubmit && !canConfirm && !canResume && status !== "CONFIRMED" && (
             <span>
               현재 상태:{" "}
@@ -168,6 +184,16 @@ export function StatusActions({
               className="rounded-md bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               주문 확정 →
+            </button>
+          )}
+          {canStartShipment && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setSimpleConfirm("startShipment")}
+              className="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              출고 시작 →
             </button>
           )}
           {canHold && (
@@ -213,18 +239,24 @@ export function StatusActions({
         </div>
       </div>
 
-      {/* ── SUBMIT/RESUME/CONFIRM 확인 모달 ────────────── */}
+      {/* ── SUBMIT/RESUME/CONFIRM/START_SHIPMENT 확인 모달 ── */}
       {simpleConfirm && (
         <div
           className={`rounded-md border p-3 space-y-2 ${
             simpleConfirm === "confirm"
               ? "border-indigo-300 bg-indigo-50"
-              : "border-amber-300 bg-amber-50"
+              : simpleConfirm === "startShipment"
+                ? "border-blue-300 bg-blue-50"
+                : "border-amber-300 bg-amber-50"
           }`}
         >
           <p
             className={`text-sm ${
-              simpleConfirm === "confirm" ? "text-indigo-900" : "text-amber-900"
+              simpleConfirm === "confirm"
+                ? "text-indigo-900"
+                : simpleConfirm === "startShipment"
+                  ? "text-blue-900"
+                  : "text-amber-900"
             }`}
           >
             {simpleConfirm === "submit" && (
@@ -246,6 +278,15 @@ export function StatusActions({
                 차감됩니다. 재고 부족 시 확정이 실패합니다.
               </>
             )}
+            {simpleConfirm === "startShipment" && (
+              <>
+                <strong>출고를 시작하시겠습니까?</strong> 주문이{" "}
+                <code className="font-mono">SHIPPING</code> 상태로 전환되고
+                칸반 첫 단계에 진입합니다. 실재고(
+                <code className="font-mono">physicalStock</code>) 는 칸반
+                terminal 단계 도달 시점에 차감됩니다.
+              </>
+            )}
           </p>
           <div className="flex justify-end gap-2">
             <button
@@ -263,12 +304,16 @@ export function StatusActions({
                   ? runSubmit
                   : simpleConfirm === "resume"
                     ? runResume
-                    : runConfirm
+                    : simpleConfirm === "confirm"
+                      ? runConfirm
+                      : runStartShipment
               }
               className={`rounded-md text-white px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${
                 simpleConfirm === "confirm"
                   ? "bg-indigo-600 hover:bg-indigo-700"
-                  : "bg-sky-600 hover:bg-sky-700"
+                  : simpleConfirm === "startShipment"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-sky-600 hover:bg-sky-700"
               }`}
             >
               {pending
@@ -277,7 +322,9 @@ export function StatusActions({
                   ? "제출"
                   : simpleConfirm === "resume"
                     ? "재개"
-                    : "확정"}
+                    : simpleConfirm === "confirm"
+                      ? "확정"
+                      : "출고 시작"}
             </button>
           </div>
         </div>

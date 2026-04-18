@@ -153,6 +153,29 @@ export default async function OrderDetailPage({
           </p>
         </div>
       )}
+      {order.status === "SHIPPING" && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 flex items-center justify-between">
+          <div className="text-sm text-blue-900">
+            <strong>출고 진행중.</strong> 칸반 보드에서 단계를 이동하세요. 마지막
+            단계 도달 시 실재고가 차감됩니다.
+          </div>
+          <Link
+            href="/admin/shipments"
+            className="rounded-md bg-blue-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-blue-700"
+          >
+            칸반 보드 →
+          </Link>
+        </div>
+      )}
+      {order.status === "COMPLETED" && order.completedAt && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <p className="text-sm text-emerald-900">
+            <strong>출고 완료.</strong>{" "}
+            {new Date(order.completedAt).toLocaleString("ko-KR")} 에 terminal
+            단계에 도달해 실재고가 차감되었습니다.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* 좌 — 거래처 / 요약 */}

@@ -268,6 +268,53 @@
   - 결과: `avail 114→111→114`, 재고 부족 에러 `"가용 0 < 요청 1"`, 롤백 후 `avail 114 불변`.
 - **테스트**: 누적 139 pass.
 
+### 2.10 Phase 3D-2c 완료 — Shipment 수명주기 + 칸반 + SHIP (2026-04-19)
+
+주문 상태 머신의 마지막 재고 연결. `physicalStock` 을 처음으로 차감하는 단계. 기존 칸반 스키마(`KanbanColumn`, `Shipment`, `ShipmentStageLog`) 를 모두 활용 — 마이그레이션 0건.
+
+- **Zod** (`shipment.ts`):
+  - `startShipmentSchema`: `note?` 만 (orderId 는 라우트 인자).
+  - `moveShipmentStageSchema`: `toStageId` (cuid 필수) + `note?`.
+  - `holdShipmentSchema`: `reason` 3~500자 필수 (사유 기록).
+  - `resumeShipmentSchema`: `note?`.
+  - 15 Vitest pass.
+- **서버 액션** (`src/lib/actions/shipment.ts`):
+  - `startShipment(orderId, {note?})`:
+    - 가드: `Order.status=CONFIRMED` · 진행중 Shipment(`completedAt=null`) 없음 · KanbanColumn 존재 · 첫 단계 non-terminal.
+    - 첫 KanbanColumn(`sortOrder` 최소) 에 Shipment 생성 + `ShipmentStageLog(from=null, to=firstStageId, note="START")` + `Order.status=SHIPPING`.
+    - 감사 `SHIPMENT_START`. 재고 변동 없음.
+  - `moveShipmentStage(shipmentId, {toStageId, note?})`:
+    - 가드: 완료 안 됨 · 동일 단계 거부 · 단계 존재.
+    - `Shipment.currentStageId=toStageId`, `enteredStageAt=now()` 갱신 + `ShipmentStageLog` 기록.
+    - **terminal 로 이동 시 자동 완료**:
+      - `Order.status` 는 반드시 SHIPPING 이어야 함.
+      - 각 라인 `SELECT ... FOR UPDATE` → `physicalStock -= quantity`.
+      - `assertInvariant(nextPhysical, availableStock)` — CONFIRM 때 available 차감됐으므로 이론상 항상 통과 (방어적).
+      - `InventoryLog.SHIP(qtyDelta=-qty, physicalAfter, availableAfter, relatedOrderId)`.
+      - `Shipment.completedAt=now()`, `Order.status=COMPLETED, completedAt=now()`.
+    - 감사 `SHIPMENT_MOVE` 또는 `SHIPMENT_COMPLETE` (completed 플래그 분기).
+  - `holdShipment(shipmentId, {reason})`: `Shipment.holdReason=reason` (기 보류 상태·완료 상태 거부). 재고 불변.
+  - `resumeShipment(shipmentId, {note?})`: `holdReason=null` (보류 아님 거부).
+  - 조회 헬퍼 `listKanbanColumns`, `listShipmentsForBoard`, `getShipment`.
+- **UI**:
+  - `StatusActions.tsx` — CONFIRMED 상태에서 **"출고 시작 →"** (blue) 버튼. 확인 모달에 "terminal 단계 도달 시 physicalStock 차감" 안내.
+  - `/admin/shipments` 페이지 — KanbanColumn 별 열, 각 열에 Shipment 카드. terminal 열은 emerald 톤.
+  - `ShipmentCard` 클라이언트 컴포넌트:
+    - 카드 정보: 주문번호(링크), 거래처명, 라인 수/총 수량/합계, 단계 진입시각.
+    - "이동" 버튼 → select + 확인 (기본값: 다음 sortOrder). terminal 선택 시 **"실재고 N개 차감" 경고** 표시.
+    - "보류"/"재개" 버튼. 보류 시 사유 입력.
+    - 완료 카드는 읽기 전용 (emerald 뱃지).
+  - 사이드바에 `/admin/shipments` 링크 추가.
+  - 주문 상세에 SHIPPING/COMPLETED 뱃지 + 칸반 보드 링크.
+- **E2E 스모크** (`scripts/smoke-shipment.ts`):
+  - [A] DRAFT(qty=2) → SUBMIT → CONFIRM → startShipment → 중간 5단계 이동 → terminal 자동 완료.
+    - 결과: `phy 64→62 (−2)`, `avail 불변 62`, `InventoryLog.SHIP(-2)`, `Order.COMPLETED`, stageHistory 6건.
+  - [B] 완료된 주문 재-startShipment → 가드 실패 (status != CONFIRMED).
+  - [C] hold → resume 왕복 — `holdReason` "테스트 보류" → null.
+  - [D] 진행중 주문 재-startShipment → 가드 실패 (이미 진행중).
+- **불변식 메모**: SHIP 시점에 `physical -= qty` 만 하므로 `physical-qty >= available` 은 CONFIRM 단계의 `physical >= available+qty` 가 성립했으니 자동 충족. 방어적으로 `assertInvariant` 호출.
+- **테스트**: 누적 154 pass (15건 추가).
+
 ### 2.1 R01·R03 세부 — 복수 배송지 (2026-04-18 추가)
 
 하나의 거래처가 여러 창고/지점에 배송받을 수 있어야 함 (예: 대리점 본점 + 지방 지점 + 물류센터, 병원 본관 구매팀 + 수술동 긴급창고).

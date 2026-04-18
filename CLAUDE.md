@@ -68,7 +68,7 @@ prototype/          초기 HTML 목업
 ```
 
 ## 현재 단계
-🟢 **Phase 3D-2b-3 (주문 CONFIRM/RESERVE + CANCEL/RELEASE) 완료** (2026-04-19)
+🟢 **Phase 3D-2c (출고/칸반/SHIP) 완료** (2026-04-19)
 - Phase 1 ✅ 스키마 · 마이그레이션 · 시드 완료 (복수 배송지 포함)
 - Phase 2 ✅ NextAuth + bcrypt + JWT · 포털별 RBAC 매트릭스 · AuditLog util
 - Phase 3A ✅ 거래처 CRUD + 복수 배송지 UI · 검증자 · 감사로그 연결 (서버 액션)
@@ -79,7 +79,8 @@ prototype/          초기 HTML 목업
 - Phase 3D-2b-1 ✅ SUBMIT 전환 · 공식 orderNumber 채번(`ORD-YYYYMMDD-NNN`, Postgres advisory lock 기반) · 라인 가격 재스냅샷 · billingMonth 세팅(R12) · `StatusActions` UI · 5건 Vitest(누적 120) + smoke-order-submit 검증(seq 증가/재SUBMIT 가드)
 - Phase 3D-2b-2 ✅ REJECT · HOLD · RESUME · CANCEL(재고 미영향 경로) · `rejectedAt/Reason` · `heldAt/Reason` 컬럼 추가 · `applyStatusTransition` 헬퍼 · UI 사유 모달 + 상세 페이지 뱃지 · 16건 Vitest(누적 136) + smoke-order-transition 4 시나리오 통과
 - Phase 3D-2b-3 ✅ CONFIRM(SUBMITTED→CONFIRMED) · 라인별 `SELECT FOR UPDATE` + availableStock 차감(RESERVE) · `InventoryLog.RESERVE/RELEASE` 기록 · 재고 부족 시 전체 롤백 · CANCEL 확장(CONFIRMED→CANCELLED 시 RELEASE) · UI 확정/취소 경고 모달 · 3건 Vitest(누적 139) + smoke-order-confirm 3 시나리오(avail 차감·복원·롤백) 통과
-- Phase 3D-2c ⏳ Shipment · 칸반 · SHIP 트랜잭션(physicalStock 차감) — 다음 단계
+- Phase 3D-2c ✅ **Shipment 수명주기** — `startShipment`(CONFIRMED→SHIPPING, 첫 KanbanColumn 진입), `moveShipmentStage`(단계 이동 + ShipmentStageLog 기록, terminal 도달 시 자동 완료), `holdShipment`/`resumeShipment` · **SHIP 트랜잭션** — terminal 진입 시 라인별 `SELECT FOR UPDATE` + `physicalStock -= qty` + `InventoryLog.SHIP` + Order.status=COMPLETED · **칸반 UI** `/admin/shipments` (컬럼별 카드, 이동/보류/재개 인라인 모달) · **ShipmentCard** 실시간 갱신 · 15건 Vitest(누적 154) + smoke-shipment 4 시나리오(전체 수명주기·재-start 가드·hold/resume·중복 start 가드) 통과
+- Phase 3D-3 ⏳ 거래명세서 출력(PDF) · Invoice · 수금 — 다음 단계
 
 **프로토타입·과업내용서는 계약 기준 유지** (계약 체결됨, 실개발 진행).
 
