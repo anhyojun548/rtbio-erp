@@ -1645,19 +1645,149 @@ function showClientDetail(clientId) {
       <tr><td style="font-weight:600; width:90px; color:var(--text-secondary);">담당자</td><td>${c.manager}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">연락처</td><td>${c.phone}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">이메일</td><td>${c.email}</td></tr>
-      <tr><td style="font-weight:600; color:var(--text-secondary);">주소</td><td>${c.address}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">기본 주소</td><td>${c.address}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">결제방식</td><td>${c.paymentType}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">마감기간</td><td>${c.closingPeriod}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">명세서</td><td>${c.invoiceType}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">할인율</td><td>무릎 ${c.discounts.knee}% / 상지 ${c.discounts.upper}% / 하지 ${c.discounts.lower}% / 스프린트 ${c.discounts.sprint}%</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">고정단가</td><td>${fixedPriceHTML}</td></tr>
     </table>
+
+    <!-- ── 배송지 관리 (복수 등록 가능) ── -->
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="font-size:14px;">📍 배송지 관리 <span style="color:var(--text-secondary); font-weight:400; font-size:12px;">(${(c.addresses||[]).length}개)</span></strong>
+        <button class="btn btn-outline btn-sm" onclick="openClientAddressForm('${c.id}', null)">+ 배송지 추가</button>
+      </div>
+      <div id="client-addr-list-${c.id}">
+        ${renderClientAddressRows(c)}
+      </div>
+    </div>
+
     <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border); font-size:13px;">
       <strong>거래 현황:</strong> 발주 ${clientOrders.length}건 | 매출 ${formatCurrency(clientRevenue)}
       ${rec ? ' | 미수금 ' + formatCurrency(rec.amount) : ''}
     </div>
   `;
   showModal('거래처 상세 — ' + c.name, bodyHTML);
+}
+
+// ── 배송지 관리 (admin-portal) ──
+function renderClientAddressRows(c) {
+  const list = c.addresses || [];
+  if (list.length === 0) {
+    return `<div class="text-sm text-muted" style="padding:10px; background:var(--bg); border-radius:var(--radius-xs);">등록된 배송지가 없습니다.</div>`;
+  }
+  const sorted = [...list].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+  return sorted.map(a => `
+    <div style="padding:10px 12px; background:var(--bg); border-radius:var(--radius-xs); margin-bottom:6px; display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:600; display:flex; align-items:center; gap:6px;">
+          ${a.label}
+          ${a.isDefault ? '<span class="badge" style="background:var(--primary-lighter); color:var(--primary); font-size:11px;">기본</span>' : ''}
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">${a.address}</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+          ${a.recipient || c.manager} · ${a.phone || c.phone || '-'}
+          ${a.memo ? ` · 📝 ${a.memo}` : ''}
+        </div>
+      </div>
+      <div style="display:flex; gap:4px; flex-shrink:0;">
+        ${!a.isDefault ? `<button class="btn btn-outline btn-sm" style="font-size:11px; padding:4px 8px;" onclick="setDefaultClientAddress('${c.id}','${a.id}')">기본으로</button>` : ''}
+        <button class="btn btn-outline btn-sm" style="font-size:11px; padding:4px 8px;" onclick="openClientAddressForm('${c.id}','${a.id}')">수정</button>
+        <button class="btn btn-outline btn-sm" style="font-size:11px; padding:4px 8px; color:var(--danger);" onclick="deleteClientAddress('${c.id}','${a.id}')">삭제</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openClientAddressForm(clientId, addressId) {
+  const c = getClient(clientId);
+  if (!c) return;
+  c.addresses = c.addresses || [];
+  const a = addressId ? c.addresses.find(x => x.id === addressId) : null;
+  const isEdit = !!a;
+
+  showModal(
+    (isEdit ? '배송지 수정' : '배송지 추가') + ' — ' + c.name,
+    `<div style="display:grid; gap:10px;">
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송지 별칭 *</label>
+        <input type="text" class="form-input" id="ca-label" value="${a ? a.label : ''}" placeholder="예: 강남 지점, 수원 창고">
+      </div>
+      <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">수령인</label>
+          <input type="text" class="form-input" id="ca-recipient" value="${a ? (a.recipient || '') : ''}" placeholder="미입력시 담당자명">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">연락처</label>
+          <input type="text" class="form-input" id="ca-phone" value="${a ? (a.phone || '') : ''}" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송 주소 *</label>
+        <input type="text" class="form-input" id="ca-address" value="${a ? a.address : ''}" placeholder="도로명 주소 + 상세주소">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송 메모</label>
+        <input type="text" class="form-input" id="ca-memo" value="${a ? (a.memo || '') : ''}" placeholder="예: 토요일 수령 불가">
+      </div>
+      <label class="radio-item" style="margin-top:4px;">
+        <input type="checkbox" id="ca-default" ${a && a.isDefault ? 'checked' : ''}>
+        <span>기본 배송지로 설정</span>
+      </label>
+    </div>`,
+    function() {
+      const label   = document.getElementById('ca-label').value.trim();
+      const address = document.getElementById('ca-address').value.trim();
+      if (!label || !address) { showToast('별칭과 주소를 입력해주세요.', 'error'); return false; }
+      const payload = {
+        id: a ? a.id : 'A-' + clientId + '-' + Date.now(),
+        label,
+        recipient: document.getElementById('ca-recipient').value.trim(),
+        phone:     document.getElementById('ca-phone').value.trim(),
+        address,
+        memo:      document.getElementById('ca-memo').value.trim(),
+        isDefault: document.getElementById('ca-default').checked,
+      };
+      // 기본 배송지 유일성 (하나만 true)
+      if (payload.isDefault) c.addresses.forEach(x => x.isDefault = false);
+      if (isEdit) {
+        const idx = c.addresses.findIndex(x => x.id === a.id);
+        c.addresses[idx] = { ...c.addresses[idx], ...payload };
+      } else {
+        // 첫 등록이면 자동 기본 배송지
+        if (c.addresses.length === 0) payload.isDefault = true;
+        c.addresses.push(payload);
+      }
+      // 상세 모달 다시 열기
+      showClientDetail(clientId);
+      showToast((isEdit ? '수정' : '추가') + ' 완료: ' + label, 'success');
+    }
+  );
+}
+
+function setDefaultClientAddress(clientId, addressId) {
+  const c = getClient(clientId);
+  if (!c || !c.addresses) return;
+  c.addresses.forEach(a => a.isDefault = (a.id === addressId));
+  showClientDetail(clientId);
+  showToast('기본 배송지 변경', 'success');
+}
+
+function deleteClientAddress(clientId, addressId) {
+  const c = getClient(clientId);
+  if (!c || !c.addresses) return;
+  const a = c.addresses.find(x => x.id === addressId);
+  if (!a) return;
+  if (!confirm(`배송지 "${a.label}" 을(를) 삭제하시겠습니까?\n(이 배송지로 진행된 과거 주문은 유지됩니다)`)) return;
+  const wasDefault = a.isDefault;
+  c.addresses = c.addresses.filter(x => x.id !== addressId);
+  // 기본값이 삭제되면 첫번째를 기본으로 승격
+  if (wasDefault && c.addresses.length > 0) c.addresses[0].isDefault = true;
+  showClientDetail(clientId);
+  showToast('배송지 삭제됨: ' + a.label, 'success');
 }
 
 // ── Client Registration / Edit Forms ──

@@ -56,6 +56,9 @@ const FREE_SHIP_MIN = { knee: 20, upper: 25, lower: 20, sprint: 40 };
 const SHIPPING_FEE = 4000;
 
 // ── 거래처 (5개) ──
+// ⚠️ 주소 관리: 기본 address 는 거래처 기본 정보용, 실제 배송지는 addresses[] 배열 사용
+//   - 하나의 거래처가 여러 창고/지점에 배송받을 수 있음
+//   - 발주 시 addresses 중 하나를 선택 → 주문에 스냅샷 저장
 const CLIENTS = [
   {
     id:'C001', name:'메디팜 의료기', type:'대리점', manager:'김대리',
@@ -65,7 +68,12 @@ const CLIENTS = [
     paymentType:'계좌이체', closingPeriod:'1일~25일',
     discounts:{ knee:5, upper:5, lower:3, sprint:0 },
     fixedPrices:{},
-    invoiceType:'RTBIO', freeShipping:false
+    invoiceType:'RTBIO', freeShipping:false,
+    addresses: [
+      { id:'A001-1', label:'본점 창고',     recipient:'김대리',  phone:'010-1234-5678', address:'서울시 강남구 테헤란로 123 메디팜빌딩 5F', memo:'평일 09:00~18:00 수령 가능', isDefault:true },
+      { id:'A001-2', label:'강남 지점',     recipient:'이지점장', phone:'02-567-8910',   address:'서울시 강남구 역삼로 88 2층',              memo:'',                             isDefault:false },
+      { id:'A001-3', label:'수원 물류센터', recipient:'박물류',   phone:'031-222-3333',  address:'경기도 수원시 영통구 광교로 45 A동 3층',   memo:'토요일 수령 불가',             isDefault:false },
+    ],
   },
   {
     id:'C002', name:'한빛정형외과', type:'병원', manager:'박원장',
@@ -75,7 +83,11 @@ const CLIENTS = [
     paymentType:'당월말카드', closingPeriod:'전달26일~당월25일',
     discounts:{ knee:10, upper:8, lower:5, sprint:3 },
     fixedPrices:{ P001: 19800 },
-    invoiceType:'거래처', freeShipping:false
+    invoiceType:'거래처', freeShipping:false,
+    addresses: [
+      { id:'A002-1', label:'본관 구매팀',   recipient:'구매과',  phone:'031-777-1000', address:'경기도 성남시 분당구 정자동 45-1 한빛메디컬 3F', memo:'반드시 구매과 경유 (직접 반입 불가)', isDefault:true },
+      { id:'A002-2', label:'수술동 창고',   recipient:'수술실팀', phone:'031-777-1077', address:'경기도 성남시 분당구 정자동 45-1 한빛메디컬 별관 2F', memo:'긴급 배송시에만 사용',              isDefault:false },
+    ],
   },
   {
     id:'C003', name:'대한메디칼', type:'대리점', manager:'이과장',
@@ -85,7 +97,11 @@ const CLIENTS = [
     paymentType:'계좌이체', closingPeriod:'1일~말일',
     discounts:{ knee:7, upper:6, lower:5, sprint:2 },
     fixedPrices:{},
-    invoiceType:'RTBIO', freeShipping:false
+    invoiceType:'RTBIO', freeShipping:false,
+    addresses: [
+      { id:'A003-1', label:'부산 본점', recipient:'이과장',  phone:'010-3333-4444', address:'부산시 해운대구 센텀중앙로 79 대한빌딩 2F', memo:'', isDefault:true },
+      { id:'A003-2', label:'울산 지점', recipient:'김지점장', phone:'052-222-3344',  address:'울산시 남구 삼산로 200 메디컬타워 5F',      memo:'', isDefault:false },
+    ],
   },
   {
     id:'C004', name:'세종재활의학과', type:'병원', manager:'최원장',
@@ -95,7 +111,11 @@ const CLIENTS = [
     paymentType:'사용량카드', closingPeriod:'전달26일~당월25일',
     discounts:{ knee:12, upper:10, lower:8, sprint:5 },
     fixedPrices:{ P004: 24500, P017: 22000 },
-    invoiceType:'거래처', freeShipping:false
+    invoiceType:'거래처', freeShipping:false,
+    addresses: [
+      { id:'A004-1', label:'본원',       recipient:'최원장',  phone:'010-7777-8888', address:'세종시 도움로 87 세종메디타워 4F', memo:'', isDefault:true },
+      { id:'A004-2', label:'대전 분원',   recipient:'김원장',  phone:'042-888-9999',  address:'대전시 서구 둔산로 123 현대메디컬 2F', memo:'화/목 09~15시만 수령 가능', isDefault:false },
+    ],
   },
   {
     id:'C005', name:'미래의료기', type:'대리점', manager:'정사원',
@@ -105,7 +125,10 @@ const CLIENTS = [
     paymentType:'3개월후결제', closingPeriod:'1일~25일',
     discounts:{ knee:3, upper:3, lower:2, sprint:0 },
     fixedPrices:{},
-    invoiceType:'RTBIO', freeShipping:false
+    invoiceType:'RTBIO', freeShipping:false,
+    addresses: [
+      { id:'A005-1', label:'본점', recipient:'정사원', phone:'010-9999-0000', address:'대전시 유성구 대학로 99 미래빌딩 3F', memo:'', isDefault:true },
+    ],
   },
 ];
 

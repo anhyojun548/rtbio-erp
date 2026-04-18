@@ -18,11 +18,13 @@ export type PriceSnapshot = {
   fixedPriceAppliedAtOrder: boolean;
 };
 
+type NumericLike = Prisma.Decimal | number | string;
+
 export type PriceInputs = {
-  basePrice: Prisma.Decimal | number;
+  basePrice: NumericLike;
   category: string | null;
-  clientDiscounts: Array<{ category: string; discountRate: Prisma.Decimal | number }>;
-  clientFixedPrice?: Prisma.Decimal | number | null;
+  clientDiscounts: Array<{ category: string; discountRate: NumericLike }>;
+  clientFixedPrice?: NumericLike | null;
 };
 
 /**

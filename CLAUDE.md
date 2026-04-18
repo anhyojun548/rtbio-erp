@@ -37,6 +37,14 @@
 - 별도 테이블 없음. `InventoryAdjustment`에 `reason='반품'` + `note` 로 처리
 - 입고/출고와 동일한 상태 머신 사용
 
+### 배송지 (복수 등록 + 스냅샷)
+- 하나의 거래처는 여러 배송지를 등록할 수 있다 (`ClientAddress` 1:N)
+- 거래처당 `isDefault=true` 는 **최대 1개** — 앱 로직으로 유일성 보장 (DB 제약 아님)
+- 발주 시 배송지 선택 → `Order.shipTo{Label,Recipient,Phone,PostalCode,Address,AddressDetail,Memo}` **스냅샷 저장**
+  - 가격 스냅샷과 동일 철학 — 이후 ClientAddress 가 수정/삭제돼도 과거 주문은 불변
+- `Order.shipToAddressId` 는 참조용 (FK SetNull) — 스냅샷이 진짜 원본
+- 임시 주소(등록 없이 이번 주문만) 도 허용: `shipToAddressId=null` + 스냅샷만 채움
+
 ## 아키텍처
 - **포털 5개**: exec-portal(영업), admin-portal(경영지원), qc-portal(품질관리), client-portal(거래처), ceo-portal(대표)
 - **공통 미들웨어**: 인증 → 테넌트 컨텍스트 → RBAC → 감사 로그
@@ -60,7 +68,19 @@ prototype/          초기 HTML 목업
 ```
 
 ## 현재 단계
-🟢 **프로토타입 + 과업내용서 완료, 데모·계약 대기** (2026-04-18 기준)
+🟢 **Phase 3D-2b-1 (주문 SUBMIT 전환) 완료** (2026-04-18)
+- Phase 1 ✅ 스키마 · 마이그레이션 · 시드 완료 (복수 배송지 포함)
+- Phase 2 ✅ NextAuth + bcrypt + JWT · 포털별 RBAC 매트릭스 · AuditLog util
+- Phase 3A ✅ 거래처 CRUD + 복수 배송지 UI · 검증자 · 감사로그 연결 (서버 액션)
+- Phase 3B ✅ 제품 CRUD + 사이즈별 재고 초기값 + 유통기한 · `ClientType.PHARMACY` 추가
+- Phase 3C ✅ 입고(RECEIVE) + 조정(반품/폐기/실사조정/입고보정) · `SELECT FOR UPDATE` 동시성 · 이중재고 불변식 · InventoryLog/Adjustment 분리 · 재고 현황/이력 페이지
+- Phase 3D-1 ✅ 카테고리 할인율(ClientDiscount) + 제품 고정가(ClientFixedPrice) 업서트/삭제 · 거래처 상세에 두 패널 · pricing.ts 우선순위 스모크 검증
+- Phase 3D-2a ✅ 주문 DRAFT CRUD + 라인 CRUD + 배송지 스냅샷 · pricing.ts 기반 라인별 단가 미리보기 · `/admin/orders` 목록·신규·상세 UI · 임시 orderNumber(`DRAFT-xxx`) · 25건 Vitest + smoke-order DB 파이프라인 검증
+- Phase 3D-2b-1 ✅ SUBMIT 전환 · 공식 orderNumber 채번(`ORD-YYYYMMDD-NNN`, Postgres advisory lock 기반) · 라인 가격 재스냅샷 · billingMonth 세팅(R12) · `StatusActions` UI · 5건 Vitest(누적 120) + smoke-order-submit 검증(seq 증가/재SUBMIT 가드)
+- Phase 3D-2b-2 ⏳ CONFIRM(RESERVE) · REJECT · HOLD/RESUME · CANCEL(RELEASE) — 다음 단계
+- Phase 3D-2c ⏳ Shipment · 칸반 · SHIP 트랜잭션(physicalStock 차감) — 그 다음
+
+**프로토타입·과업내용서는 계약 기준 유지** (계약 체결됨, 실개발 진행).
 
 **완료된 산출물**
 - 프로토타입 5개 포털 + Step A/B/C 보완 완료

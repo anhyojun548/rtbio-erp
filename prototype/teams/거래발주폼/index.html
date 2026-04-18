@@ -421,27 +421,34 @@
 
     <!-- Delivery address -->
     <div class="confirm-section">
-      <h3>배송 정보</h3>
-      <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="addr-type" value="default" checked onchange="toggleAltAddress()">
-          <span>기본 배송지</span>
-        </label>
-        <div style="padding-left:26px; font-size:14px; color:var(--text-secondary);" id="default-address"></div>
-        <label class="radio-item" style="margin-top:4px;">
-          <input type="radio" name="addr-type" value="alt" onchange="toggleAltAddress()">
-          <span>다른 주소로 배송</span>
-        </label>
-        <div class="alt-address-fields" id="alt-address-fields">
-          <div class="form-group" style="margin-bottom:8px;">
-            <input type="text" class="form-input" placeholder="받는 분" id="alt-name">
-          </div>
-          <div class="form-group" style="margin-bottom:8px;">
-            <input type="text" class="form-input" placeholder="연락처" id="alt-phone">
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <input type="text" class="form-input" placeholder="배송 주소" id="alt-addr">
-          </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3 style="margin:0;">배송지 선택</h3>
+        <button class="btn btn-outline btn-sm" onclick="openNewAddressModal()" style="font-size:13px;">+ 신규 배송지 추가</button>
+      </div>
+      <div class="text-sm text-muted" style="margin-bottom:10px;">
+        등록된 배송지 중 선택하거나, 이번 주문에만 사용할 임시 주소를 직접 입력할 수 있습니다.
+      </div>
+
+      <!-- 등록된 배송지 목록 (라디오) -->
+      <div class="radio-group" id="addr-list"></div>
+
+      <!-- 임시 주소 (이번만 사용) -->
+      <label class="radio-item" style="margin-top:8px;">
+        <input type="radio" name="addr-type" value="oneoff" onchange="onAddrSelectChange()">
+        <span>이번 주문만 다른 주소로 배송 (저장 안 함)</span>
+      </label>
+      <div class="alt-address-fields" id="alt-address-fields">
+        <div class="form-group" style="margin-bottom:8px;">
+          <input type="text" class="form-input" placeholder="받는 분" id="alt-name">
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <input type="text" class="form-input" placeholder="연락처" id="alt-phone">
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <input type="text" class="form-input" placeholder="배송 주소" id="alt-addr">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <input type="text" class="form-input" placeholder="배송 메모 (선택)" id="alt-memo">
         </div>
       </div>
     </div>
@@ -1064,18 +1071,154 @@ function renderConfirmPage(items) {
   document.getElementById('confirm-shipping-note').textContent =
     shipping === 0 ? '배송비 무료' : `배송비 ${formatCurrency(shipping)} 포함`;
 
-  // Default address
-  document.getElementById('default-address').textContent = currentClient.address;
+  // ── 배송지 목록 렌더링 ──
+  renderAddressList();
 }
 
-function toggleAltAddress() {
-  const isAlt = document.querySelector('input[name="addr-type"][value="alt"]').checked;
-  document.getElementById('alt-address-fields').classList.toggle('show', isAlt);
+// 등록된 배송지를 라디오 리스트로 렌더
+function renderAddressList() {
+  const container = document.getElementById('addr-list');
+  if (!container) return;
+  const list = currentClient.addresses || [];
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="text-sm text-muted" style="padding:12px; background:var(--bg); border-radius:var(--radius-xs);">
+        등록된 배송지가 없습니다. 아래에서 이번 주문 주소를 입력하거나 "+ 신규 배송지 추가" 버튼을 누르세요.
+      </div>`;
+    // 등록된 배송지가 없으면 oneoff 자동 선택
+    const oneoff = document.querySelector('input[name="addr-type"][value="oneoff"]');
+    if (oneoff) { oneoff.checked = true; }
+    onAddrSelectChange();
+    return;
+  }
+  // 기본배송지가 먼저 오도록 정렬
+  const sorted = [...list].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+  const defaultId = (sorted.find(a => a.isDefault) || sorted[0]).id;
+
+  container.innerHTML = sorted.map(a => `
+    <label class="radio-item" style="align-items:flex-start;">
+      <input type="radio" name="addr-type" value="${a.id}" ${a.id === defaultId ? 'checked' : ''} onchange="onAddrSelectChange()">
+      <div style="flex:1; padding-left:4px;">
+        <div style="font-weight:600; display:flex; align-items:center; gap:6px;">
+          ${a.label}
+          ${a.isDefault ? '<span class="badge" style="background:var(--primary-lighter); color:var(--primary); font-size:11px;">기본</span>' : ''}
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">
+          ${a.address}
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+          ${a.recipient || currentClient.manager} · ${a.phone || currentClient.phone || '-'}
+          ${a.memo ? ` · <span style="color:var(--warning);">📝 ${a.memo}</span>` : ''}
+        </div>
+      </div>
+    </label>
+  `).join('');
+
+  onAddrSelectChange();
+}
+
+function onAddrSelectChange() {
+  const selected = document.querySelector('input[name="addr-type"]:checked');
+  const isOneoff = selected && selected.value === 'oneoff';
+  document.getElementById('alt-address-fields').classList.toggle('show', isOneoff);
+}
+
+// 신규 배송지 추가 모달
+function openNewAddressModal() {
+  showModal(
+    '신규 배송지 추가',
+    `<div style="display:grid; gap:10px;">
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송지 별칭 *</label>
+        <input type="text" class="form-input" id="new-addr-label" placeholder="예: 강남 지점, 수원 창고">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">수령인</label>
+        <input type="text" class="form-input" id="new-addr-recipient" placeholder="수령인 이름 (미입력 시 담당자명 사용)">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">연락처</label>
+        <input type="text" class="form-input" id="new-addr-phone" placeholder="010-0000-0000">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송 주소 *</label>
+        <input type="text" class="form-input" id="new-addr-address" placeholder="도로명 주소 + 상세주소">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">배송 메모</label>
+        <input type="text" class="form-input" id="new-addr-memo" placeholder="예: 토요일 수령 불가, 3층 창고로 반입">
+      </div>
+      <label class="radio-item" style="margin-top:4px;">
+        <input type="checkbox" id="new-addr-default">
+        <span>기본 배송지로 설정</span>
+      </label>
+    </div>`,
+    function() {
+      const label = document.getElementById('new-addr-label').value.trim();
+      const address = document.getElementById('new-addr-address').value.trim();
+      if (!label || !address) {
+        showToast('배송지 별칭과 주소를 입력해주세요.', 'error');
+        return false; // 모달 닫지 않음 (가능하면)
+      }
+      const newAddr = {
+        id: 'A-NEW-' + Date.now(),
+        label,
+        recipient: document.getElementById('new-addr-recipient').value.trim(),
+        phone: document.getElementById('new-addr-phone').value.trim(),
+        address,
+        memo: document.getElementById('new-addr-memo').value.trim(),
+        isDefault: document.getElementById('new-addr-default').checked,
+      };
+      currentClient.addresses = currentClient.addresses || [];
+      // 기본 배송지로 설정 시 기존 기본값 해제
+      if (newAddr.isDefault) currentClient.addresses.forEach(a => a.isDefault = false);
+      currentClient.addresses.push(newAddr);
+      renderAddressList();
+      // 방금 추가한 주소 선택
+      const radio = document.querySelector(`input[name="addr-type"][value="${newAddr.id}"]`);
+      if (radio) { radio.checked = true; onAddrSelectChange(); }
+      showToast(`배송지 "${label}" 을(를) 추가했습니다.`, 'success');
+    }
+  );
+}
+
+// 현재 선택된 배송지 정보 반환 (저장용 스냅샷)
+function getSelectedShipTo() {
+  const sel = document.querySelector('input[name="addr-type"]:checked');
+  if (!sel) return null;
+  if (sel.value === 'oneoff') {
+    return {
+      addressId: null,
+      label: '임시 배송지',
+      recipient: document.getElementById('alt-name').value.trim() || currentClient.manager,
+      phone: document.getElementById('alt-phone').value.trim(),
+      address: document.getElementById('alt-addr').value.trim(),
+      memo: document.getElementById('alt-memo').value.trim(),
+    };
+  }
+  const a = (currentClient.addresses || []).find(x => x.id === sel.value);
+  if (!a) return null;
+  return {
+    addressId: a.id,
+    label: a.label,
+    recipient: a.recipient || currentClient.manager,
+    phone: a.phone || currentClient.phone,
+    address: a.address,
+    memo: a.memo || '',
+  };
 }
 
 function submitOrder() {
   const items = getOrderItems();
   if (items.length === 0) return;
+
+  // 배송지 스냅샷 검증
+  const shipTo = getSelectedShipTo();
+  if (!shipTo || !shipTo.address) {
+    showToast('배송지를 선택하거나 입력해주세요.', 'error');
+    return;
+  }
+
   const total = items.reduce((s, i) => s + i.unitPrice * i.qty, 0) + calculateShipping(items);
   const method = document.querySelector('input[name="ship-method"]:checked').value;
 
@@ -1087,9 +1230,15 @@ function submitOrder() {
       <div style="font-size:14px; color:var(--text-secondary); margin-bottom:16px;">
         ${items.length}개 품목 | ${method} | ${formatCurrency(total)}
       </div>
-      <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:13px; color:var(--text-secondary);">
-        주문번호: <strong style="color:var(--primary);">ORD-0411-NEW</strong><br>
-        택배 마감 15:30 이전 접수분은 당일 출고됩니다.
+      <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:13px; color:var(--text-secondary); text-align:left;">
+        <strong style="color:var(--primary);">주문번호: ORD-0411-NEW</strong><br>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">
+          <div style="font-weight:600; color:var(--text);">📍 배송지: ${shipTo.label}</div>
+          <div style="margin-top:2px;">${shipTo.address}</div>
+          <div style="margin-top:2px; font-size:12px;">${shipTo.recipient} · ${shipTo.phone || '-'}</div>
+          ${shipTo.memo ? `<div style="margin-top:4px; color:var(--warning); font-size:12px;">📝 ${shipTo.memo}</div>` : ''}
+        </div>
+        <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">택배 마감 15:30 이전 접수분은 당일 출고됩니다.</div>
       </div>
     </div>`,
     function() {

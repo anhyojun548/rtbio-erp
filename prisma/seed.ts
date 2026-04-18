@@ -223,6 +223,69 @@ async function main() {
     console.log(`✓ ClientFixedPrice: 서울대병원 × 인공무릎 A = 400,000원`);
   }
 
+  // ------ 6.5 거래처 배송지 (복수 등록) ------
+  // 하나의 거래처가 여러 창고/지점에 물품을 받는 경우 대응
+  const addressesByCode: Record<string, Array<{ label: string; address: string; addressDetail?: string; recipientName?: string; phone?: string; memo?: string; isDefault: boolean }>> = {
+    "C-AGEN-001": [
+      { label: "본점 창고", address: "서울 강남구 테헤란로 123", addressDetail: "지하 1층 창고", recipientName: "김창고", phone: "02-000-0001", memo: "평일 09:00~18:00 수령 가능", isDefault: true },
+      { label: "강남 지점", address: "서울 강남구 역삼로 88", addressDetail: "2층", recipientName: "이지점장", phone: "02-000-0011", isDefault: false },
+      { label: "수원 물류센터", address: "경기 수원시 영통구 광교로 45", addressDetail: "A동 3층", recipientName: "박물류", phone: "031-000-0021", memo: "토요일 수령 불가", isDefault: false },
+    ],
+    "C-AGEN-002": [
+      { label: "부산 본점", address: "부산 해운대구 센텀로 12", recipientName: "이대표", phone: "051-000-0002", isDefault: true },
+      { label: "울산 지점", address: "울산 남구 삼산로 200", recipientName: "김지점", phone: "052-000-0002", isDefault: false },
+    ],
+    "C-AGEN-003": [
+      { label: "대전 본점", address: "대전 유성구 문지로 71", recipientName: "박대표", phone: "042-000-0003", isDefault: true },
+    ],
+    "C-HOSP-001": [
+      { label: "본관 구매팀", address: "서울 종로구 대학로 101", addressDetail: "본관 지하 1층 구매팀", recipientName: "구매담당", phone: "02-000-1001", memo: "반드시 구매팀 경유 (직접 반입 불가)", isDefault: true },
+      { label: "수술동 창고", address: "서울 종로구 대학로 101", addressDetail: "수술동 2층 의료재료 창고", recipientName: "수술동 관리자", phone: "02-000-1091", memo: "긴급 배송 시에만 사용", isDefault: false },
+    ],
+    "C-HOSP-002": [
+      { label: "원무팀", address: "서울 서초구 반포대로 222", recipientName: "원무과", phone: "02-000-1002", isDefault: true },
+    ],
+    "C-HOSP-003": [
+      { label: "구매팀", address: "부산 부산진구 복지로 75", recipientName: "구매담당", phone: "051-000-1003", isDefault: true },
+    ],
+    "C-HOSP-004": [
+      { label: "본관 1층", address: "광주 동구 필문대로 160", recipientName: "원무과", phone: "062-000-1004", isDefault: true },
+    ],
+    "C-HOSP-005": [
+      { label: "본관 구매팀", address: "대구 남구 두류공원로 17", recipientName: "구매팀", phone: "053-000-1005", isDefault: true },
+    ],
+    "C-OTHER-01": [
+      { label: "협회 사무국", address: "서울 영등포구 여의대로 33", addressDetail: "10층 사무국", recipientName: "사무국장", phone: "02-000-2001", isDefault: true },
+    ],
+  };
+
+  let addrCount = 0;
+  for (const client of clients) {
+    const list = addressesByCode[client.code] ?? [];
+    for (const a of list) {
+      // upsert 키 대용: 동일 client + label 중복 방지 위해 사전 삭제 없이 findFirst 로 체크
+      const existing = await prisma.clientAddress.findFirst({
+        where: { clientId: client.id, label: a.label },
+      });
+      if (existing) continue;
+      await prisma.clientAddress.create({
+        data: {
+          clientId: client.id,
+          label: a.label,
+          address: a.address,
+          addressDetail: a.addressDetail,
+          recipientName: a.recipientName,
+          phone: a.phone,
+          memo: a.memo,
+          isDefault: a.isDefault,
+          createdBy: "seed",
+        },
+      });
+      addrCount++;
+    }
+  }
+  console.log(`✓ ClientAddresses: ${addrCount}개 (거래처당 평균 ${(addrCount / clients.length).toFixed(1)}개)`);
+
   // ------ 7. 칸반 단계 (R05) ------
   const kanbanStages = [
     { key: "RECEIVED",  label: "접수대기", sortOrder: 1, color: "#fbbf24" },

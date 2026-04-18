@@ -190,6 +190,7 @@ model ExpiryLot {
 enum ClientType {
   AGENCY // 대리점
   HOSPITAL // 병원
+  PHARMACY // 약국 (향후 확장용 — 현재 미사용)
   OTHER // 기타
 
   @@schema("tenant_altibio")
@@ -215,6 +216,7 @@ model Client {
 
   discounts   ClientDiscount[]
   fixedPrices ClientFixedPrice[]
+  addresses   ClientAddress[]
   orders      Order[]
   invoices    Invoice[]
   ledgers     ClosingLedger[]
@@ -223,6 +225,33 @@ model Client {
 
   @@index([type])
   @@index([salesRepId])
+  @@schema("tenant_altibio")
+}
+
+// 거래처 배송지 (복수 등록) — 하나의 거래처가 여러 곳에 배송 가능
+// 발주 시 이 목록에서 선택 → Order 에 스냅샷 저장
+// CASCADE: 거래처 삭제 시 배송지 함께 삭제, 과거 주문은 스냅샷으로 보존
+model ClientAddress {
+  id            String   @id @default(cuid())
+  clientId      String
+  label         String // 배송지 별칭 (예: "본점 창고", "강남지점", "대구 물류센터")
+  recipientName String? // 수령인 이름 (비어있으면 거래처 담당자 사용)
+  phone         String? // 수령인 연락처
+  postalCode    String?
+  address       String // 기본 주소
+  addressDetail String? // 상세 주소 (동/호수 등)
+  memo          String? // 배송 메모 (예: "3층 창고 옆 문으로", "금~월요일 수령 불가")
+  isDefault     Boolean  @default(false) // 기본 배송지 플래그 (거래처당 1개 권장, 앱 로직으로 enforce)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+
+  client Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([clientId, active])
+  @@index([clientId, isDefault])
   @@schema("tenant_altibio")
 }
 
@@ -292,12 +321,27 @@ model Order {
   note          String?
   // 월 1~25일 발주 → 월말 입금 규칙 (R12) 체크용
   billingMonth  String? // "2026-04" 형식
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  createdBy     String?
+
+  // ── 배송지 (선택된 ClientAddress 의 스냅샷 — 가격 스냅샷과 동일 철학)
+  // 발주 제출 시 ClientAddress 내용을 고정 기록. 이후 배송지가 수정/삭제돼도 주문은 영향 없음.
+  shipToAddressId     String? // 선택된 배송지 참조 (Nullable: 임시주소/직접입력 대응)
+  shipToLabel         String? // 스냅샷: 배송지 별칭
+  shipToRecipient     String? // 스냅샷: 수령인
+  shipToPhone         String? // 스냅샷: 연락처
+  shipToPostalCode    String?
+  shipToAddress       String? // 스냅샷: 기본 주소
+  shipToAddressDetail String? // 스냅샷: 상세 주소
+  shipToMemo          String? // 스냅샷: 배송 메모
+
+  shipMethod String? // "택배" / "방문수령" / "퀵"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
 
   // CASCADE: 거래처 삭제 시 주문은 SET NULL → 감사상 보존
-  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client         Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  shipToAddress_ ClientAddress? @relation(fields: [shipToAddressId], references: [id], onDelete: SetNull)
 
   items     OrderItem[]
   shipments Shipment[]
@@ -306,6 +350,7 @@ model Order {
   @@index([clientId, orderDate])
   @@index([status])
   @@index([orderDate])
+  @@index([shipToAddressId])
   @@schema("tenant_altibio")
 }
 

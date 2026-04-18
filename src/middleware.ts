@@ -1,34 +1,72 @@
+/**
+ * Edge middleware — 모든 요청을 통과시키며 순차 처리:
+ *
+ *   1) 테넌트 서브도메인 추출 → `x-tenant-id` 헤더 주입
+ *   2) 보호 경로 인증 게이트 (미인증 시 /login redirect)
+ *   3) RBAC — 역할에 따른 포털 접근 제한 (ROLE_PORTAL_ACCESS)
+ *
+ * 감사 로그 기록은 Route Handler/Server Action 에서 `logAudit()` 사용
+ * (Edge 런타임에서 Prisma 직접 사용 불가).
+ */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { canAccessPath } from "@/lib/rbac";
 
-/**
- * 멀티테넌시 서브도메인 라우팅.
- *
- * 규칙: {tenant}.rtbio-erp.com → header `x-tenant-id` 주입
- *       localhost 개발환경에서는 `?tenant=altibio` 쿼리로 override
- *
- * Phase 2 (인증)에서 세션·RBAC 추가 예정.
- */
-export function middleware(req: NextRequest) {
-  const host = req.headers.get("host") ?? "";
+// Edge 에서 auth.ts 의 secret 과 동일한 값을 사용해야 함
+const DEV_SECRET =
+  "dev-only-change-in-prod-d8f3a1b9c7e5f2d4a6b8c0e1f3d5a7b9c1e3d5f7a9b1c3e5d7f9a1b3c5e7d9";
+
+const PUBLIC_PATHS = ["/login", "/api/auth", "/403", "/_next", "/favicon.ico"];
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
+  const pathname = url.pathname;
 
-  // 개발 환경 override
+  // ── 1) 테넌트 컨텍스트 주입 ───────────────────────────────────
+  const host = req.headers.get("host") ?? "";
   const tenantQuery = url.searchParams.get("tenant");
-
   let tenant: string | null = tenantQuery;
-
   if (!tenant) {
-    // {tenant}.rtbio-erp.com 에서 tenant 추출
     const match = host.match(/^([^.]+)\.rtbio-erp\.(com|local)$/);
     if (match) tenant = match[1] ?? null;
   }
 
-  const res = NextResponse.next();
-  if (tenant) {
-    res.headers.set("x-tenant-id", tenant);
+  const requestHeaders = new Headers(req.headers);
+  if (tenant) requestHeaders.set("x-tenant-id", tenant);
+
+  // ── 2) 인증 게이트 ─────────────────────────────────────────
+  if (isPublic(pathname) || pathname === "/") {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
-  return res;
+
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET ?? DEV_SECRET,
+  });
+
+  if (!token) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname + url.search);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // ── 3) RBAC — 포털별 접근 제한 ────────────────────────────
+  const role = token.role;
+  if (role && !canAccessPath(role, pathname)) {
+    return NextResponse.redirect(new URL("/403", req.url));
+  }
+
+  // 세션에 tenantId 가 있으면 우선 적용 (구독자별 격리)
+  if (!tenant && token.tenantCode) {
+    requestHeaders.set("x-tenant-id", token.tenantCode);
+  }
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
