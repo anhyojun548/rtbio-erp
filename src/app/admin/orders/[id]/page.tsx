@@ -8,11 +8,13 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/session";
 import { getOrder } from "@/lib/actions/order";
 import { getClient } from "@/lib/actions/client";
+import { getInvoiceByOrderId } from "@/lib/actions/invoice";
 import type { OrderStatus, ClientType } from "@prisma/client";
 import { ItemsPanel } from "@/components/admin/orders/ItemsPanel";
 import { HeaderEditForm } from "@/components/admin/orders/HeaderEditForm";
 import { DeleteOrderButton } from "@/components/admin/orders/DeleteOrderButton";
 import { StatusActions } from "@/components/admin/orders/StatusActions";
+import { IssueInvoiceButton } from "@/components/admin/orders/IssueInvoiceButton";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   DRAFT: "DRAFT",
@@ -91,6 +93,10 @@ export default async function OrderDetailPage({
     (s, l) => s + Number(l.lineTotal),
     0,
   );
+
+  // COMPLETED 주문만 거래명세서 발급 대상.
+  const existingInvoice =
+    order.status === "COMPLETED" ? await getInvoiceByOrderId(order.id) : null;
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
@@ -175,6 +181,21 @@ export default async function OrderDetailPage({
             단계에 도달해 실재고가 차감되었습니다.
           </p>
         </div>
+      )}
+
+      {order.status === "COMPLETED" && (
+        <IssueInvoiceButton
+          orderId={order.id}
+          existingInvoice={
+            existingInvoice
+              ? {
+                  id: existingInvoice.id,
+                  invoiceNumber: existingInvoice.invoiceNumber,
+                  status: existingInvoice.status,
+                }
+              : null
+          }
+        />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

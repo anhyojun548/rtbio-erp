@@ -68,7 +68,7 @@ prototype/          초기 HTML 목업
 ```
 
 ## 현재 단계
-🟢 **Phase 3D-2c (출고/칸반/SHIP) 완료** (2026-04-19)
+🟢 **Phase 3D-3a (거래명세서 Invoice) 완료** (2026-04-19)
 - Phase 1 ✅ 스키마 · 마이그레이션 · 시드 완료 (복수 배송지 포함)
 - Phase 2 ✅ NextAuth + bcrypt + JWT · 포털별 RBAC 매트릭스 · AuditLog util
 - Phase 3A ✅ 거래처 CRUD + 복수 배송지 UI · 검증자 · 감사로그 연결 (서버 액션)
@@ -80,7 +80,8 @@ prototype/          초기 HTML 목업
 - Phase 3D-2b-2 ✅ REJECT · HOLD · RESUME · CANCEL(재고 미영향 경로) · `rejectedAt/Reason` · `heldAt/Reason` 컬럼 추가 · `applyStatusTransition` 헬퍼 · UI 사유 모달 + 상세 페이지 뱃지 · 16건 Vitest(누적 136) + smoke-order-transition 4 시나리오 통과
 - Phase 3D-2b-3 ✅ CONFIRM(SUBMITTED→CONFIRMED) · 라인별 `SELECT FOR UPDATE` + availableStock 차감(RESERVE) · `InventoryLog.RESERVE/RELEASE` 기록 · 재고 부족 시 전체 롤백 · CANCEL 확장(CONFIRMED→CANCELLED 시 RELEASE) · UI 확정/취소 경고 모달 · 3건 Vitest(누적 139) + smoke-order-confirm 3 시나리오(avail 차감·복원·롤백) 통과
 - Phase 3D-2c ✅ **Shipment 수명주기** — `startShipment`(CONFIRMED→SHIPPING, 첫 KanbanColumn 진입), `moveShipmentStage`(단계 이동 + ShipmentStageLog 기록, terminal 도달 시 자동 완료), `holdShipment`/`resumeShipment` · **SHIP 트랜잭션** — terminal 진입 시 라인별 `SELECT FOR UPDATE` + `physicalStock -= qty` + `InventoryLog.SHIP` + Order.status=COMPLETED · **칸반 UI** `/admin/shipments` (컬럼별 카드, 이동/보류/재개 인라인 모달) · **ShipmentCard** 실시간 갱신 · 15건 Vitest(누적 154) + smoke-shipment 4 시나리오(전체 수명주기·재-start 가드·hold/resume·중복 start 가드) 통과
-- Phase 3D-3 ⏳ 거래명세서 출력(PDF) · Invoice · 수금 — 다음 단계
+- Phase 3D-3a ✅ **거래명세서(Invoice)** — COMPLETED 주문 → DRAFT Invoice 스냅샷 생성(`createInvoiceFromOrder`) · 주문당 활성 invoice 1건 제약 · VAT 10% 계산(`calcVatTotal`, R18) · `issueInvoice`(DRAFT→ISSUED, `INV-YYYYMMDD-NNN` Postgres advisory lock 채번, orderNumber 와 키공간 분리) · `markInvoiceSent`(ISSUED→SENT + sentAt) · `cancelInvoice`(사유 기록) · **PDF 출력** `/admin/invoices/[id]/pdf` (@react-pdf/renderer, Noto Sans KR CDN, 공급자/공급받는자/라인 테이블/VAT 합계) · **UI** `/admin/invoices` 목록+필터 · 상세(DRAFT 편집폼·상태 액션·PDF 미리보기) · 주문 상세(COMPLETED) "거래명세서 발급" 버튼 · 21건 Vitest(누적 175) + smoke-invoice 5 시나리오(생성·발행·중복 가드·취소·재생성 seq 증분) 통과
+- Phase 3D-3b ⏳ 수금(Payment) · 거래처원장(ClosingLedger) · 세금계산서 연동 — 다음 단계
 
 **프로토타입·과업내용서는 계약 기준 유지** (계약 체결됨, 실개발 진행).
 
