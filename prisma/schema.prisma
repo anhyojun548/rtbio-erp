@@ -1,0 +1,776 @@
+// ============================================================================
+// RTBIO ERP — Prisma Schema (Phase 1 초안, 2026-04-18)
+// ============================================================================
+// 설계 원칙 (CLAUDE.md 참조):
+//   1. 멀티테넌시: public + tenant_{id} (스키마 분리)
+//   2. 가격 스냅샷: 주문 확정 시점 단가를 OrderItem 에 고정
+//   3. 재고 이중관리: physicalStock / availableStock
+//   4. 반품 = InventoryAdjustment + reason='반품'
+//   5. 감사 컬럼: createdAt / updatedAt / createdBy 필수
+//   6. 외래키 CASCADE 는 각 관계 주석으로 명시
+// ----------------------------------------------------------------------------
+// 본 파일은 샘플 테넌트 `tenant_altibio` 기준으로 작성. 실제 운영 시에는
+// 테넌트 추가 시 schemas 배열 확장 + 런타임 마이그레이션 스크립트 사용.
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public", "tenant_altibio"]
+}
+
+// ============================================================================
+// ▼ public 스키마 — 공용 (인증, 테넌시, 감사)
+// ============================================================================
+
+enum UserRole {
+  SUPER_ADMIN // 전체 운영사 (하마다랩스)
+  TENANT_OWNER // 테넌트 대표 (CEO)
+  ADMIN // 경영지원
+  QC // 품질관리
+  EXEC // 영업
+  CLIENT // 거래처
+  VIEWER // 조회 전용
+
+  @@schema("public")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  code      String   @unique // 스키마명 접미사 (예: "altibio" → tenant_altibio)
+  name      String
+  subdomain String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  users     User[]
+  auditLogs AuditLog[]
+
+  @@index([subdomain])
+  @@schema("public")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String // bcrypt hash
+  name        String
+  role        UserRole
+  tenantId    String? // null = SUPER_ADMIN
+  phone       String?
+  active      Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+
+  // CASCADE: 테넌트 삭제 시 사용자도 삭제 (운영사 SUPER_ADMIN 제외)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  auditLogs AuditLog[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@schema("public")
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  tenantId  String?
+  userId    String?
+  action    String // 예: "ORDER_CREATE", "INVENTORY_ADJUST"
+  resource  String // 예: "Order:abc123"
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  // CASCADE: 테넌트/유저 삭제 시에도 감사로그는 보존 → SET NULL
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, timestamp])
+  @@index([resource])
+  @@schema("public")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
+}
+
+// ============================================================================
+// ▼ tenant_altibio 스키마 — 테넌트 격리 데이터
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// R08: 제품 및 재고 관리
+// ----------------------------------------------------------------------------
+
+model Product {
+  id           String   @id @default(cuid())
+  code         String   @unique // 자체 제품코드
+  name         String
+  brand        String?
+  category     String? // 카테고리 (할인율 테이블 키)
+  part         String? // 부위 (예: 상완, 하지)
+  basePrice    Decimal  @db.Decimal(12, 2)
+  active       Boolean  @default(true)
+  expiryMonths Int? // 유통기한(개월) — R19
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+
+  sizes       ProductSize[]
+  orderItems  OrderItem[]
+  fixedPrices ClientFixedPrice[]
+
+  @@index([category])
+  @@index([brand])
+  @@schema("tenant_altibio")
+}
+
+model ProductSize {
+  id             String   @id @default(cuid())
+  productId      String
+  sizeCode       String // 예: "S", "M", "L", "12x8"
+  physicalStock  Int      @default(0) // 실재고
+  availableStock Int      @default(0) // 가용재고 (예약분 제외)
+  reorderPoint   Int? // 재고 알람 기준 (월평균×2.5 등) — R14
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+
+  // CASCADE: 제품 삭제 시 사이즈도 삭제
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItems    OrderItem[]
+  inventoryLogs InventoryLog[]
+  adjustments   InventoryAdjustment[]
+  expiryLots    ExpiryLot[]
+
+  @@unique([productId, sizeCode])
+  @@index([productId])
+  @@schema("tenant_altibio")
+}
+
+// R19: 유통기한 관리 — 로트별 잔여수량 추적
+model ExpiryLot {
+  id            String   @id @default(cuid())
+  productSizeId String
+  lotNumber     String
+  expiryDate    DateTime
+  quantity      Int
+  remainingQty  Int
+  receivedAt    DateTime @default(now())
+  note          String?
+
+  // CASCADE: 제품사이즈 삭제 시 로트도 삭제
+  productSize ProductSize @relation(fields: [productSizeId], references: [id], onDelete: Cascade)
+
+  @@index([productSizeId, expiryDate])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R01, R02: 거래처 및 할인율
+// ----------------------------------------------------------------------------
+
+enum ClientType {
+  AGENCY // 대리점
+  HOSPITAL // 병원
+  OTHER // 기타
+
+  @@schema("tenant_altibio")
+}
+
+model Client {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  name           String
+  type           ClientType
+  businessNumber String? // 사업자번호
+  representative String? // 대표자
+  phone          String?
+  email          String?
+  address        String?
+  postalCode     String?
+  paymentTerms   String? // 결제조건 (예: "월말 25일 발주, 다음달 말 입금")
+  salesRepId     String? // 담당 영업사원
+  active         Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  createdBy      String?
+
+  discounts   ClientDiscount[]
+  fixedPrices ClientFixedPrice[]
+  orders      Order[]
+  invoices    Invoice[]
+  ledgers     ClosingLedger[]
+  payments    Payment[]
+  assignments SalesAssignment[]
+
+  @@index([type])
+  @@index([salesRepId])
+  @@schema("tenant_altibio")
+}
+
+// 우선순위 중간: discounts[category] (R02)
+model ClientDiscount {
+  id           String   @id @default(cuid())
+  clientId     String
+  category     String // Product.category 와 매칭
+  discountRate Decimal  @db.Decimal(5, 4) // 0.0000 ~ 1.0000
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+
+  // CASCADE: 거래처 삭제 시 할인율도 삭제
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, category])
+  @@schema("tenant_altibio")
+}
+
+// 우선순위 최상: fixedPrices (R02)
+model ClientFixedPrice {
+  id         String   @id @default(cuid())
+  clientId   String
+  productId  String
+  fixedPrice Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+
+  // CASCADE: 거래처/제품 삭제 시 고정가도 삭제
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, productId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R03, R04, R13: 주문 (발주 → 확정 → 출고)
+// ----------------------------------------------------------------------------
+
+enum OrderStatus {
+  DRAFT // 거래처 작성중
+  SUBMITTED // 발주 제출 (거래처 → QC)
+  CONFIRMED // QC 확정 (가용재고 차감 완료)
+  HOLD // 보류 (이월)
+  REJECTED // 반려
+  SHIPPING // 출고 진행중 (칸반)
+  COMPLETED // 출고 완료
+  CANCELLED // 취소
+
+  @@schema("tenant_altibio")
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique // 예: "ORD-20260418-001"
+  clientId      String
+  status        OrderStatus @default(DRAFT)
+  orderDate     DateTime
+  requestedDate DateTime? // 희망 배송일
+  confirmedAt   DateTime?
+  shippedAt     DateTime?
+  completedAt   DateTime?
+  invoiceIssued Boolean     @default(false) // R07 연동
+  note          String?
+  // 월 1~25일 발주 → 월말 입금 규칙 (R12) 체크용
+  billingMonth  String? // "2026-04" 형식
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  createdBy     String?
+
+  // CASCADE: 거래처 삭제 시 주문은 SET NULL → 감사상 보존
+  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  items     OrderItem[]
+  shipments Shipment[]
+  invoices  Invoice[]
+
+  @@index([clientId, orderDate])
+  @@index([status])
+  @@index([orderDate])
+  @@schema("tenant_altibio")
+}
+
+// 가격 스냅샷 — 주문 확정 시 단가/할인 고정
+model OrderItem {
+  id                       String   @id @default(cuid())
+  orderId                  String
+  productId                String
+  productSizeId            String
+  quantity                 Int
+  // 스냅샷 (CLAUDE.md 도메인 규칙)
+  unitPrice                Decimal  @db.Decimal(12, 2) // 최종 단가
+  basePriceAtOrder         Decimal  @db.Decimal(12, 2) // 주문 시점 기준가
+  discountRateAtOrder      Decimal? @db.Decimal(5, 4) // 적용된 할인율
+  fixedPriceAppliedAtOrder Boolean  @default(false) // fixedPrice 적용 여부
+  lineTotal                Decimal  @db.Decimal(14, 2) // unitPrice * quantity
+  createdAt                DateTime @default(now())
+
+  // CASCADE: 주문 삭제 시 라인도 삭제
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productSize ProductSize @relation(fields: [productSizeId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R05, R17: 출고 칸반 (커스터마이징 단계)
+// ----------------------------------------------------------------------------
+
+// 테넌트별 칸반 단계 정의 (최대 8단계)
+model KanbanColumn {
+  id         String   @id @default(cuid())
+  key        String   @unique // 코드 (예: "RECEIVED", "PICKING")
+  label      String
+  sortOrder  Int
+  isTerminal Boolean  @default(false) // 출고완료 단계 여부
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+
+  shipments Shipment[]
+
+  @@index([sortOrder])
+  @@schema("tenant_altibio")
+}
+
+model Shipment {
+  id             String    @id @default(cuid())
+  orderId        String
+  currentStageId String
+  enteredStageAt DateTime  @default(now())
+  holdReason     String? // 보류 사유 (4/21 데모 피드백: QC 보류 버튼)
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+
+  // CASCADE: 주문 삭제 시 출고도 삭제
+  order        Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  currentStage KanbanColumn       @relation(fields: [currentStageId], references: [id], onDelete: Restrict)
+  stageHistory ShipmentStageLog[]
+  assignees    ShipmentAssignee[]
+
+  @@index([orderId])
+  @@index([currentStageId])
+  @@schema("tenant_altibio")
+}
+
+// 단계별 담당자 (R17) — 한 출고의 단계마다 다수 담당자 배정 가능
+model ShipmentAssignee {
+  id         String   @id @default(cuid())
+  shipmentId String
+  stageId    String // KanbanColumn.id
+  userId     String // public.User.id (cross-schema 참조, 앱 레벨에서 검증)
+  assignedAt DateTime @default(now())
+
+  // CASCADE: 출고 삭제 시 담당자도 삭제
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, stageId, userId])
+  @@index([userId])
+  @@schema("tenant_altibio")
+}
+
+model ShipmentStageLog {
+  id          BigInt   @id @default(autoincrement())
+  shipmentId  String
+  fromStageId String?
+  toStageId   String
+  movedBy     String? // userId
+  movedAt     DateTime @default(now())
+  note        String?
+
+  // CASCADE: 출고 삭제 시 이력 삭제
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, movedAt])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R14: 재고 로그 및 조정 (반품 포함)
+// ----------------------------------------------------------------------------
+
+enum InventoryLogType {
+  RESERVE // 주문 확정 → availableStock 차감
+  RELEASE // 주문 취소 → availableStock 복구
+  SHIP // 출고 → physicalStock 차감
+  RECEIVE // 입고 → physicalStock 증가
+  ADJUST_IN // 조정(+)
+  ADJUST_OUT // 조정(-)
+  RETURN // 반품 (조정의 특수 케이스)
+
+  @@schema("tenant_altibio")
+}
+
+model InventoryLog {
+  id             BigInt           @id @default(autoincrement())
+  productSizeId  String
+  type           InventoryLogType
+  qtyDelta       Int // +/- 변화량
+  physicalAfter  Int // 변동 후 실재고
+  availableAfter Int // 변동 후 가용재고
+  relatedOrderId String?
+  note           String?
+  createdAt      DateTime         @default(now())
+  createdBy      String?
+
+  // CASCADE: 제품사이즈 삭제 시 로그 삭제 (또는 보존하려면 SET NULL 로 변경)
+  productSize ProductSize @relation(fields: [productSizeId], references: [id], onDelete: Cascade)
+
+  @@index([productSizeId, createdAt])
+  @@schema("tenant_altibio")
+}
+
+// 반품 / 입고조정 / 폐기 등 수기 조정 (CLAUDE.md: 반품 = reason='반품')
+model InventoryAdjustment {
+  id            String   @id @default(cuid())
+  productSizeId String
+  qty           Int // 양수 = 입고/반품, 음수 = 폐기
+  reason        String // "반품" | "입고" | "폐기" | "실사조정" 등
+  note          String?
+  approvedBy    String?
+  createdAt     DateTime @default(now())
+  createdBy     String?
+
+  productSize ProductSize @relation(fields: [productSizeId], references: [id], onDelete: Cascade)
+
+  @@index([productSizeId, createdAt])
+  @@index([reason])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R07, R09, R10, R18: 거래명세서 / 원장 / 마감
+// ----------------------------------------------------------------------------
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  SENT
+  CANCELLED
+
+  @@schema("tenant_altibio")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  clientId      String
+  orderId       String? // 발주 건 기반이면 연결
+  issueDate     DateTime
+  dueDate       DateTime?
+  supplyAmount  Decimal       @db.Decimal(14, 2) // 공급가액
+  vatAmount     Decimal       @db.Decimal(14, 2) // R18 부가세 10%
+  totalAmount   Decimal       @db.Decimal(14, 2)
+  status        InvoiceStatus @default(DRAFT)
+  pdfUrl        String?
+  sentAt        DateTime?
+  note          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  createdBy     String?
+
+  // CASCADE: 거래처 삭제 시 RESTRICT, 주문 삭제 시 SET NULL
+  client Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  order  Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  items  InvoiceItem[]
+
+  @@index([clientId, issueDate])
+  @@index([status])
+  @@schema("tenant_altibio")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(12, 2)
+  amount      Decimal @db.Decimal(14, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@schema("tenant_altibio")
+}
+
+// R10: 월 마감 원장
+model ClosingLedger {
+  id           String    @id @default(cuid())
+  clientId     String
+  closingMonth String // "2026-04"
+  carryOver    Decimal   @default(0) @db.Decimal(14, 2) // 전월 이월
+  monthlySales Decimal   @default(0) @db.Decimal(14, 2) // 당월 매출
+  received     Decimal   @default(0) @db.Decimal(14, 2) // 당월 수금
+  balance      Decimal   @default(0) @db.Decimal(14, 2) // 잔액
+  note         String?
+  closedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdBy    String?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, closingMonth])
+  @@index([closingMonth])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R12: 수금 관리 (일부입금, 은행 수기 입력, 미수금)
+// ----------------------------------------------------------------------------
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL // 일부입금
+  PAID
+  OVERDUE
+
+  @@schema("tenant_altibio")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  clientId  String
+  amount    Decimal       @db.Decimal(14, 2)
+  paidAt    DateTime
+  method    String // "계좌이체" | "카드" | "현금" 등
+  status    PaymentStatus @default(PENDING)
+  bankTxnId String? // BankTransaction 연결
+  note      String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  createdBy String?
+
+  client  Client           @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  bankTxn BankTransaction? @relation(fields: [bankTxnId], references: [id], onDelete: SetNull)
+
+  @@index([clientId, paidAt])
+  @@schema("tenant_altibio")
+}
+
+// 은행 입금 수기 입력 (R12 프로토타입 요구사항)
+model BankTransaction {
+  id        String   @id @default(cuid())
+  bankName  String
+  payer     String // 입금자
+  amount    Decimal  @db.Decimal(14, 2)
+  txnDate   DateTime
+  reference String?
+  matched   Boolean  @default(false) // Payment 와 매칭 여부
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  payments Payment[]
+
+  @@index([txnDate])
+  @@index([matched])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R15, R21, R23: 영업 (실적, 담당자 배정, 학회·방문)
+// ----------------------------------------------------------------------------
+
+// 담당자-거래처 배정 (R11, R23)
+model SalesAssignment {
+  id         String   @id @default(cuid())
+  clientId   String
+  salesRepId String // public.User.id
+  assignedAt DateTime @default(now())
+  active     Boolean  @default(true)
+  createdBy  String?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, salesRepId])
+  @@index([salesRepId])
+  @@schema("tenant_altibio")
+}
+
+// R23: 학회
+model Conference {
+  id        String    @id @default(cuid())
+  name      String
+  location  String?
+  startDate DateTime
+  endDate   DateTime?
+  note      String?
+  createdAt DateTime  @default(now())
+  createdBy String?
+
+  visitors ConferenceVisitor[]
+
+  @@index([startDate])
+  @@schema("tenant_altibio")
+}
+
+// R23: 방문자 방명록
+model ConferenceVisitor {
+  id            String   @id @default(cuid())
+  conferenceId  String
+  name          String
+  phone         String?
+  affiliation   String? // 소속
+  assignedRepId String? // 담당자 배정
+  contactStatus String? // "신규" | "접촉중" | "계약" 등
+  note          String?
+  createdAt     DateTime @default(now())
+  createdBy     String?
+
+  conference Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+
+  @@index([conferenceId])
+  @@index([assignedRepId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R20: 판매 계약서
+// ----------------------------------------------------------------------------
+
+model SalesContract {
+  id        String    @id @default(cuid())
+  clientId  String
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  pdfUrl    String?
+  signed    Boolean   @default(false)
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+
+  @@index([clientId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R22: 데이터 사용량 수기 입력
+// ----------------------------------------------------------------------------
+
+model DataUsage {
+  id        String   @id @default(cuid())
+  month     String // "2026-04"
+  category  String // "서버" | "스토리지" | "이메일" 등
+  amount    Decimal  @db.Decimal(14, 2)
+  unit      String // "GB" | "건" 등
+  note      String?
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  @@unique([month, category])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// R24: 임원진 대시보드 — 위젯 커스터마이징
+// ----------------------------------------------------------------------------
+
+model DashboardWidget {
+  id                String   @id @default(cuid())
+  userId            String // public.User.id
+  preset            String // "sales_total", "order_status", "inventory_alert" 등
+  position          Int
+  width             Int      @default(6) // grid cols 1-12
+  height            Int      @default(4)
+  overrideDateRange String? // null = 전역값 사용
+  config            Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId, position])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// 알림 / 이메일 큐 (R14, 재고알람 + 거래명세서 발송)
+// ----------------------------------------------------------------------------
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+
+  @@schema("tenant_altibio")
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String // public.User.id
+  channel   NotificationChannel
+  title     String
+  body      String
+  readAt    DateTime?
+  link      String?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, readAt])
+  @@schema("tenant_altibio")
+}
+
+enum EmailStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+
+  @@schema("tenant_altibio")
+}
+
+model EmailQueue {
+  id          String      @id @default(cuid())
+  toAddress   String
+  ccAddress   String?
+  subject     String
+  body        String
+  template    String? // 템플릿 키
+  attachments Json? // [{filename, url}]
+  status      EmailStatus @default(QUEUED)
+  sentAt      DateTime?
+  errorMsg    String?
+  retryCount  Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// 테넌트 설정 (R13: 업무시간, 택배 마감시간 등)
+// ----------------------------------------------------------------------------
+
+model TenantSetting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@schema("tenant_altibio")
+}

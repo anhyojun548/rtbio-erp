@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RTBIO ERP — 기술 스택 회의 자료</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    background: #f5f6f8;
+    color: #2c3e50;
+    line-height: 1.6;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 240px;
+    background: #1e2a3a;
+    color: #fff;
+    padding: 24px 0;
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 0 24px 20px;
+    border-bottom: 1px solid #34495e;
+    margin-bottom: 16px;
+  }
+  .sidebar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .sidebar-sub {
+    font-size: 12px;
+    color: #95a5a6;
+    margin-top: 4px;
+  }
+  .nav-item {
+    display: block;
+    padding: 10px 24px;
+    color: #bdc3c7;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .nav-item:hover {
+    background: #2c3e50;
+    color: #fff;
+  }
+  .nav-item.active {
+    background: #2c3e50;
+    color: #fff;
+    border-left-color: #3498db;
+  }
+  .nav-section {
+    padding: 8px 24px;
+    font-size: 11px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 16px;
+  }
+
+  /* ---------- Main ---------- */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    padding: 32px 48px 80px;
+    max-width: 1280px;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1e2a3a;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 32px 0 16px;
+    color: #1e2a3a;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #ecf0f1;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 20px 0 10px;
+    color: #34495e;
+  }
+  p { margin: 8px 0; }
+  .subtitle {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #ecf0f1;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .card-aws {
+    border-top: 4px solid #FF9900;
+  }
+  .card-azure {
+    border-top: 4px solid #0078D4;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .card-title.aws { color: #FF9900; }
+  .card-title.azure { color: #0078D4; }
+  .card-cost {
+    font-size: 22px;
+    font-weight: 700;
+    color: #27ae60;
+  }
+
+  /* ---------- Tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin: 12px 0;
+    font-size: 13px;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #34495e;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.total td {
+    background: #fef9e7;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  td.aws-col { background: #fff8ec; }
+  td.azure-col { background: #e8f4fd; }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-pending { background: #fef3cd; color: #856404; }
+  .badge-done    { background: #d4edda; color: #155724; }
+  .badge-aws     { background: #FF9900; color: #fff; }
+  .badge-azure   { background: #0078D4; color: #fff; }
+  .badge-gray    { background: #e0e0e0; color: #555; }
+
+  /* ---------- Status blocks ---------- */
+  .alert {
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .alert-warn { background: #fff3cd; border-left: 4px solid #f39c12; }
+  .alert-info { background: #e3f2fd; border-left: 4px solid #3498db; }
+  .alert-success { background: #d4edda; border-left: 4px solid #27ae60; }
+
+  /* ---------- Score bars ---------- */
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+  }
+  .score-label {
+    min-width: 200px;
+    font-size: 13px;
+  }
+  .score-weight {
+    font-size: 12px;
+    color: #95a5a6;
+    min-width: 50px;
+  }
+  .bar-container {
+    flex: 1;
+    height: 18px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+  .bar-aws {
+    background: #FF9900;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .bar-azure {
+    background: #0078D4;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ---------- Lists ---------- */
+  ul, ol {
+    padding-left: 24px;
+    margin: 8px 0;
+  }
+  li { margin: 4px 0; font-size: 14px; }
+  .check-list {
+    list-style: none;
+    padding-left: 0;
+  }
+  .check-list li {
+    padding: 8px 12px;
+    margin: 6px 0;
+    background: #f8f9fa;
+    border-left: 3px solid #bdc3c7;
+    border-radius: 4px;
+  }
+  .pro { color: #27ae60; }
+  .con { color: #e74c3c; }
+
+  /* ---------- Footer ---------- */
+  .meeting-footer {
+    position: fixed;
+    bottom: 0;
+    left: 240px;
+    right: 0;
+    background: #1e2a3a;
+    color: #fff;
+    padding: 10px 48px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media print {
+    .sidebar, .meeting-footer { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+    .page { display: block !important; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">RTBIO ERP</div>
+    <div class="sidebar-sub">기술 스택 회의 · 2026-04-15</div>
+  </div>
+
+  <div class="nav-section">개요</div>
+  <a class="nav-item active" data-page="summary">📌 한눈에 보기</a>
+  <a class="nav-item" data-page="confirmed">✅ 확정 사항</a>
+
+  <div class="nav-section">클라우드 비교</div>
+  <a class="nav-item" data-page="compare">⚖️ AWS vs Azure</a>
+  <a class="nav-item" data-page="cost">💰 비용 비교</a>
+  <a class="nav-item" data-page="credit">🎁 스타트업 크레딧</a>
+  <a class="nav-item" data-page="proscons">📊 장단점</a>
+  <a class="nav-item" data-page="score">🏆 점수 비교</a>
+
+  <div class="nav-section">확장 로드맵</div>
+  <a class="nav-item" data-page="stage1">1단계 · 론칭</a>
+  <a class="nav-item" data-page="stage2">2단계 · SaaS 확장</a>
+  <a class="nav-item" data-page="stage3">3단계 · 엔터프라이즈</a>
+
+  <div class="nav-section">의사결정</div>
+  <a class="nav-item" data-page="checklist">📋 체크리스트</a>
+  <a class="nav-item" data-page="decision">🎯 추천 시나리오</a>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+
+  <!-- =========== SUMMARY =========== -->
+  <section class="page active" id="page-summary">
+    <h1>📌 기술 스택 회의 — 한눈에 보기</h1>
+    <p class="subtitle">RTBIO ERP 멀티테넌트 SaaS · 2026-04-15 · 회의용 요약</p>
+
+    <div class="alert alert-warn">
+      <strong>🟡 오늘 결정할 항목:</strong> AWS vs Azure 클라우드 선택<br>
+      나머지 스택(Next.js 14, PostgreSQL, Prisma 등)은 확정됨
+    </div>
+
+    <h2>회의 핵심 3가지</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">1️⃣ 비용 차이</div>
+        </div>
+        <p><strong>5% 이내 (거의 동일)</strong></p>
+        <p>AWS $160 vs Azure $155 / 월 · 1단계 기준<br>
+        <span class="con">→ 비용은 결정 기준이 아님</span></p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">2️⃣ 크레딧 차이</div>
+        </div>
+        <p><strong>Azure 유리</strong></p>
+        <p>AWS Activate $1,000 (조건 까다로움)<br>
+        Azure Microsoft for Startups <strong>$6,000</strong> (신청 쉬움)<br>
+        <span class="pro">→ 1~2년 거의 무료 운영 가능</span></p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">3️⃣ 계약서 이슈</div>
+        </div>
+        <p><strong>AWS 유리</strong></p>
+        <p>과업내용서에 "AWS" 명시됨<br>
+        Azure 선택 시 클라이언트 협의 필요<br>
+        <span class="con">→ 변경 가능 여부가 관건</span></p>
+      </div>
+    </div>
+
+    <h2>오늘 회의 결정 포인트</h2>
+    <ul class="check-list">
+      <li><strong>Q1.</strong> 알티바이오 측이 "AWS → Azure" 변경에 동의할 수 있는가?</li>
+      <li><strong>Q2.</strong> Azure 스타트업 크레딧($6,000) 신청할 법인 준비가 됐는가?</li>
+      <li><strong>Q3.</strong> 운영 담당자가 AWS와 Azure 중 어느 쪽에 익숙한가?</li>
+      <li><strong>Q4.</strong> 향후 판매 대상 고객사(대기업/공공)가 선호하는 클라우드가 있는가?</li>
+    </ul>
+
+    <h2>권고</h2>
+    <div class="card-grid">
+      <div class="card card-aws">
+        <div class="card-header">
+          <div class="card-title aws">AWS 선택</div>
+          <span class="badge badge-aws">안정성 우선</span>
+        </div>
+        <ul>
+          <li>과업내용서 변경 불필요</li>
+          <li>국내 레퍼런스/개발자 풀 풍부</li>
+          <li>인력 교체·충원 부담 적음</li>
+        </ul>
+      </div>
+      <div class="card card-azure">
+        <div class="card-header">
+          <div class="card-title azure">Azure 선택</div>
+          <span class="badge badge-azure">비용 효율 우선</span>
+        </div>
+        <ul>
+          <li>크레딧 $6,000로 1~2년 무료 운영</li>
+          <li>초기 자금 부담 최소화</li>
+          <li>Microsoft 생태계 연동 (M365, GitHub)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========== CONFIRMED =========== -->
+  <section class="page" id="page-confirmed">
+    <h1>✅ 확정 사항</h1>
+    <p class="subtitle">이미 정해진 기술 스택과 구조 (대안 포함)</p>
+
+    <h2>애플리케이션 스택</h2>
+    <table>
+      <tr><th>영역</th><th>선택</th><th>선정 이유</th><th>주요 대안</th></tr>
+      <tr><td>프레임워크</td><td><strong>Next.js 14</strong> (App Router)</td><td>프론트+API 통합, SSR, 컨테이너 배포</td><td>Nuxt 3 / Remix / SvelteKit</td></tr>
+      <tr><td>언어</td><td><strong>TypeScript</strong></td><td>타입 안정성, ERP 복잡 데이터 모델 대응</td><td>JavaScript(ES2024) — 타입 안정성 ↓</td></tr>
+      <tr><td>DB</td><td><strong>PostgreSQL 16</strong></td><td>트랜잭션 안정성, 스키마 분리 멀티테넌시</td><td>MySQL 8 / MariaDB / CockroachDB</td></tr>
+      <tr><td>ORM</td><td><strong>Prisma</strong></td><td>타입세이프 쿼리, 마이그레이션 관리</td><td>Drizzle ORM / Kysely / TypeORM</td></tr>
+      <tr><td>인증</td><td><strong>NextAuth.js</strong></td><td>JWT 세션, 거래처/내부 이중 인증, 무료</td><td>Clerk(유료) / Auth0(유료) / Supabase Auth</td></tr>
+      <tr><td>UI</td><td><strong>Tailwind CSS</strong></td><td>프로토타입 디자인 시스템 호환</td><td>Chakra UI / Styled Components / CSS Modules</td></tr>
+      <tr><td>상태관리</td><td><strong>Zustand</strong></td><td>경량, 대시보드 실시간 상태</td><td>Redux Toolkit / Jotai / Valtio</td></tr>
+      <tr><td>PDF</td><td><strong>@react-pdf/renderer</strong></td><td>거래명세서, 원장 PDF 생성 (React 컴포넌트로)</td><td>Puppeteer(HTML→PDF) / jsPDF / PDFKit</td></tr>
+      <tr><td>유효성 검증</td><td><strong>Zod</strong></td><td>입력 검증, API 스키마 타입 추론</td><td>Yup / Joi / Valibot</td></tr>
+      <tr><td>이메일 발송</td><td><strong>Nodemailer + Daum SMTP</strong></td><td>거래처가 이미 daum.net 사용 → 기존 메일 계정으로 발송 (브랜드 일관성)</td><td>SES / SendGrid / Resend (신규 도메인 필요, 별도 설정)</td></tr>
+    </table>
+
+    <h2>인프라 구조</h2>
+    <table>
+      <tr><th>항목</th><th>선택</th><th>선정 이유</th><th>주요 대안</th></tr>
+      <tr><td>호스팅 방식</td><td><strong>Container 기반</strong></td><td>Vercel 등 서버리스 배제 (콜드스타트, DB 커넥션, 함수 타임아웃 한계)</td><td>Vercel Serverless / VM 직접 운영 / Kubernetes(조기 도입)</td></tr>
+      <tr><td>멀티테넌시</td><td><strong>스키마 분리형</strong></td><td>PostgreSQL Schema per Tenant — 의료업 데이터 격리 요구</td><td>DB 분리형(비용 ↑) / 단일 스키마+Row tenant_id(격리 ↓)</td></tr>
+      <tr><td>테넌트 라우팅</td><td><strong>서브도메인</strong></td><td><code>{tenant}.rtbio-erp.com</code></td><td>경로 기반 <code>/t/{tenant}/…</code> / 커스텀 도메인</td></tr>
+      <tr><td>현재 단계</td><td><strong>1단계</strong></td><td>1~5곳 거래처, 컨테이너 1~2개 + 단일 DB</td><td>2단계(5~30곳) / 3단계(30+곳) — 성장 시 전환</td></tr>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>💡 중요:</strong> AWS 또는 Azure 어느 쪽을 선택하든 위 스택은 동일하게 적용됩니다.
+      클라우드 결정은 인프라 구성 방식(ECS vs Container Apps, RDS vs Flexible Server 등)만 영향.
+    </div>
+
+    <div class="alert alert-info" style="margin-top:12px">
+      <strong>📧 이메일 발송 전략:</strong> Nodemailer로 <code>smtp.daum.net:465 (SSL)</code> 접속 → 기존 Daum 메일 계정으로 인증 → 거래명세서/알림 이메일을 <strong>기존 daum.net 주소에서 발송</strong>.
+      이렇게 하면 거래처가 받는 메일이 지금 쓰시는 메일과 같은 발신자로 보이고, 별도 도메인 인증(SPF/DKIM)도 불필요합니다.
+      대량 발송(월 1,000통+)으로 확장 시 SES/SendGrid로 전환 검토.
+    </div>
+  </section>
+
+  <!-- =========== COMPARE =========== -->
+  <section class="page" id="page-compare">
+    <h1>⚖️ AWS vs Azure 한눈 비교</h1>
+    <p class="subtitle">1단계 (Seoul 리전) 기준</p>
+
+    <table>
+      <tr>
+        <th style="width: 30%;">항목</th>
+        <th style="width: 35%;">AWS</th>
+        <th style="width: 35%;">Azure</th>
+      </tr>
+      <tr>
+        <td>1단계 월 비용 (Seoul)</td>
+        <td class="aws-col">~$160</td>
+        <td class="azure-col">~$155</td>
+      </tr>
+      <tr>
+        <td>스타트업 크레딧</td>
+        <td class="aws-col">AWS Activate $1K~$100K<br><span class="con">(조건 까다로움)</span></td>
+        <td class="azure-col"><strong>Microsoft for Startups $6,000</strong><br><span class="pro">(조건 단순)</span></td>
+      </tr>
+      <tr>
+        <td>한국 리전</td>
+        <td class="aws-col">ap-northeast-2 (Seoul)</td>
+        <td class="azure-col">Korea Central (Seoul)</td>
+      </tr>
+      <tr>
+        <td>시장 점유율 (2026)</td>
+        <td class="aws-col">1위 (~32%)</td>
+        <td class="azure-col">2위 (~23%)</td>
+      </tr>
+      <tr>
+        <td>국내 레퍼런스</td>
+        <td class="aws-col"><strong>매우 많음</strong></td>
+        <td class="azure-col">많음 (대기업/공공 강세)</td>
+      </tr>
+      <tr>
+        <td>개발자 풀</td>
+        <td class="aws-col"><strong>가장 넓음</strong></td>
+        <td class="azure-col">중간</td>
+      </tr>
+      <tr>
+        <td>과업내용서 명시</td>
+        <td class="aws-col"><span class="pro">✅ AWS</span></td>
+        <td class="azure-col"><span class="con">변경 필요</span></td>
+      </tr>
+      <tr>
+        <td>UI/콘솔</td>
+        <td class="aws-col">복잡하지만 강력</td>
+        <td class="azure-col">깔끔, Microsoft 스타일</td>
+      </tr>
+      <tr>
+        <td>기본 보안 설정</td>
+        <td class="aws-col">관대함 (실수 위험)</td>
+        <td class="azure-col"><strong>보수적 (안전)</strong></td>
+      </tr>
+      <tr>
+        <td>의료/규제 대응</td>
+        <td class="aws-col">HIPAA, CSAP, ISMS-P 지원</td>
+        <td class="azure-col">HIPAA, CSAP, ISMS-P 지원</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- =========== COST =========== -->
+  <section class="page" id="page-cost">
+    <h1>💰 단계별 비용 비교</h1>
+    <p class="subtitle">Seoul 리전, USD 기준</p>
+
+    <h2>1단계 — 거래처 1~5곳</h2>
+    <div class="card-grid">
+      <div class="card card-aws">
+        <div class="card-header">
+          <div class="card-title aws">AWS</div>
+          <div class="card-cost">~$160</div>
+        </div>
+        <table>
+          <tr><th>계층</th><th>서비스</th><th>월 비용</th></tr>
+          <tr><td>CDN+WAF</td><td>CloudFront + WAF</td><td>~$30</td></tr>
+          <tr><td>앱</td><td>ECS Fargate 0.5vCPU/1GB</td><td>~$30</td></tr>
+          <tr><td>DB</td><td>RDS PG t3.medium Single-AZ</td><td>~$85</td></tr>
+          <tr><td>파일</td><td>S3 (50GB)</td><td>~$10</td></tr>
+          <tr><td>이메일</td><td>Daum SMTP (기존 계정)</td><td>$0</td></tr>
+          <tr><td>모니터링</td><td>CloudWatch</td><td>~$5</td></tr>
+          <tr class="total"><td colspan="2">합계</td><td>~$160</td></tr>
+        </table>
+      </div>
+      <div class="card card-azure">
+        <div class="card-header">
+          <div class="card-title azure">Azure</div>
+          <div class="card-cost">~$155</div>
+        </div>
+        <table>
+          <tr><th>계층</th><th>서비스</th><th>월 비용</th></tr>
+          <tr><td>CDN+WAF</td><td>Azure Front Door Basic</td><td>~$35</td></tr>
+          <tr><td>앱</td><td>Container Apps 0.5vCPU/1GB</td><td>~$30</td></tr>
+          <tr><td>DB</td><td>PG Flexible B2ms 2vCPU/4GB</td><td>~$80</td></tr>
+          <tr><td>파일</td><td>Blob Storage (50GB Hot)</td><td>~$10</td></tr>
+          <tr><td>이메일</td><td>Daum SMTP (기존 계정)</td><td>$0</td></tr>
+          <tr><td>모니터링</td><td>Application Insights</td><td>$0</td></tr>
+          <tr class="total"><td colspan="2">합계</td><td>~$155</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h2>크레딧 적용 시 실질 비용</h2>
+    <table>
+      <tr><th>단계</th><th>AWS 기본</th><th>AWS 크레딧 적용</th><th>Azure 기본</th><th>Azure 크레딧 적용</th></tr>
+      <tr>
+        <td>1단계 (1~5곳)</td>
+        <td>$160/월</td>
+        <td>$0 (12개월, 조건부)</td>
+        <td>$155/월</td>
+        <td><strong class="pro">$0 (6~24개월, 신청 쉬움)</strong></td>
+      </tr>
+      <tr>
+        <td>2단계 (5~30곳)</td>
+        <td>~$680</td>
+        <td>—</td>
+        <td>~$680</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>3단계 (30곳+)</td>
+        <td>~$2,500+</td>
+        <td>—</td>
+        <td>~$2,500+</td>
+        <td>—</td>
+      </tr>
+    </table>
+
+    <div class="alert alert-success">
+      <strong>💰 1~2년차 예상 절감액:</strong><br>
+      AWS 선택 시 12개월 × $160 = <strong>~$1,920</strong> (크레딧 $1,000만 활용 가정)<br>
+      Azure 선택 시 24개월 × $155 = <strong>~$3,720 전액 무료</strong> (크레딧 $6,000 전액 활용 가능)<br>
+      <strong>→ Azure가 약 $1,800~$2,800 더 유리</strong>
+    </div>
+  </section>
+
+  <!-- =========== CREDIT =========== -->
+  <section class="page" id="page-credit">
+    <h1>🎁 스타트업 크레딧 비교</h1>
+    <p class="subtitle">초기 운영 비용에 큰 영향</p>
+
+    <div class="card-grid">
+      <div class="card card-aws">
+        <div class="card-header">
+          <div class="card-title aws">AWS Activate</div>
+        </div>
+        <table>
+          <tr><th>티어</th><th>금액</th><th>조건</th></tr>
+          <tr><td>기본</td><td>$1,000</td><td>이메일 신청, 대부분 승인</td></tr>
+          <tr><td>Portfolio</td><td>$25,000~$100,000</td><td>승인 엑셀러레이터/VC 연결 필요</td></tr>
+        </table>
+        <p><strong>유효기간:</strong> 12~24개월</p>
+        <p><strong>조건:</strong> <span class="con">까다로움, 심사 불투명</span></p>
+      </div>
+
+      <div class="card card-azure">
+        <div class="card-header">
+          <div class="card-title azure">Microsoft for Startups</div>
+        </div>
+        <table>
+          <tr><th>티어</th><th>금액</th><th>조건</th></tr>
+          <tr><td>기본 (즉시)</td><td>$1,000</td><td>법인 등록만 되면 통과</td></tr>
+          <tr><td>검증 후</td><td><strong>+$5,000 = $6,000</strong></td><td>간단한 검증</td></tr>
+          <tr><td>Investor Offer</td><td>최대 $150,000 / 2년</td><td>승인 VC 추천</td></tr>
+        </table>
+        <p><strong>유효기간:</strong> 180일~2년</p>
+        <p><strong>조건:</strong> <span class="pro">법인 등록된 스타트업이면 대부분 통과 ✅</span></p>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>결론:</strong> 크레딧 측면에서 <strong>Azure가 압도적으로 유리</strong><br>
+      신청 장벽 낮고, 기본 금액 6배 차이 ($1K vs $6K)
+    </div>
+  </section>
+
+  <!-- =========== PROS/CONS =========== -->
+  <section class="page" id="page-proscons">
+    <h1>📊 장단점 정리</h1>
+    <p class="subtitle">각 클라우드 선택 시 트레이드오프</p>
+
+    <div class="card-grid">
+      <div class="card card-aws">
+        <div class="card-header">
+          <div class="card-title aws">AWS</div>
+        </div>
+        <h3 class="pro">장점</h3>
+        <ul>
+          <li>✅ 과업내용서 명시된 스택 (별도 협의 불필요)</li>
+          <li>✅ 국내 개발자 풀 가장 넓음</li>
+          <li>✅ 서비스 종류가 가장 많음</li>
+          <li>✅ 국내 레퍼런스 풍부 (문제 해결 빠름)</li>
+          <li>✅ Next.js 생태계 최적 (SST, Amplify)</li>
+        </ul>
+        <h3 class="con">단점</h3>
+        <ul>
+          <li>❌ 콘솔/IAM 복잡, 학습 곡선 가파름</li>
+          <li>❌ 크레딧 확보 어려움</li>
+          <li>❌ 데이터 전송 비용 Azure보다 비쌈</li>
+          <li>❌ 기본값이 관대함 (보안 실수 위험)</li>
+        </ul>
+      </div>
+
+      <div class="card card-azure">
+        <div class="card-header">
+          <div class="card-title azure">Azure</div>
+        </div>
+        <h3 class="pro">장점</h3>
+        <ul>
+          <li>✅ <strong>크레딧 $6,000 확보 용이</strong></li>
+          <li>✅ Microsoft 생태계 (M365, GitHub, Copilot)</li>
+          <li>✅ 콘솔 직관적, IAM 간단</li>
+          <li>✅ 엔터프라이즈 선호 (대기업/공공)</li>
+          <li>✅ 기본 보안 설정 보수적 (실수 방지)</li>
+        </ul>
+        <h3 class="con">단점</h3>
+        <ul>
+          <li>❌ 과업내용서 변경 필요</li>
+          <li>❌ 국내 AWS 대비 개발자 풀 좁음</li>
+          <li>❌ 일부 서비스 AWS보다 설익음</li>
+          <li>❌ Next.js 전용 도구 AWS만큼 풍부하지 않음</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>개발 생산성 비교</h2>
+    <table>
+      <tr><th>항목</th><th>AWS</th><th>Azure</th></tr>
+      <tr><td>Next.js 컨테이너 배포 자동화</td><td>중간 (ECS + CodePipeline)</td><td><strong>쉬움</strong> (Container Apps + GitHub Actions)</td></tr>
+      <tr><td>PostgreSQL 초기 세팅</td><td>중간</td><td><strong>쉬움</strong></td></tr>
+      <tr><td>CLI/SDK 편의성</td><td>AWS CLI 강력</td><td>Azure CLI 깔끔</td></tr>
+    </table>
+    <p>→ <strong>초기 개발 속도는 Azure가 약간 빠름</strong> (설정 간단)</p>
+  </section>
+
+  <!-- =========== SCORE =========== -->
+  <section class="page" id="page-score">
+    <h1>🏆 가중치 적용 점수 비교</h1>
+    <p class="subtitle">각 항목별 10점 만점</p>
+
+    <div class="card">
+      <div class="score-bar">
+        <div class="score-label">1~2년차 비용 (크레딧 포함)</div>
+        <div class="score-weight">25%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:60%;">AWS 6/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:90%;">Azure 9/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">국내 레퍼런스/인력</div>
+        <div class="score-weight">20%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:90%;">AWS 9/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:70%;">Azure 7/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">개발 생산성</div>
+        <div class="score-weight">15%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:70%;">AWS 7/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:80%;">Azure 8/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">확장성</div>
+        <div class="score-weight">15%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:90%;">AWS 9/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:90%;">Azure 9/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">과업내용서 부합</div>
+        <div class="score-weight">10%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:100%;">AWS 10/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:50%;">Azure 5/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">의료/규제 대응</div>
+        <div class="score-weight">10%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:90%;">AWS 9/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:90%;">Azure 9/10</div>
+        </div>
+      </div>
+
+      <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
+
+      <div class="score-bar">
+        <div class="score-label">엔터프라이즈 고객 선호</div>
+        <div class="score-weight">5%</div>
+        <div class="bar-container">
+          <div class="bar-aws" style="width:80%;">AWS 8/10</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-label">　</div>
+        <div class="score-weight">　</div>
+        <div class="bar-container">
+          <div class="bar-azure" style="width:90%;">Azure 9/10</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>가중 평균 총점</h2>
+    <div class="card-grid">
+      <div class="card card-aws" style="text-align: center;">
+        <div class="card-title aws" style="font-size: 24px;">AWS</div>
+        <div style="font-size: 48px; font-weight: 700; color: #FF9900; margin: 10px 0;">7.95</div>
+        <div style="color: #7f8c8d;">/ 10</div>
+      </div>
+      <div class="card card-azure" style="text-align: center;">
+        <div class="card-title azure" style="font-size: 24px;">Azure</div>
+        <div style="font-size: 48px; font-weight: 700; color: #0078D4; margin: 10px 0;">8.15</div>
+        <div style="color: #7f8c8d;">/ 10</div>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>근소하게 Azure 우위</strong> (크레딧 효과가 큼)<br>
+      단, 과업내용서 변경이 불가능하다면 AWS로 확정하는 것이 합리적
+    </div>
+  </section>
+
+  <!-- =========== STAGE 1 =========== -->
+  <section class="page" id="page-stage1">
+    <h1>1단계 — 론칭 (현재)</h1>
+    <p class="subtitle">거래처 1~5곳, 월 $100~200</p>
+
+    <div class="card">
+      <h3>구성</h3>
+      <pre style="background:#f8f9fa;padding:16px;border-radius:4px;font-family:monospace;font-size:13px;line-height:1.8;">
+[사용자]
+    ↓
+[CDN + WAF] (CloudFront / Azure Front Door)
+    ↓
+[Container × 1~2] (Next.js)
+    ↓
+[PostgreSQL Single-AZ] (Burstable)
+    ↓
+[Object Storage] (S3 / Blob)</pre>
+    </div>
+
+    <h3>1단계에서 생략하는 것 (+ 생략 이유)</h3>
+    <table>
+      <tr>
+        <th>생략 항목</th>
+        <th>대체</th>
+        <th>생략 이유</th>
+        <th>절약</th>
+      </tr>
+      <tr>
+        <td><strong>Redis 캐시</strong></td>
+        <td>앱 메모리 (<code>lru-cache</code>)</td>
+        <td>동시 사용자 10~30명, 컨테이너 1개라 분산 캐시 불필요</td>
+        <td>+$45/월</td>
+      </tr>
+      <tr>
+        <td><strong>Read Replica</strong></td>
+        <td>단일 DB (t3.medium)</td>
+        <td>읽기+쓰기 QPS 모두 여유, 라우팅 분기 복잡도 회피</td>
+        <td>+$150/월</td>
+      </tr>
+      <tr>
+        <td><strong>별도 큐 서비스</strong></td>
+        <td>PG <code>SKIP LOCKED</code> + cron</td>
+        <td>큐 작업 하루 수십 건, 트랜잭션 정합성 유리</td>
+        <td>+$25/월</td>
+      </tr>
+      <tr>
+        <td><strong>Multi-AZ DB</strong></td>
+        <td>Single-AZ + PITR 백업</td>
+        <td>의료용품 ERP 초단위 가용성 불요, 복구 30분 수용</td>
+        <td>+$80/월</td>
+      </tr>
+    </table>
+    <div class="alert alert-success" style="margin-top: 16px;">
+      <strong>원칙: YAGNI + 측정 기반 스케일업</strong> — 4항목 모두 추가 시 월 $460 (2.9배) 이지만 1~5곳 규모에서는 체감 효과 0. <strong>2단계 전환 시그널 발생 시점에 단계적 투입.</strong><br>
+      단, 코드 레벨 준비는 미리 (Prisma 읽기/쓰기 분리 구조, 큐 인터페이스 추상화, 세션 저장소 swap-able 설계)
+    </div>
+
+    <h3>1단계 → 2단계 전환 시그널</h3>
+    <ul>
+      <li>거래처 5곳 이상 확보</li>
+      <li>월 평균 동시 접속자 50명 이상</li>
+      <li>DB CPU 70% 이상 지속</li>
+      <li>응답 시간 p95 &gt; 1초</li>
+    </ul>
+  </section>
+
+  <!-- =========== STAGE 2 =========== -->
+  <section class="page" id="page-stage2">
+    <h1>2단계 — SaaS 확장</h1>
+    <p class="subtitle">거래처 5~30곳, 월 $500~1,500</p>
+
+    <h3>추가되는 요소</h3>
+    <table>
+      <tr><th>추가 요소</th><th>목적</th><th>비용 증분</th></tr>
+      <tr><td>컨테이너 오토스케일 2~5</td><td>피크 부하 대응</td><td>+$100</td></tr>
+      <tr><td>DB General Purpose 승급</td><td>동시 커넥션 ↑, 성능 ↑</td><td>+$200</td></tr>
+      <tr><td>Read Replica × 1</td><td>대시보드/보고서 쿼리 분산</td><td>+$150</td></tr>
+      <tr><td>Redis Cache</td><td>세션, 쿼리 캐시</td><td>+$45</td></tr>
+      <tr><td>Functions / Lambda</td><td>정산 마감, 알림, 배치</td><td>+$20</td></tr>
+      <tr><td>Queue</td><td>이메일/PDF 작업 큐</td><td>+$5</td></tr>
+      <tr class="total"><td colspan="2">합계 (1단계 포함)</td><td>~$680</td></tr>
+    </table>
+
+    <h3>2단계에서 도입하는 것</h3>
+    <ul>
+      <li><strong>백그라운드 작업 분리</strong>: PDF 생성, 이메일, 엑셀 내보내기 → Functions/Lambda</li>
+      <li><strong>캐시 계층</strong>: Redis로 세션 공유 + 마스터 데이터 캐시</li>
+      <li><strong>DB 커넥션 풀링</strong>: PgBouncer or Prisma Accelerate</li>
+      <li><strong>모니터링 강화</strong>: 커스텀 대시보드, 알림 규칙</li>
+      <li><strong>CI/CD 고도화</strong>: GitHub Actions → 자동 배포</li>
+    </ul>
+  </section>
+
+  <!-- =========== STAGE 3 =========== -->
+  <section class="page" id="page-stage3">
+    <h1>3단계 — 엔터프라이즈</h1>
+    <p class="subtitle">거래처 30곳+, 월 $2,000~5,000+</p>
+
+    <h3>주요 변경 사항</h3>
+    <table>
+      <tr><th>항목</th><th>2단계</th><th>3단계</th></tr>
+      <tr><td>컨테이너</td><td>Container Apps / ECS</td><td><strong>AKS / EKS (Kubernetes)</strong></td></tr>
+      <tr><td>DB</td><td>Flexible + Replica</td><td><strong>Hyperscale Citus</strong> / 테넌트별 분리</td></tr>
+      <tr><td>메시징</td><td>Storage Queue / SQS</td><td>Service Bus / EventBridge</td></tr>
+      <tr><td>캐시</td><td>Redis C1</td><td>Redis Enterprise (클러스터)</td></tr>
+      <tr><td>배포</td><td>단일 리전</td><td><strong>멀티 리전</strong> (국내 + 글로벌)</td></tr>
+      <tr><td>격리</td><td>스키마 분리</td><td>대형 고객 <strong>전용 인스턴스 옵션</strong></td></tr>
+    </table>
+
+    <h3>엔터프라이즈 대응 추가 요소</h3>
+    <ul>
+      <li>SOC 2 / ISO 27001 인증 준비</li>
+      <li>전용 인스턴스 옵션 (대형 고객 대상 단독 DB + VPC)</li>
+      <li>SLA 99.9% 보장</li>
+      <li>감사 로그 보존 7년 (법정 기준)</li>
+      <li>데이터 암호화: TDE, TLS 1.3</li>
+    </ul>
+  </section>
+
+  <!-- =========== CHECKLIST =========== -->
+  <section class="page" id="page-checklist">
+    <h1>📋 회의 전 체크리스트</h1>
+    <p class="subtitle">결정 전 확인할 항목</p>
+
+    <ul class="check-list">
+      <li>
+        <input type="checkbox"> <strong>알티바이오 측 과업내용서의 "AWS" 명시 변경 가능 여부</strong><br>
+        <small>→ 불가능하면 AWS 확정 (협의 리스크 제거)</small>
+      </li>
+      <li>
+        <input type="checkbox"> <strong>Azure 스타트업 크레딧 신청 자격 확인</strong><br>
+        <small>→ 법인 등록 상태? Microsoft for Startups 신청 가능한가?</small>
+      </li>
+      <li>
+        <input type="checkbox"> <strong>운영 담당 인력의 클라우드 경험</strong><br>
+        <small>→ AWS vs Azure 중 익숙한 쪽은? 교체/충원 시 어느 쪽이 유리?</small>
+      </li>
+      <li>
+        <input type="checkbox"> <strong>향후 판매 대상 고객사의 선호 클라우드</strong><br>
+        <small>→ 대기업 납품 가능성 포함. 엔터프라이즈는 Azure 선호 경향</small>
+      </li>
+      <li>
+        <input type="checkbox"> <strong>3단계 확장 시 파트너사/벤더 선호도</strong><br>
+        <small>→ 컨설팅/지원 계약 시 어느 클라우드가 유리?</small>
+      </li>
+    </ul>
+
+    <h2>결정 후 조치 사항</h2>
+    <ul class="check-list">
+      <li>⬜ `tech-stack.md`의 🟡 미정 표시 제거, 최종 클라우드 확정</li>
+      <li>⬜ 과업내용서 변경 필요 시 클라이언트 공식 협의 요청</li>
+      <li>⬜ (Azure 선택 시) Microsoft for Startups 즉시 신청</li>
+      <li>⬜ Phase 1 (Schema 설계) 착수</li>
+    </ul>
+  </section>
+
+  <!-- =========== DECISION =========== -->
+  <section class="page" id="page-decision">
+    <h1>🎯 추천 시나리오</h1>
+    <p class="subtitle">상황별 최적 선택</p>
+
+    <div class="card card-aws">
+      <div class="card-header">
+        <div class="card-title aws">A안 · 안정 운영 우선 → AWS</div>
+        <span class="badge badge-aws">보수적</span>
+      </div>
+      <h3>이런 경우 선택</h3>
+      <ul>
+        <li>과업내용서 변경이 어렵거나 리스크가 큼</li>
+        <li>국내 레퍼런스/커뮤니티 의존도가 높음</li>
+        <li>인력 교체/충원이 잦을 것으로 예상</li>
+        <li>크레딧 없이도 초기 운영 부담 없음</li>
+      </ul>
+    </div>
+
+    <div class="card card-azure">
+      <div class="card-header">
+        <div class="card-title azure">B안 · 비용 효율 우선 → Azure</div>
+        <span class="badge badge-azure">공격적</span>
+      </div>
+      <h3>이런 경우 선택</h3>
+      <ul>
+        <li>과업내용서 변경이 가능</li>
+        <li>법인 등록 완료, 스타트업 크레딧 신청 가능</li>
+        <li>초기 자금 부담 최소화가 최우선</li>
+        <li>향후 대기업/공공 고객 타겟팅</li>
+        <li>Microsoft 생태계(M365, GitHub) 사용 중</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #95a5a6;">
+      <div class="card-header">
+        <div class="card-title" style="color: #95a5a6;">C안 · 하이브리드</div>
+        <span class="badge badge-gray">비추천</span>
+      </div>
+      <p>운영 복잡도만 증가. 1단계 스타트업 규모에서는 불필요.</p>
+    </div>
+
+    <h2>최종 의사결정 매트릭스</h2>
+    <table>
+      <tr>
+        <th>조건</th>
+        <th>권장 선택</th>
+      </tr>
+      <tr>
+        <td>장기 안정성 최우선</td>
+        <td><span class="badge badge-aws">AWS</span></td>
+      </tr>
+      <tr>
+        <td>초기 비용 절감 + 빠른 개발 최우선</td>
+        <td><span class="badge badge-azure">Azure</span></td>
+      </tr>
+      <tr>
+        <td>과업내용서 수정 불가</td>
+        <td><span class="badge badge-aws">AWS (강제)</span></td>
+      </tr>
+      <tr>
+        <td>법인 미등록 / 크레딧 신청 불가</td>
+        <td><span class="badge badge-aws">AWS</span></td>
+      </tr>
+      <tr>
+        <td>향후 대기업/공공 진입 계획</td>
+        <td><span class="badge badge-azure">Azure</span></td>
+      </tr>
+    </table>
+
+    <div class="alert alert-success" style="margin-top: 24px;">
+      <strong>💡 어느 쪽이든 1단계 구성과 확장 로드맵은 동일하게 적용 가능.</strong><br>
+      회의에서 결정된 쪽으로 2단계, 3단계 세부 문서를 확정하면 됩니다.
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<div class="meeting-footer">
+  <div>📅 회의일: 2026-04-15</div>
+  <div>🏢 RTBIO ERP 프로젝트 · 기술 스택 의사결정</div>
+  <div>🖨️ Ctrl+P로 인쇄 가능</div>
+</div>
+
+<script>
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      const pageId = 'page-' + item.dataset.page;
+      document.getElementById(pageId).classList.add('active');
+      window.scrollTo(0, 0);
+    });
+  });
+
+  // 키보드 방향키로 페이지 이동
+  document.addEventListener('keydown', (e) => {
+    const navs = Array.from(document.querySelectorAll('.nav-item'));
+    const activeIdx = navs.findIndex(n => n.classList.contains('active'));
+    if (e.key === 'ArrowDown' && activeIdx < navs.length - 1) {
+      navs[activeIdx + 1].click();
+    } else if (e.key === 'ArrowUp' && activeIdx > 0) {
+      navs[activeIdx - 1].click();
+    }
+  });
+</script>
+</body>
+</html>

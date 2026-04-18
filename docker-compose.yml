@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rtbio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rtbio_erp
+      POSTGRES_USER: rtbio
+      POSTGRES_PASSWORD: rtbio_dev_pw
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - rtbio_pgdata:/var/lib/postgresql/data
+      - ./prisma/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rtbio -d rtbio_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rtbio_pgdata:

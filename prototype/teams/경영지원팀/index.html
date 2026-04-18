@@ -1,0 +1,3237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RTBIO 경영지원팀 포탈</title>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/ai-assistant.css">
+<link rel="stylesheet" href="css/widget-dashboard.css">
+<link href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
+<style>
+/* ── Admin Portal Page-Specific Styles ── */
+.page { padding: 0; }
+.page.active { display: block; }
+.page-inner { padding: 0 0 40px; }
+
+/* ── Section Headers ── */
+.section-header {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-header .count {
+  background: var(--primary-lighter); color: var(--primary);
+  font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+}
+
+/* ── Dashboard Bar Chart ── */
+.chart-bar-container {
+  display: flex; align-items: flex-end; gap: 12px;
+  height: 160px; padding: 20px 0 0;
+}
+.chart-bar-wrapper {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.chart-bar {
+  width: 100%; min-width: 32px; border-radius: 6px 6px 0 0;
+  background: var(--accent); transition: height 0.4s ease;
+  position: relative;
+}
+.chart-bar:hover { background: var(--primary); }
+.chart-bar-label {
+  font-size: 11px; color: var(--text-muted); white-space: nowrap;
+}
+.chart-bar-value {
+  font-size: 10px; font-weight: 600; color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Search Bar ── */
+.search-bar {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.search-bar .form-input,
+.search-bar .form-select { max-width: 260px; }
+
+/* ── Filter Row ── */
+.filter-row {
+  display: flex; align-items: center; gap: 12px; margin: 16px 0;
+  flex-wrap: wrap;
+}
+.filter-row .form-select { min-width: 160px; max-width: 220px; }
+.filter-info {
+  font-size: 13px; color: var(--text-secondary); margin-left: auto;
+}
+
+/* ── Client Cards Grid ── */
+.client-cards-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+}
+@media (max-width: 900px) {
+  .client-cards-grid { grid-template-columns: 1fr; }
+}
+.client-card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  padding: 20px; transition: box-shadow 0.15s;
+}
+.client-card:hover { box-shadow: var(--shadow-md); }
+.client-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.client-card-header .name { font-size: 16px; font-weight: 700; }
+.client-card-row {
+  display: flex; gap: 8px; font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 6px; line-height: 1.6;
+}
+.client-card-row .label {
+  font-weight: 600; color: var(--text); min-width: 72px; flex-shrink: 0;
+}
+.discount-tags {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+}
+.discount-tag {
+  font-size: 11px; padding: 2px 8px; border-radius: 12px;
+  background: var(--primary-lighter); color: var(--primary); font-weight: 600;
+}
+.client-card-footer {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end;
+}
+
+/* ── Invoice Preview ── */
+.invoice-form {
+  display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.invoice-form .form-group { margin-bottom: 0; min-width: 160px; }
+.invoice-preview {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-md);
+  padding: 40px; max-width: 800px; margin: 0 auto;
+}
+@media (max-width: 640px) {
+  .invoice-preview { padding: 20px 16px; }
+}
+.invoice-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 32px; padding-bottom: 16px; border-bottom: 3px solid var(--primary);
+}
+.invoice-title {
+  font-size: 24px; font-weight: 700; color: var(--primary);
+}
+.invoice-logo-area {
+  font-size: 20px; font-weight: 700; color: var(--primary);
+}
+.invoice-date {
+  font-size: 13px; color: var(--text-secondary); margin-top: 4px;
+}
+.invoice-parties {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  margin-bottom: 24px;
+}
+@media (max-width: 640px) {
+  .invoice-parties { grid-template-columns: 1fr; }
+}
+.invoice-party h4 {
+  font-size: 12px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.invoice-party p {
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;
+}
+.invoice-party .name { font-size: 15px; font-weight: 700; color: var(--text); }
+.invoice-totals {
+  display: flex; flex-direction: column; align-items: flex-end;
+  margin-top: 16px; gap: 8px;
+}
+.invoice-total-row {
+  display: flex; gap: 24px; font-size: 14px;
+}
+.invoice-total-row .label { color: var(--text-secondary); min-width: 80px; text-align: right; }
+.invoice-total-row .value { font-weight: 600; min-width: 120px; text-align: right; }
+.invoice-total-row.grand {
+  font-size: 18px; font-weight: 700; color: var(--primary);
+  padding-top: 8px; border-top: 2px solid var(--primary);
+}
+.invoice-footer {
+  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.8;
+}
+.invoice-actions {
+  display: flex; gap: 8px; justify-content: center; margin-top: 24px;
+}
+
+/* ── Ledger Summary ── */
+.ledger-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.ledger-summary-card {
+  background: var(--surface); border-radius: var(--radius-sm);
+  padding: 16px; border: 1px solid var(--border); text-align: center;
+}
+.ledger-summary-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.ledger-summary-card .value { font-size: 20px; font-weight: 700; }
+
+/* ── Report Styles ── */
+.report-header {
+  text-align: center; margin-bottom: 32px;
+  padding: 24px; background: var(--primary); border-radius: var(--radius);
+  color: #fff;
+}
+.report-header h2 { font-size: 22px; font-weight: 700; }
+.report-header p { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+.report-section { margin-bottom: 24px; }
+.report-section h3 {
+  font-size: 16px; font-weight: 700; margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border);
+}
+.category-bars {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.category-bar-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.category-bar-row .label {
+  min-width: 80px; font-size: 13px; font-weight: 600; text-align: right;
+}
+.category-bar-track {
+  flex: 1; height: 24px; background: var(--bg); border-radius: 12px; overflow: hidden;
+}
+.category-bar-fill {
+  height: 100%; border-radius: 12px; display: flex; align-items: center;
+  padding-left: 10px; font-size: 11px; font-weight: 700; color: #fff;
+  transition: width 0.5s ease;
+}
+.category-bar-row .percent {
+  min-width: 40px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+}
+.product-ranking {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.product-rank-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  background: var(--surface); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.product-rank-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+}
+.product-rank-num.rank-1 { background: #FFB300; }
+.product-rank-num.rank-2 { background: #90A4AE; }
+.product-rank-num.rank-3 { background: #A1887F; }
+.product-rank-num.rank-other { background: var(--border); color: var(--text-secondary); }
+.product-rank-info { flex: 1; }
+.product-rank-info .name { font-size: 14px; font-weight: 600; }
+.product-rank-info .detail { font-size: 12px; color: var(--text-muted); }
+.product-rank-qty { font-size: 14px; font-weight: 700; color: var(--primary); }
+
+/* ── Clickable Row ── */
+.data-table tr.clickable { cursor: pointer; }
+.data-table tr.clickable:hover td { background: var(--primary-lighter); }
+
+/* ── Totals Row ── */
+.data-table tr.totals-row td {
+  font-weight: 700; background: var(--bg);
+  border-top: 2px solid var(--primary);
+}
+
+/* ── Table Responsive Wrapper ── */
+.table-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* ── Grid Input Table (Excel-like) ── */
+.grid-table input, .grid-table select {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 6px 10px; font-size: 13px; width: 100%;
+  background: #fff; transition: border-color 0.15s;
+}
+.grid-table input:focus, .grid-table select:focus {
+  border-color: var(--accent); outline: none;
+  box-shadow: 0 0 0 3px rgba(0,168,181,0.1);
+}
+.grid-table input[type="number"] { text-align: right; }
+.grid-table .auto-calc {
+  background: var(--bg); font-weight: 600; text-align: right;
+  padding: 6px 10px; font-size: 13px; color: var(--text);
+}
+.grid-table tfoot td {
+  font-weight: 700; background: var(--bg); border-top: 2px solid var(--border);
+}
+.grid-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;
+}
+
+/* ── Aging Table Colors ── */
+.aging-normal { color: var(--success); font-weight: 600; }
+.aging-warning { color: var(--warning); font-weight: 600; }
+.aging-danger { color: var(--danger); font-weight: 600; }
+
+/* ── Settings Form ── */
+.settings-form { max-width: 600px; }
+.settings-form .form-group { margin-bottom: 16px; }
+.settings-form label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 4px;
+}
+.settings-form .form-input, .settings-form .form-select {
+  width: 100%; max-width: 400px;
+}
+.settings-section-title {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin: 24px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Modal Form (Registration / Edit) ── */
+.modal-form { max-width: 560px; }
+.modal-form .form-row {
+  display: flex; gap: 12px; margin-bottom: 12px;
+}
+.modal-form .form-group {
+  flex: 1; display: flex; flex-direction: column;
+}
+.modal-form .form-group label {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.modal-form .form-group input,
+.modal-form .form-group select {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px;
+}
+.modal-form .form-group input:focus,
+.modal-form .form-group select:focus {
+  border-color: var(--accent); outline: none;
+}
+.modal-form .form-note {
+  font-size: 11px; color: var(--text-muted); margin-top: 2px;
+}
+.discount-inputs {
+  display: flex; gap: 8px; align-items: center;
+}
+.discount-inputs label {
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.discount-inputs input {
+  width: 60px; text-align: center;
+}
+.modal-form .form-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+
+/* ── Official Report Document ── */
+.report-doc {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-md);
+  padding: 48px 40px; margin: 0 auto;
+}
+@media (max-width:640px) { .report-doc { padding: 24px 16px; } }
+.report-doc-header {
+  text-align: center; border-bottom: 3px double var(--primary);
+  padding-bottom: 20px; margin-bottom: 28px;
+}
+.report-doc-header .company-name {
+  font-size: 14px; color: var(--text-secondary); letter-spacing: 2px; margin-bottom: 4px;
+}
+.report-doc-header .doc-title {
+  font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px;
+}
+.report-doc-header .doc-period {
+  font-size: 13px; color: var(--text-muted);
+}
+.report-doc-actions {
+  display: flex; gap: 8px; justify-content: center; margin: 28px 0 0;
+  padding-top: 20px; border-top: 1px solid var(--border);
+}
+.report-doc .section-title {
+  font-size: 15px; font-weight: 700; color: var(--primary);
+  margin: 28px 0 12px; padding-left: 12px;
+  border-left: 3px solid var(--primary);
+}
+.report-doc .data-table { font-size: 13px; }
+.report-doc .stats-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.report-doc .stats-row .stat-box {
+  text-align: center; padding: 14px 8px;
+  background: var(--bg); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.report-doc .stats-row .stat-box .val { font-size: 20px; font-weight: 700; }
+.report-doc .stats-row .stat-box .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── Drilldown Toggle ── */
+.drilldown-toggle { cursor: pointer; }
+.drilldown-toggle:hover td { background: var(--primary-lighter); }
+.drilldown-toggle td:first-child::before {
+  content: '▸ '; color: var(--primary); font-weight: 700;
+}
+.drilldown-toggle.open td:first-child::before { content: '▾ '; }
+.drilldown-child { background: var(--bg); }
+.drilldown-child td:first-child { padding-left: 32px; font-size: 12px; color: var(--text-secondary); }
+.drilldown-child.hidden { display: none; }
+
+/* ── Per-product discount grid ── */
+.product-discount-grid {
+  display: grid; grid-template-columns: 1fr 80px; gap: 6px 12px;
+  align-items: center; max-height: 240px; overflow-y: auto;
+  padding: 8px 0;
+}
+.product-discount-grid .pd-label { font-size: 12px; font-weight: 500; }
+.product-discount-grid input {
+  width: 70px; text-align: center; padding: 4px 6px;
+  font-size: 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+}
+
+/* ── Ledger memo inputs ── */
+.ledger-memo-input {
+  width: 100%; padding: 4px 8px; border: 1px solid transparent;
+  border-radius: var(--radius-xs); font-size: 12px; background: transparent;
+  transition: border-color 0.15s;
+}
+.ledger-memo-input:focus {
+  border-color: var(--accent); outline: none; background: #fff;
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo-white.png" alt="RTBIO">
+      <div class="logo-text">Business Automation System</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">김</div>
+      <div>
+        <div class="sidebar-user-name">김소영</div>
+        <div class="sidebar-user-role">경영지원팀 팀장</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">업무 관리</div>
+      <div class="nav-item active" data-page="page-dashboard" onclick="goTo('page-dashboard')">
+        <span class="nav-icon">📊</span> 대시보드
+      </div>
+      <div class="nav-item" data-page="page-orders" onclick="goTo('page-orders')">
+        <span class="nav-icon">📋</span> 발주관리
+        <span class="nav-badge-count" id="nav-pending-badge"></span>
+      </div>
+      <div class="nav-item" data-page="page-clients" onclick="goTo('page-clients')">
+        <span class="nav-icon">🏢</span> 거래처관리
+      </div>
+      <div class="nav-section">정산</div>
+      <div class="nav-item" data-page="page-invoice" onclick="goTo('page-invoice')">
+        <span class="nav-icon">📄</span> 거래명세서
+      </div>
+      <div class="nav-item" data-page="page-ledger" onclick="goTo('page-ledger')">
+        <span class="nav-icon">📒</span> 마감원장
+      </div>
+      <div class="nav-item" data-page="page-report" onclick="goTo('page-report')">
+        <span class="nav-icon">📈</span> 보고서
+      </div>
+      <div class="nav-section">ERP 기본</div>
+      <div class="nav-item disabled" style="opacity:0.4;pointer-events:none;cursor:default;">
+        <span class="nav-icon">💰</span> 매입관리 <span style="font-size:11px;margin-left:4px;">(사용안함)</span>
+      </div>
+      <div class="nav-item" data-page="page-payments" onclick="goTo('page-payments')">
+        <span class="nav-icon">💳</span> 수금관리
+      </div>
+      <div class="nav-item" data-page="page-tax-invoice" onclick="goTo('page-tax-invoice')">
+        <span class="nav-icon">📑</span> 세금계산서
+      </div>
+      <div class="nav-item" data-page="page-client-ledger" onclick="goTo('page-client-ledger')">
+        <span class="nav-icon">📖</span> 거래처원장
+      </div>
+      <div class="nav-item" data-page="page-journal" onclick="goTo('page-journal')">
+        <span class="nav-icon">📊</span> 매입매출장
+      </div>
+      <div class="nav-section">설정</div>
+      <div class="nav-item" data-page="page-settings" onclick="goTo('page-settings')">
+        <span class="nav-icon">⚙️</span> 시스템설정
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="index.html">&larr; 역할 선택</a>
+    </div>
+  </aside>
+
+  <!-- ── Mobile Topbar ── -->
+  <div class="mobile-topbar">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">RTBIO 경영지원</div>
+  </div>
+
+  <!-- ── Sidebar Overlay (Mobile) ── -->
+  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ══════════════════════════════════════════
+       MAIN CONTENT
+       ══════════════════════════════════════════ -->
+  <div class="main-content">
+
+    <!-- ══════════════════════════════════════
+         P06: 대시보드
+         ══════════════════════════════════════ -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-inner" style="padding:0 0 40px;">
+        <div class="dashboard-toolbar">
+          <div class="toolbar-left">
+            <h1>📊 경영지원 대시보드</h1>
+            <div class="kebab-wrapper">
+              <button class="kebab-btn" id="kebabBtn" title="더보기">⋮</button>
+              <div class="kebab-menu" id="kebabMenu">
+                <button class="kebab-item" id="btnExport">📤 대시보드 내보내기</button>
+                <button class="kebab-item" id="btnImport">📥 대시보드 가져오기</button>
+                <div class="kebab-divider"></div>
+                <button class="kebab-item" id="btnReset">🔄 기본 레이아웃으로 초기화</button>
+              </div>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <div id="globalDateWrapper" style="display:flex;align-items:center;gap:6px;margin-right:8px;font-size:13px;">
+              <span style="color:var(--text-secondary);">📅 기간</span>
+              <select id="globalDateRange" class="form-select" style="height:32px;font-size:12px;padding:0 8px;">
+                <option value="today">오늘</option>
+                <option value="7d">최근 7일</option>
+                <option value="30d" selected>최근 30일</option>
+                <option value="month">이번 달</option>
+                <option value="custom">커스텀</option>
+              </select>
+              <input type="date" id="globalDateFrom" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;" value="2026-04-01">
+              <input type="date" id="globalDateTo" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;" value="2026-04-16">
+            </div>
+            <button class="tb-btn primary" id="btnAddWidget">➕ 위젯 추가</button>
+          </div>
+        </div>
+        <div class="grid-stack" id="gridStack"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P07: 발주관리
+         ══════════════════════════════════════ -->
+    <div id="page-orders" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">발주관리</div>
+            <div class="main-subtitle">전체 발주 현황 및 관리</div>
+          </div>
+        </div>
+
+        <!-- Status Tab Bar -->
+        <div class="tab-bar mb-16" id="orders-tab-bar">
+          <button class="tab-btn active" data-tab="all" onclick="filterOrders('all')">전체</button>
+          <button class="tab-btn" data-tab="접수" onclick="filterOrders('접수')">접수</button>
+          <button class="tab-btn" data-tab="확정" onclick="filterOrders('확정')">확정</button>
+          <button class="tab-btn" data-tab="출고중" onclick="filterOrders('출고중')">출고중</button>
+          <button class="tab-btn" data-tab="완료" onclick="filterOrders('완료')">완료</button>
+        </div>
+
+        <!-- Filter Row -->
+        <div class="filter-row">
+          <select class="form-select" id="orders-client-filter" onchange="filterOrders(currentStatusFilter)">
+            <option value="all">전체 거래처</option>
+          </select>
+          <span class="text-sm text-muted">2026-04-08 ~ 2026-04-11</span>
+          <div class="filter-info" id="orders-summary"></div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="table-wrap">
+          <table class="data-table" id="orders-table">
+            <thead><tr>
+              <th>발주번호</th><th>거래처</th><th>발주일</th><th>배송</th>
+              <th class="text-right">금액</th><th>상태</th><th>담당자</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P08: 거래처관리
+         ══════════════════════════════════════ -->
+    <div id="page-clients" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">거래처관리</div>
+            <div class="main-subtitle">거래처 정보 조회 및 관리</div>
+          </div>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="search-bar" style="flex-wrap:wrap;gap:8px;">
+          <input type="text" class="form-input" id="client-search"
+                 placeholder="거래처명 검색..." oninput="filterClients(this.value)">
+          <select class="form-select" id="client-type-filter" onchange="filterClients(document.getElementById('client-search').value)" style="max-width:140px;">
+            <option value="all">전체 유형</option>
+            <option value="대리점">대리점</option>
+            <option value="병원">병원</option>
+            <option value="기타">기타</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="showAddClientTypeForm()">+ 유형 추가</button>
+          <button class="btn btn-primary" onclick="showNewClientForm()">+ 신규 거래처 등록</button>
+        </div>
+        <div class="text-sm text-muted mb-16" id="clients-summary"></div>
+
+        <!-- Client Cards -->
+        <div class="client-cards-grid" id="clients-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P09: 거래명세서
+         ══════════════════════════════════════ -->
+    <div id="page-invoice" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">거래명세서</div>
+            <div class="main-subtitle">거래명세서 생성 및 미리보기</div>
+          </div>
+        </div>
+
+        <!-- Invoice Form with Search -->
+        <div class="invoice-form" style="flex-wrap:wrap;gap:12px;">
+          <div class="form-group" style="margin-bottom:0;position:relative;min-width:220px;">
+            <label>거래처 검색/선택</label>
+            <input type="text" class="form-input" id="invoice-client-search"
+                   placeholder="거래처명 입력..." oninput="filterInvoiceClients(this.value)"
+                   onfocus="document.getElementById('invoice-client-dropdown').style.display='block'"
+                   autocomplete="off">
+            <div id="invoice-client-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);max-height:200px;overflow-y:auto;"></div>
+            <input type="hidden" id="invoice-client-select-value" value="C001">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>시작일</label>
+            <input type="date" class="form-input" id="invoice-from" value="2026-04-01">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>종료일</label>
+            <input type="date" class="form-input" id="invoice-to" value="2026-04-11">
+          </div>
+          <div class="form-group" style="margin-bottom:0;min-width:160px;">
+            <label>담당자 검색 (B-4)</label>
+            <select class="form-select" id="invoice-manager-filter" onchange="filterInvoiceByManager()">
+              <option value="all">전체 담당자</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary" onclick="renderInvoice(document.getElementById('invoice-client-select-value').value)">
+              명세서 생성
+            </button>
+          </div>
+        </div>
+
+        <!-- Invoice Preview -->
+        <div id="invoice-preview-area"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P10: 마감원장
+         ══════════════════════════════════════ -->
+    <div id="page-ledger" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">마감원장</div>
+            <div class="main-subtitle">기간별 거래처 정산 원장</div>
+          </div>
+        </div>
+
+        <!-- Period Filter -->
+        <div class="filter-row mb-16" style="flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
+            <input type="date" class="form-input" id="ledger-date-from" value="2026-04-01" style="max-width:160px;" onchange="renderLedger()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
+            <input type="date" class="form-input" id="ledger-date-to" value="2026-04-11" style="max-width:160px;" onchange="renderLedger()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">정렬</label>
+            <select class="form-select" id="ledger-sort" style="max-width:160px;" onchange="renderLedger()">
+              <option value="name">거래처명순</option>
+              <option value="receivable-desc">미수금 높은순</option>
+              <option value="receivable-asc">미수금 낮은순</option>
+              <option value="sales-desc">매출 높은순</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="renderLedger()">조회</button>
+            <button class="btn btn-outline btn-sm" onclick="confirmLedgerClose()">마감 확정</button>
+          </div>
+        </div>
+
+        <!-- Ledger Summary Cards -->
+        <div class="ledger-summary" id="ledger-summary"></div>
+
+        <!-- Ledger Table -->
+        <div class="table-wrap">
+          <table class="data-table" id="ledger-table">
+            <thead><tr>
+              <th style="cursor:pointer;" onclick="ledgerSortBy('name')">거래처 ↕</th>
+              <th class="text-right">전월이월</th>
+              <th class="text-right">당월매출</th>
+              <th class="text-right">수금액</th>
+              <th class="text-right" style="cursor:pointer;" onclick="ledgerSortBy('receivable-desc')">미수잔액 ↕</th>
+              <th style="min-width:120px;">비고</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="grid-actions mt-16" style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="showToast('PDF가 다운로드되었습니다', 'success')">📄 PDF 다운로드</button>
+          <button class="btn btn-outline btn-sm" onclick="sendLedgerEmail()">📧 이메일 발송</button>
+          <button class="btn btn-outline btn-sm" onclick="showToast('인쇄 준비 중...', 'info')">🖨️ 인쇄</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P11: 보고서 (고도화)
+         ══════════════════════════════════════ -->
+    <div id="page-report" class="page">
+      <div class="page-inner">
+
+        <!-- Filter Toolbar -->
+        <div class="main-header" style="margin-bottom:0;">
+          <div>
+            <div class="main-title">보고서</div>
+            <div class="main-subtitle">기간별 매출 분석 및 공문 형태 보고서</div>
+          </div>
+        </div>
+
+        <div class="filter-row mb-16" style="background:var(--surface);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--border);flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
+            <input type="date" class="form-input" id="report-date-from" value="2026-04-01" style="max-width:160px;" onchange="renderReport()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
+            <input type="date" class="form-input" id="report-date-to" value="2026-04-11" style="max-width:160px;" onchange="renderReport()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">거래처 유형</label>
+            <select class="form-select" id="report-client-type" style="max-width:140px;" onchange="renderReport()">
+              <option value="all">전체</option>
+              <option value="대리점">대리점</option>
+              <option value="병원">병원</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">담당자</label>
+            <select class="form-select" id="report-manager-filter" style="max-width:160px;" onchange="renderReport()">
+              <option value="all">전체 담당자</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary btn-sm" onclick="renderReport()">조회</button>
+          </div>
+        </div>
+
+        <!-- Official Document Report Area -->
+        <div id="report-document-area" style="max-width:900px;margin:0 auto;"></div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P12: 매입관리
+         ══════════════════════════════════════ -->
+    <div id="page-purchases" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">매입관리</div>
+            <div class="main-subtitle">매입 데이터 입력 및 이력 관리</div>
+          </div>
+        </div>
+
+        <!-- Top Filters -->
+        <div class="filter-row mb-16">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">매입일자</label>
+            <input type="date" class="form-input" value="2026-04-11" style="max-width:180px;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">공급업체</label>
+            <select class="form-select" id="purchase-supplier" style="max-width:220px;">
+              <option value="메디텍코리아">메디텍코리아</option>
+              <option value="한국의료기">한국의료기</option>
+              <option value="글로벌메드">글로벌메드</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Excel-like Grid -->
+        <div class="section-header">매입 입력</div>
+        <div class="table-wrap">
+          <table class="data-table grid-table" id="purchase-grid">
+            <thead><tr>
+              <th style="width:40px;">#</th>
+              <th>제품명</th>
+              <th>규격</th>
+              <th style="width:80px;">수량</th>
+              <th style="width:120px;">매입단가</th>
+              <th style="width:120px;">금액</th>
+            </tr></thead>
+            <tbody id="purchase-grid-body"></tbody>
+            <tfoot id="purchase-grid-foot"></tfoot>
+          </table>
+        </div>
+        <div class="grid-actions">
+          <button class="btn btn-outline btn-sm" onclick="addPurchaseRow()">+ 행 추가</button>
+          <button class="btn btn-outline" onclick="showToast('임시 저장되었습니다', 'info')">임시저장</button>
+          <button class="btn btn-primary" onclick="showToast('매입이 확정 저장되었습니다', 'success')">확정 저장</button>
+        </div>
+
+        <!-- Purchase History -->
+        <div class="section-header mt-24">매입 이력 <span class="count">최근 5건</span></div>
+        <div class="table-wrap">
+          <table class="data-table" id="purchase-history-table">
+            <thead><tr>
+              <th>매입일</th><th>공급업체</th><th>품목수</th><th class="text-right">매입금액</th><th>상태</th>
+            </tr></thead>
+            <tbody id="purchase-history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P13: 수금관리
+         ══════════════════════════════════════ -->
+    <div id="page-payments" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">수금관리</div>
+            <div class="main-subtitle">입금 등록 및 미수금 현황</div>
+          </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid mb-24" id="payments-stats"></div>
+
+        <!-- 정산 주기 안내 -->
+        <div style="background:var(--primary-lighter);border-left:3px solid var(--primary);padding:10px 14px;border-radius:4px;font-size:13px;margin-bottom:16px;">
+          💡 <strong>수금 규칙</strong>: 월 1~25일 발주 건은 <strong>월말 일괄 입금</strong>. 연체/일부 입금은 미수금 현황에서 확인.
+        </div>
+
+        <!-- 입금 등록 Section (은행 입금 수기 입력) -->
+        <div class="section-header">🏦 은행 입금 수기 등록</div>
+        <div class="table-wrap mb-16">
+          <table class="data-table grid-table" id="payment-register-table">
+            <thead><tr>
+              <th>거래처</th>
+              <th style="width:130px;">은행</th>
+              <th style="width:130px;">입금자명</th>
+              <th style="width:130px;">입금액</th>
+              <th style="width:130px;">일자</th>
+              <th style="width:120px;">참조/적요</th>
+              <th style="width:110px;">상태</th>
+            </tr></thead>
+            <tbody id="payment-register-body"></tbody>
+          </table>
+        </div>
+        <div class="grid-actions">
+          <button class="btn btn-outline btn-sm" onclick="addPaymentRow()">+ 행 추가</button>
+          <button class="btn btn-primary" onclick="showToast('입금이 등록되었습니다', 'success')">입금 등록</button>
+        </div>
+
+        <!-- 대리점별 미수금 -->
+        <div class="section-header mt-24">🏢 대리점별 미수금 현황</div>
+        <div class="table-wrap">
+          <table class="data-table" id="client-outstanding-table">
+            <thead><tr>
+              <th>거래처</th>
+              <th>유형</th>
+              <th class="text-right">매출액</th>
+              <th class="text-right">입금액</th>
+              <th class="text-right">미수금</th>
+              <th class="text-right">연체일</th>
+              <th>상태</th>
+            </tr></thead>
+            <tbody id="client-outstanding-body"></tbody>
+          </table>
+        </div>
+
+        <!-- 미수금 Aging Table -->
+        <div class="section-header mt-24">📊 미수금 현황 (Aging)</div>
+        <div class="table-wrap">
+          <table class="data-table" id="aging-table">
+            <thead><tr>
+              <th>거래처</th><th class="text-right">미수금액</th>
+              <th class="text-right">30일 이내</th><th class="text-right">31-60일</th>
+              <th class="text-right">61-90일</th><th class="text-right">90일+</th><th>상태</th>
+            </tr></thead>
+            <tbody id="aging-body"></tbody>
+          </table>
+        </div>
+        <div class="grid-actions mt-16">
+          <button class="btn btn-outline" onclick="showToast('엑셀 파일이 다운로드되었습니다', 'success')">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P14: 세금계산서
+         ══════════════════════════════════════ -->
+    <div id="page-tax-invoice" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">세금계산서</div>
+            <div class="main-subtitle">전자세금계산서 발행·조회·관리</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="showToast('엑셀 내보내기 (프로토타입)', 'info')">📤 엑셀</button>
+            <button class="btn btn-primary" onclick="showNewTaxInvoiceForm()">＋ 신규 발행</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid" id="tax-invoice-stats" style="margin-top:16px;"></div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar mt-16">
+          <label>기간</label>
+          <input type="month" id="ti-month" value="2026-04" onchange="renderTaxInvoice()">
+          <label style="margin-left:12px;">거래처</label>
+          <select id="ti-client" onchange="renderTaxInvoice()">
+            <option value="all">전체</option>
+          </select>
+          <label style="margin-left:12px;">상태</label>
+          <select id="ti-status" onchange="renderTaxInvoice()">
+            <option value="all">전체</option>
+            <option value="발행완료">발행완료</option>
+            <option value="미발행">미발행</option>
+            <option value="취소">취소</option>
+          </select>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap mt-16">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>승인번호</th>
+                <th>작성일</th>
+                <th>거래처</th>
+                <th class="text-right">공급가액</th>
+                <th class="text-right">세액 (10%)</th>
+                <th class="text-right">합계</th>
+                <th>상태</th>
+                <th style="width:220px;">작업</th>
+              </tr>
+            </thead>
+            <tbody id="tax-invoice-body"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+          💡 사업자 등록 완료 후 실제 국세청 전자세금계산서 API(팝빌/바로빌 등)와 연동될 예정. 현재는 내부 관리용 프로토타입입니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P15: 거래처원장
+         ══════════════════════════════════════ -->
+    <div id="page-client-ledger" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">거래처원장</div>
+            <div class="main-subtitle">거래처별 상세 원장 조회</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row mb-16">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">거래처 선택</label>
+            <select class="form-select" id="client-ledger-select" onchange="renderClientLedger(this.value)" style="max-width:220px;"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
+            <input type="date" class="form-input" value="2026-04-01" style="max-width:160px;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
+            <input type="date" class="form-input" value="2026-04-11" style="max-width:160px;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">담당자</label>
+            <select class="form-select" id="ledger-manager-filter" onchange="renderClientLedger()" style="max-width:160px;">
+              <option value="all">전체 담당자</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="ledger-summary" id="client-ledger-summary"></div>
+
+        <!-- Running Ledger Table -->
+        <div class="table-wrap">
+          <table class="data-table" id="client-ledger-table">
+            <thead><tr>
+              <th>일자</th><th>구분</th><th>적요</th>
+              <th class="text-right">차변(매출)</th><th class="text-right">대변(수금)</th>
+              <th class="text-right">잔액</th>
+            </tr></thead>
+            <tbody id="client-ledger-body"></tbody>
+          </table>
+        </div>
+        <div class="grid-actions mt-16">
+          <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')">🖨️ 인쇄</button>
+          <button class="btn btn-outline" onclick="showToast('엑셀 파일이 다운로드되었습니다', 'success')">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P16: 매입매출장
+         ══════════════════════════════════════ -->
+    <div id="page-journal" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">매입매출장</div>
+            <div class="main-subtitle">매출장 / 매입장 조회</div>
+          </div>
+        </div>
+
+        <!-- Tab Switch -->
+        <div class="tab-bar mb-16" id="journal-tab-bar">
+          <button class="tab-btn active" data-tab="sales" onclick="renderJournal('sales')">매출장</button>
+          <button class="tab-btn" data-tab="purchase" onclick="renderJournal('purchase')">매입장</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row mb-16">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
+            <input type="date" class="form-input" value="2026-04-01" style="max-width:160px;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
+            <input type="date" class="form-input" value="2026-04-11" style="max-width:160px;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">거래처</label>
+            <select class="form-select" id="journal-client-filter" onchange="renderJournal(currentJournalTab)" style="max-width:180px;">
+              <option value="all">전체 거래처</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">담당자</label>
+            <select class="form-select" id="journal-manager-filter" onchange="renderJournal(currentJournalTab)" style="max-width:160px;">
+              <option value="all">전체 담당자</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">검색</label>
+            <input type="text" class="form-input" id="journal-search" placeholder="적요/품목..." oninput="renderJournal(currentJournalTab)" style="max-width:160px;">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="renderJournal(currentJournalTab)">조회</button>
+        </div>
+
+        <!-- Journal Table -->
+        <div class="table-wrap">
+          <table class="data-table" id="journal-table">
+            <thead id="journal-thead"></thead>
+            <tbody id="journal-body"></tbody>
+            <tfoot id="journal-foot"></tfoot>
+          </table>
+        </div>
+        <div class="grid-actions mt-16">
+          <button class="btn btn-outline" onclick="showToast('엑셀 파일이 다운로드되었습니다', 'success')">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         P17: 시스템설정
+         ══════════════════════════════════════ -->
+    <div id="page-settings" class="page">
+      <div class="page-inner">
+        <div class="main-header">
+          <div>
+            <div class="main-title">시스템설정</div>
+            <div class="main-subtitle">시스템 환경 설정 및 관리</div>
+          </div>
+        </div>
+
+        <!-- Settings Tabs -->
+        <div class="tab-bar mb-16" id="settings-tab-bar">
+          <button class="tab-btn active" data-tab="basic" onclick="renderSettings('basic')">기본설정</button>
+          <button class="tab-btn" data-tab="company" onclick="renderSettings('company')">회사정보</button>
+          <button class="tab-btn" data-tab="suppliers" onclick="renderSettings('suppliers')">공급업체관리</button>
+        </div>
+
+        <!-- Settings Content -->
+        <div id="settings-content"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+
+<!-- Widget Picker Modal -->
+<div class="picker-overlay" id="pickerOverlay">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <h2>➕ 위젯 추가</h2>
+      <button class="picker-close" id="pickerClose">✕</button>
+    </div>
+    <div class="picker-section">
+      <h3>📌 프리셋 위젯</h3>
+      <div class="preset-list" id="presetList"></div>
+    </div>
+    <div class="picker-section">
+      <h3>🎨 빈 위젯으로 추가</h3>
+      <div class="picker-grid" id="widgetTypeGrid"></div>
+    </div>
+  </div>
+</div>
+<div class="widget-ctx" id="widgetCtx">
+  <button class="widget-ctx-item" data-action="edit">✏️ 위젯 수정</button>
+  <button class="widget-ctx-item" data-action="duplicate">📋 복제</button>
+  <div class="widget-ctx-divider"></div>
+  <button class="widget-ctx-item" data-action="refresh">🔄 새로고침</button>
+  <div class="widget-ctx-divider"></div>
+  <button class="widget-ctx-item danger" data-action="delete">🗑️ 삭제</button>
+</div>
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h2>✏️ 위젯 수정</h2>
+      <button class="edit-modal-close" id="editClose">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-field"><label>위젯 제목</label><input type="text" id="editTitle" placeholder="위젯 제목을 입력하세요"></div>
+      <div class="edit-field"><label>위젯 타입</label><select id="editType"></select></div>
+      <div class="edit-field"><label>데이터 소스</label><select id="editPreset"><option value="">✏️ 직접 설정 (커스텀)</option></select></div>
+      <div class="edit-field">
+        <label>📅 기간 (override)</label>
+        <select id="editDateOverride">
+          <option value="">전역 기간 따름</option>
+          <option value="today">오늘</option>
+          <option value="7d">최근 7일</option>
+          <option value="30d">최근 30일</option>
+          <option value="month">이번 달</option>
+        </select>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+          ⚠️ 대시보드 전역 기간이 변경되면 위젯 override는 자동 리셋됩니다.
+        </div>
+      </div>
+      <div class="custom-section" id="customSection">
+        <div class="edit-field"><label>데이터 테이블</label><select id="customTable"><option value="orders">📋 주문</option><option value="products">📦 제품</option><option value="inventory">🏭 재고</option><option value="clients">🏢 거래처</option><option value="payments">💳 입금</option></select></div>
+        <div class="edit-field"><label>표시 컬럼</label><div class="col-chips" id="colChips"></div></div>
+        <div class="edit-field"><label>필터 조건</label><div id="filterRows"></div><button class="add-condition-btn" id="addFilterBtn">+ 조건 추가</button></div>
+        <div class="agg-row">
+          <div class="agg-field"><label>그룹핑</label><select id="customGroup"><option value="">없음</option><option value="client">거래처별</option><option value="product">제품별</option><option value="status">상태별</option><option value="date">날짜별</option></select></div>
+          <div class="agg-field"><label>집계</label><select id="customAgg"><option value="">없음</option><option value="sum">합계</option><option value="avg">평균</option><option value="count">건수</option></select></div>
+          <div class="agg-field"><label>정렬</label><select id="customSort"><option value="desc">내림차순 ↓</option><option value="asc">오름차순 ↑</option></select></div>
+        </div>
+        <div class="preview-section"><h4>📋 미리보기</h4><div class="preview-table-wrap" id="previewWrap"></div><div class="preview-count" id="previewCount"></div></div>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="tb-btn" id="editCancel">취소</button>
+      <button class="tb-btn primary" id="editSave">저장</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+</div><!-- /layout -->
+
+<script src="js/data.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/ai-assistant.js"></script>
+<script src="js/widget-dashboard.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   경영지원팀 포탈 — Page Logic
+   ══════════════════════════════════════════ */
+
+let currentStatusFilter = 'all';
+
+// ── Shared Constants (고도화) ──
+const BRAND_MAP = {
+  '리코탭플러스': { color: 'var(--primary)', products: ['P001','P002','P003','P008','P009','P010','P015','P016'] },
+  '리깁스':      { color: 'var(--accent)',  products: ['P004','P005','P011','P012','P017','P018'] },
+  '레오(보조기)': { color: 'var(--warning)', products: ['P006','P007','P013','P014','P019','P020','P021'] },
+  '리스프린트':   { color: 'var(--purple)',  products: ['P022','P023','P024','P025','P026','P027','P028'] },
+};
+const SALES_REPS = [
+  { id:'REP01', name:'김대영' },
+  { id:'REP02', name:'이수진' },
+  { id:'REP03', name:'박민호' },
+];
+const CLIENT_REP_MAP = { C001:'REP01', C002:'REP02', C003:'REP01', C004:'REP03', C005:'REP02' };
+
+// ── P06: Dashboard ──
+function renderDashboard() {
+  // Date display
+  document.getElementById('dashboard-date').textContent = formatDateFull(TODAY);
+
+  // Stats
+  document.getElementById('dashboard-stats').innerHTML = `
+    <div class="stat-card stat-primary">
+      <div class="stat-label">오늘 발주</div>
+      <div class="stat-value">${todayOrders.length}건</div>
+      <div class="stat-sub">금일 접수된 발주</div>
+    </div>
+    <div class="stat-card stat-accent">
+      <div class="stat-label">오늘 매출</div>
+      <div class="stat-value">${formatCurrency(todayRevenue)}</div>
+      <div class="stat-sub">확정 + 접수 합계</div>
+    </div>
+    <div class="stat-card stat-warning">
+      <div class="stat-label">미확정 발주</div>
+      <div class="stat-value">${pendingOrders}건</div>
+      <div class="stat-sub">확정 대기 중</div>
+    </div>
+    <div class="stat-card stat-danger">
+      <div class="stat-label">총 미수금</div>
+      <div class="stat-value">${formatCurrency(totalReceivables)}</div>
+      <div class="stat-sub">${RECEIVABLES.length}개 거래처</div>
+    </div>
+  `;
+
+  // Pending badge in nav
+  document.getElementById('nav-pending-badge').textContent = pendingOrders;
+
+  // Time bar
+  const ti = getTimeInfo();
+  document.getElementById('dashboard-timebar').innerHTML = `
+    <div class="time-bar ${ti.level}">
+      현재 ${ti.current} | 택배 마감 ${ti.cutoff} | 남은 시간: ${ti.remainText}
+    </div>
+  `;
+
+  // Today's orders table
+  document.getElementById('today-order-count').textContent = todayOrders.length + '건';
+  const tbody1 = document.querySelector('#dashboard-orders-table tbody');
+  tbody1.innerHTML = todayOrders.map(o => `
+    <tr>
+      <td class="mono">${o.id}</td>
+      <td>${getClientName(o.clientId)}</td>
+      <td class="text-right">${formatCurrency(calcOrderTotal(o))}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td class="text-muted">${o.time}</td>
+    </tr>
+  `).join('');
+
+  // Receivables table
+  document.getElementById('receivable-total-badge').textContent = formatCurrency(totalReceivables);
+  const tbody2 = document.querySelector('#dashboard-receivables-table tbody');
+  tbody2.innerHTML = RECEIVABLES.map(r => {
+    let cls = '';
+    if (r.overdueDays > 14) cls = 'text-danger fw-600';
+    else if (r.overdueDays > 7) cls = 'text-muted'; // warning tone
+    return `
+      <tr>
+        <td>${getClientName(r.clientId)}</td>
+        <td class="text-right fw-600">${formatCurrency(r.amount)}</td>
+        <td class="text-right ${cls}">${r.overdueDays > 0 ? r.overdueDays + '일' : '-'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Revenue bar chart
+  const maxRev = Math.max(...DAILY_REVENUES.map(d => d.amount));
+  const maxBarH = 120;
+  document.getElementById('dashboard-revenue-chart').innerHTML = DAILY_REVENUES.map(d => {
+    const h = maxRev > 0 ? Math.max(4, (d.amount / maxRev) * maxBarH) : 4;
+    const amtLabel = d.amount >= 1000000
+      ? (d.amount / 10000).toFixed(0) + '만'
+      : d.amount > 0 ? formatNumber(d.amount) : '0';
+    return `
+      <div class="chart-bar-wrapper">
+        <div class="chart-bar-value">${amtLabel}</div>
+        <div class="chart-bar" style="height:${h}px"></div>
+        <div class="chart-bar-label">${d.date}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── P07: Orders ──
+function renderOrders(statusFilter) {
+  currentStatusFilter = statusFilter;
+
+  // Populate client filter dropdown (once)
+  const clientSelect = document.getElementById('orders-client-filter');
+  if (clientSelect.options.length <= 1) {
+    CLIENTS.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      clientSelect.appendChild(opt);
+    });
+  }
+
+  const clientFilter = document.getElementById('orders-client-filter').value;
+
+  // Filter orders
+  let filtered = [...ORDERS];
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(o => o.status === statusFilter);
+  }
+  if (clientFilter !== 'all') {
+    filtered = filtered.filter(o => o.clientId === clientFilter);
+  }
+
+  // Update tab active states
+  document.querySelectorAll('#orders-tab-bar .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === statusFilter);
+  });
+
+  // Summary
+  const totalAmount = filtered.reduce((s, o) => s + calcOrderTotal(o), 0);
+  document.getElementById('orders-summary').innerHTML =
+    `총 <strong>${filtered.length}건</strong> | 합계 <strong>${formatCurrency(totalAmount)}</strong>`;
+
+  // Table
+  const tbody = document.querySelector('#orders-table tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding:40px;">해당 조건의 발주가 없습니다.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(o => `
+    <tr class="clickable" onclick="showOrderDetail('${o.id}')">
+      <td class="mono">${o.id}</td>
+      <td>${getClientName(o.clientId)}</td>
+      <td>${formatDate(o.date)}</td>
+      <td>${o.shippingType}</td>
+      <td class="text-right fw-600">${formatCurrency(calcOrderTotal(o))}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${getStaffName(o.assigneeId)}</td>
+    </tr>
+  `).join('');
+}
+
+function filterOrders(status) {
+  renderOrders(status);
+}
+
+function showOrderDetail(orderId) {
+  const o = ORDERS.find(x => x.id === orderId);
+  if (!o) return;
+  const client = getClient(o.clientId);
+  const itemsHTML = o.items.map(item => `
+    <tr>
+      <td>${getProductName(item.productId)}</td>
+      <td class="text-center">${item.size}</td>
+      <td class="text-right">${item.qty}</td>
+      <td class="text-right">${formatCurrency(item.unitPrice)}</td>
+      <td class="text-right fw-600">${formatCurrency(item.unitPrice * item.qty)}</td>
+    </tr>
+  `).join('');
+
+  const bodyHTML = `
+    <div style="margin-bottom:12px;">
+      <div class="flex justify-between items-center mb-8">
+        <span class="mono text-sm">${o.id}</span>
+        ${statusBadge(o.status)}
+      </div>
+      <div class="text-sm text-muted mb-8">
+        거래처: <strong>${getClientName(o.clientId)}</strong> |
+        발주일: ${formatDateFull(o.date)} ${o.time} |
+        배송: ${o.shippingType}
+      </div>
+      ${o.altAddress ? `<div class="text-sm text-muted mb-8">배송지: ${o.altAddress}</div>` : ''}
+      ${o.assigneeId ? `<div class="text-sm text-muted mb-8">담당자: ${getStaffName(o.assigneeId)}</div>` : ''}
+      ${o.trackingNo ? `<div class="text-sm text-muted mb-8">송장번호: ${o.trackingNo}</div>` : ''}
+    </div>
+    <table class="data-table" style="font-size:13px;">
+      <thead><tr>
+        <th>제품명</th><th class="text-center">사이즈</th><th class="text-right">수량</th>
+        <th class="text-right">단가</th><th class="text-right">금액</th>
+      </tr></thead>
+      <tbody>${itemsHTML}</tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td colspan="4" class="text-right">합계</td>
+          <td class="text-right">${formatCurrency(calcOrderTotal(o))}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+      <button class="btn btn-primary btn-sm" onclick="goToInvoiceFromOrder('${o.clientId}')">🧾 거래명세서 출력</button>
+      <button class="btn btn-outline btn-sm" onclick="printSingleOrder('${o.id}')">🖨️ 발주서 인쇄</button>
+    </div>
+  `;
+  showModal('발주 상세 — ' + o.id, bodyHTML);
+}
+
+function goToInvoiceFromOrder(clientId) {
+  // Close modal
+  const overlay = document.querySelector('.modal-overlay');
+  if (overlay) overlay.remove();
+  // Navigate to invoice page with the client pre-selected
+  goTo('page-invoice');
+  // Update sidebar active
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item[data-page="page-invoice"]')?.classList.add('active');
+  // Render invoice for this client
+  setTimeout(() => renderInvoice(clientId), 100);
+}
+
+function printSingleOrder(orderId) {
+  const o = ORDERS.find(x => x.id === orderId);
+  if (!o) return;
+  showToast(`${o.id} 발주서 인쇄 준비 중...`);
+}
+
+// ── P08: Clients (고도화) ──
+let customClientTypes = ['대리점', '병원', '기타']; // user can add more
+
+function renderClients(searchTerm) {
+  const typeFilter = document.getElementById('client-type-filter')?.value || 'all';
+  let filtered = CLIENTS;
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = CLIENTS.filter(c => c.name.toLowerCase().includes(term));
+  }
+  if (typeFilter !== 'all') {
+    filtered = filtered.filter(c => c.type === typeFilter);
+  }
+
+  const typeCounts = {};
+  filtered.forEach(c => { typeCounts[c.type] = (typeCounts[c.type] || 0) + 1; });
+  const summaryParts = [`총 거래처 <strong>${filtered.length}개</strong>`];
+  for (const t of customClientTypes) {
+    if (typeCounts[t]) summaryParts.push(`${t} <strong>${typeCounts[t]}개</strong>`);
+  }
+  document.getElementById('clients-summary').innerHTML = summaryParts.join(' | ');
+
+  const grid = document.getElementById('clients-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-text">검색 결과가 없습니다.</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(c => {
+    const typeBadge = c.type === '대리점'
+      ? '<span class="badge badge-type-dealer">대리점</span>'
+      : c.type === '병원'
+      ? '<span class="badge badge-type-hospital">병원</span>'
+      : `<span class="badge" style="background:var(--purple-light);color:var(--purple);">${c.type}</span>`;
+
+    const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[c.id])?.name || '-';
+
+    const fixedPriceHTML = Object.keys(c.fixedPrices).length > 0
+      ? Object.entries(c.fixedPrices).map(([pid, price]) =>
+          `${getProductName(pid)}: ${formatCurrency(price)}`
+        ).join(', ')
+      : '없음';
+
+    return `
+      <div class="client-card">
+        <div class="client-card-header">
+          <span class="name">${c.name}</span>
+          ${typeBadge}
+        </div>
+        <div class="client-card-row"><span class="label">담당자</span><span>${c.manager}</span></div>
+        <div class="client-card-row"><span class="label">영업담당</span><span>${repName}</span></div>
+        <div class="client-card-row"><span class="label">연락처</span><span>${c.phone}</span></div>
+        <div class="client-card-row"><span class="label">이메일</span><span>${c.email}</span></div>
+        <div class="client-card-row"><span class="label">주소</span><span>${c.address}</span></div>
+        <div class="client-card-row"><span class="label">결제방식</span><span>${c.paymentType}</span></div>
+        <div class="client-card-row"><span class="label">마감기간</span><span>${c.closingPeriod}</span></div>
+        <div class="client-card-row"><span class="label">명세서</span><span>${c.invoiceType}</span></div>
+        <div class="discount-tags">
+          <span class="discount-tag">무릎 ${c.discounts.knee}%</span>
+          <span class="discount-tag">상지 ${c.discounts.upper}%</span>
+          <span class="discount-tag">하지 ${c.discounts.lower}%</span>
+          <span class="discount-tag">스프린트 ${c.discounts.sprint}%</span>
+        </div>
+        <div class="client-card-row mt-8"><span class="label">고정단가</span><span>${fixedPriceHTML}</span></div>
+        <div class="client-card-footer">
+          <button class="btn btn-outline btn-sm" onclick="showEditClientForm('${c.id}')">수정</button>
+          <button class="btn btn-outline btn-sm" onclick="showClientDiscountDetail('${c.id}')">할인설정</button>
+          <button class="btn btn-outline btn-sm" onclick="showClientDetail('${c.id}')">상세보기</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterClients(term) {
+  renderClients(term);
+}
+
+function showAddClientTypeForm() {
+  showModal('거래처 유형 추가', `
+    <div class="form-group">
+      <label>새 유형명</label>
+      <input type="text" class="form-input" id="new-client-type" placeholder="예: 약국, 재활센터...">
+    </div>
+    <div class="text-sm text-muted">현재 유형: ${customClientTypes.join(', ')}</div>
+  `, function() {
+    const newType = document.getElementById('new-client-type')?.value?.trim();
+    if (newType && !customClientTypes.includes(newType)) {
+      customClientTypes.push(newType);
+      // Add to filter dropdown
+      const sel = document.getElementById('client-type-filter');
+      const opt = document.createElement('option');
+      opt.value = newType;
+      opt.textContent = newType;
+      sel.appendChild(opt);
+      showToast('"' + newType + '" 유형이 추가되었습니다', 'success');
+    }
+  });
+}
+
+function showClientDiscountDetail(clientId) {
+  const c = getClient(clientId);
+  if (!c) return;
+
+  // Build per-product discount UI grouped by category
+  const catNames = { knee: '무릎', upper: '상지', lower: '하지', sprint: '스프린트' };
+  let productsHTML = '';
+  for (const [catId, catName] of Object.entries(catNames)) {
+    const catProducts = PRODUCTS.filter(p => p.cat === catId);
+    productsHTML += `<div style="font-size:13px;font-weight:700;margin:12px 0 6px;color:var(--primary);">${catName} (기본 ${c.discounts[catId]}%)</div>`;
+    productsHTML += '<div class="product-discount-grid">';
+    catProducts.forEach(p => {
+      const customDisc = c.fixedPrices[p.id] ? Math.round((1 - c.fixedPrices[p.id] / p.basePrice) * 100) : '';
+      productsHTML += `
+        <div class="pd-label">${p.name}</div>
+        <div><input type="number" min="0" max="50" value="${customDisc}" placeholder="${c.discounts[catId]}"> %</div>
+      `;
+    });
+    productsHTML += '</div>';
+  }
+
+  showModal('품목별 할인율 설정 - ' + c.name, `
+    <div style="max-height:400px;overflow-y:auto;">
+      <div class="text-sm text-muted mb-8">개별 할인율을 비워두면 카테고리 기본 할인율이 적용됩니다.</div>
+      ${productsHTML}
+    </div>
+  `, function() {
+    showToast(c.name + ' 할인율이 저장되었습니다', 'success');
+  });
+}
+
+// C-2: 신규/수정 거래처 할인율 별도 팝업 (중첩 모달)
+function openDiscountPopup() {
+  const cur = {
+    knee: parseFloat(document.getElementById('cf-disc-knee').value) || 0,
+    upper: parseFloat(document.getElementById('cf-disc-upper').value) || 0,
+    lower: parseFloat(document.getElementById('cf-disc-lower').value) || 0,
+    sprint: parseFloat(document.getElementById('cf-disc-sprint').value) || 0,
+  };
+
+  // 기존 모달을 임시로 숨김
+  const outerModal = document.querySelector('.modal-overlay');
+  if (outerModal) outerModal.style.zIndex = '900';
+
+  const body = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+      카테고리별 기본 할인율입니다. 0 ~ 50% 범위에서 설정하세요.
+    </div>
+    <div style="display:grid;grid-template-columns:110px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;">
+      <label style="font-weight:600;">🦵 무릎</label>
+      <input type="range" id="pop-knee" min="0" max="50" value="${cur.knee}" oninput="document.getElementById('pop-knee-v').textContent=this.value+'%'">
+      <span id="pop-knee-v" style="font-weight:700;color:var(--primary);">${cur.knee}%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;">
+      <label style="font-weight:600;">💪 상지</label>
+      <input type="range" id="pop-upper" min="0" max="50" value="${cur.upper}" oninput="document.getElementById('pop-upper-v').textContent=this.value+'%'">
+      <span id="pop-upper-v" style="font-weight:700;color:var(--primary);">${cur.upper}%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;">
+      <label style="font-weight:600;">🦶 하지</label>
+      <input type="range" id="pop-lower" min="0" max="50" value="${cur.lower}" oninput="document.getElementById('pop-lower-v').textContent=this.value+'%'">
+      <span id="pop-lower-v" style="font-weight:700;color:var(--primary);">${cur.lower}%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;">
+      <label style="font-weight:600;">🩹 스프린트</label>
+      <input type="range" id="pop-sprint" min="0" max="50" value="${cur.sprint}" oninput="document.getElementById('pop-sprint-v').textContent=this.value+'%'">
+      <span id="pop-sprint-v" style="font-weight:700;color:var(--primary);">${cur.sprint}%</span>
+    </div>
+  `;
+
+  showModal('🔧 카테고리별 할인율 설정', body, () => {
+    const k = document.getElementById('pop-knee').value;
+    const u = document.getElementById('pop-upper').value;
+    const l = document.getElementById('pop-lower').value;
+    const s = document.getElementById('pop-sprint').value;
+    document.getElementById('cf-disc-knee').value = k;
+    document.getElementById('cf-disc-upper').value = u;
+    document.getElementById('cf-disc-lower').value = l;
+    document.getElementById('cf-disc-sprint').value = s;
+    const sum = document.getElementById('cf-disc-summary');
+    if (sum) sum.innerHTML = `무릎 <b>${k}%</b> · 상지 <b>${u}%</b> · 하지 <b>${l}%</b> · 스프린트 <b>${s}%</b>`;
+    if (outerModal) outerModal.style.zIndex = '';
+    showToast('할인율이 적용되었습니다');
+  });
+
+  // 중첩 팝업은 위에 띄우기
+  setTimeout(() => {
+    const all = document.querySelectorAll('.modal-overlay');
+    const top = all[all.length - 1];
+    if (top) top.style.zIndex = '1100';
+    // 취소/X 클릭 시 외부 모달 z-index 복원
+    const closeBtns = top ? top.querySelectorAll('.modal-close, .modal-cancel') : [];
+    closeBtns.forEach(b => b.addEventListener('click', () => {
+      if (outerModal) outerModal.style.zIndex = '';
+    }));
+  }, 10);
+}
+
+function showClientDetail(clientId) {
+  const c = getClient(clientId);
+  if (!c) return;
+  const typeBadge = c.type === '대리점'
+    ? '<span class="badge badge-type-dealer">대리점</span>'
+    : '<span class="badge badge-type-hospital">병원</span>';
+
+  const fixedPriceHTML = Object.keys(c.fixedPrices).length > 0
+    ? '<ul style="margin:4px 0 0 16px;font-size:13px;">' +
+      Object.entries(c.fixedPrices).map(([pid, price]) =>
+        `<li>${getProductName(pid)}: ${formatCurrency(price)}</li>`
+      ).join('') + '</ul>'
+    : '없음';
+
+  // Count orders for this client
+  const clientOrders = ORDERS.filter(o => o.clientId === clientId);
+  const clientRevenue = clientOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+  const rec = RECEIVABLES.find(r => r.clientId === clientId);
+
+  const bodyHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="flex items-center gap-8 mb-8">
+        <strong style="font-size:18px;">${c.name}</strong> ${typeBadge}
+      </div>
+    </div>
+    <table style="width:100%; font-size:13px; line-height:2;">
+      <tr><td style="font-weight:600; width:90px; color:var(--text-secondary);">담당자</td><td>${c.manager}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">연락처</td><td>${c.phone}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">이메일</td><td>${c.email}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">주소</td><td>${c.address}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">결제방식</td><td>${c.paymentType}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">마감기간</td><td>${c.closingPeriod}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">명세서</td><td>${c.invoiceType}</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">할인율</td><td>무릎 ${c.discounts.knee}% / 상지 ${c.discounts.upper}% / 하지 ${c.discounts.lower}% / 스프린트 ${c.discounts.sprint}%</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">고정단가</td><td>${fixedPriceHTML}</td></tr>
+    </table>
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border); font-size:13px;">
+      <strong>거래 현황:</strong> 발주 ${clientOrders.length}건 | 매출 ${formatCurrency(clientRevenue)}
+      ${rec ? ' | 미수금 ' + formatCurrency(rec.amount) : ''}
+    </div>
+  `;
+  showModal('거래처 상세 — ' + c.name, bodyHTML);
+}
+
+// ── Client Registration / Edit Forms ──
+function buildClientFormHTML(client) {
+  const isEdit = !!client;
+  const c = client || { name:'', type:'대리점', manager:'', phone:'', email:'', address:'',
+    paymentType:'당월말카드', closingPeriod:'1일~25일', invoiceType:'RTBIO',
+    discounts:{ knee:0, upper:0, lower:0, sprint:0 }, loginId:'', pw:'' };
+
+  return `
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>업체명</label>
+          <input type="text" id="cf-name" value="${c.name}">
+        </div>
+        <div class="form-group">
+          <label>유형</label>
+          <select id="cf-type">
+            ${customClientTypes.map(t => '<option value="' + t + '"' + (c.type === t ? ' selected' : '') + '>' + t + '</option>').join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>담당자명</label>
+          <input type="text" id="cf-manager" value="${c.manager}">
+        </div>
+        <div class="form-group">
+          <label>연락처</label>
+          <input type="text" id="cf-phone" value="${c.phone}" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>담당 영업사원</label>
+          <select id="cf-sales-rep">
+            <option value="">선택안함</option>
+            ${SALES_REPS.map(r => '<option value="' + r.id + '"' + (CLIENT_REP_MAP[isEdit ? client.id : ''] === r.id ? ' selected' : '') + '>' + r.name + '</option>').join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>이메일</label>
+          <input type="text" id="cf-email" value="${c.email}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>주소</label>
+          <input type="text" id="cf-address" value="${c.address}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>결제방식</label>
+          <select id="cf-payment">
+            <option value="당월말카드" ${c.paymentType === '당월말카드' ? 'selected' : ''}>당월말카드</option>
+            <option value="사용량카드" ${c.paymentType === '사용량카드' ? 'selected' : ''}>사용량카드</option>
+            <option value="계좌이체" ${c.paymentType === '계좌이체' ? 'selected' : ''}>계좌이체</option>
+            <option value="3개월후결제" ${c.paymentType === '3개월후결제' ? 'selected' : ''}>3개월후결제</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>마감기간</label>
+          <select id="cf-closing">
+            <option value="1일~25일" ${c.closingPeriod === '1일~25일' ? 'selected' : ''}>1일~25일</option>
+            <option value="1일~말일" ${c.closingPeriod === '1일~말일' ? 'selected' : ''}>1일~말일</option>
+            <option value="전달26일~당월25일" ${c.closingPeriod === '전달26일~당월25일' ? 'selected' : ''}>전달26일~당월25일</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>명세서 양식</label>
+          <select id="cf-invoice-type">
+            <option value="RTBIO" ${c.invoiceType === 'RTBIO' ? 'selected' : ''}>RTBIO</option>
+            <option value="거래처" ${c.invoiceType === '거래처' ? 'selected' : ''}>거래처</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>할인율 설정</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="openDiscountPopup()">🔧 할인율 설정 (팝업)</button>
+            <span id="cf-disc-summary" style="font-size:12px;color:var(--text-secondary);">
+              무릎 <b>${c.discounts.knee}%</b> · 상지 <b>${c.discounts.upper}%</b> · 하지 <b>${c.discounts.lower}%</b> · 스프린트 <b>${c.discounts.sprint}%</b>
+            </span>
+            <input type="hidden" id="cf-disc-knee" value="${c.discounts.knee}">
+            <input type="hidden" id="cf-disc-upper" value="${c.discounts.upper}">
+            <input type="hidden" id="cf-disc-lower" value="${c.discounts.lower}">
+            <input type="hidden" id="cf-disc-sprint" value="${c.discounts.sprint}">
+          </div>
+          <span class="form-note">카테고리별 기본 할인율. 품목별 개별 할인율은 등록 후 거래처 목록에서 별도 설정합니다.</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Login ID</label>
+          <input type="text" id="cf-login-id" value="${isEdit ? c.loginId : ''}" readonly style="background:var(--bg);">
+          <span class="form-note">자동 생성됩니다</span>
+        </div>
+        <div class="form-group">
+          <label>Login PW</label>
+          <input type="text" id="cf-login-pw" value="${isEdit ? c.pw : ''}" readonly style="background:var(--bg);">
+          <span class="form-note">관리번호가 자동 부여됩니다</span>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="document.querySelector('.modal-overlay').remove()">취소</button>
+        <button class="btn btn-primary" onclick="${isEdit
+          ? "showToast('거래처 정보가 수정되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
+          : "showToast('거래처가 등록되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
+        }">${isEdit ? '저장' : '등록'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function showNewClientForm() {
+  const bodyHTML = buildClientFormHTML(null);
+  showModal('신규 거래처 등록', bodyHTML);
+  // Hide the default modal footer since we have our own form-actions
+  const overlay = document.querySelector('.modal-overlay');
+  const footer = overlay.querySelector('.modal-footer');
+  if (footer) footer.style.display = 'none';
+}
+
+function showEditClientForm(clientId) {
+  const c = getClient(clientId);
+  if (!c) return;
+  const bodyHTML = buildClientFormHTML(c);
+  showModal('거래처 수정 — ' + c.name, bodyHTML);
+  // Hide the default modal footer since we have our own form-actions
+  const overlay = document.querySelector('.modal-overlay');
+  const footer = overlay.querySelector('.modal-footer');
+  if (footer) footer.style.display = 'none';
+}
+
+// ── P09: Invoice (고도화) ──
+function initInvoiceClientSearch() {
+  const dropdown = document.getElementById('invoice-client-dropdown');
+  const input = document.getElementById('invoice-client-search');
+  if (!dropdown || !input) return;
+
+  function renderDropdown(term) {
+    const filtered = term
+      ? CLIENTS.filter(c => c.name.toLowerCase().includes(term.toLowerCase()))
+      : CLIENTS;
+    dropdown.innerHTML = filtered.map(c => `
+      <div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);"
+           onmouseover="this.style.background='var(--primary-lighter)'"
+           onmouseout="this.style.background=''"
+           onclick="selectInvoiceClient('${c.id}','${c.name}')">
+        ${c.name} <span style="color:var(--text-muted);font-size:11px;">(${c.type})</span>
+      </div>
+    `).join('');
+    dropdown.style.display = filtered.length > 0 ? 'block' : 'none';
+  }
+  renderDropdown('');
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#invoice-client-search') && !e.target.closest('#invoice-client-dropdown')) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+function selectInvoiceClient(clientId, clientName) {
+  document.getElementById('invoice-client-search').value = clientName;
+  document.getElementById('invoice-client-select-value').value = clientId;
+  document.getElementById('invoice-client-dropdown').style.display = 'none';
+  renderInvoice(clientId);
+}
+
+// B-4: populate manager select (once) and filter clients by selected manager
+function populateInvoiceManagerSelect() {
+  const mgrSel = document.getElementById('invoice-manager-filter');
+  if (mgrSel && mgrSel.options.length === 1) {
+    SALES_REPS.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.name;
+      mgrSel.appendChild(o);
+    });
+  }
+}
+function filterInvoiceByManager() {
+  // When manager changes, re-filter the dropdown based on current search term
+  const term = (document.getElementById('invoice-client-search') || {}).value || '';
+  filterInvoiceClients(term);
+  document.getElementById('invoice-client-dropdown').style.display = 'block';
+}
+
+function filterInvoiceClients(term) {
+  populateInvoiceManagerSelect();
+  const dropdown = document.getElementById('invoice-client-dropdown');
+  const mgrFilter = (document.getElementById('invoice-manager-filter') || {}).value || 'all';
+  let filtered = term
+    ? CLIENTS.filter(c => c.name.toLowerCase().includes(term.toLowerCase()))
+    : CLIENTS;
+  if (mgrFilter !== 'all') filtered = filtered.filter(c => CLIENT_REP_MAP[c.id] === mgrFilter);
+  dropdown.innerHTML = filtered.map(c => `
+    <div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);"
+         onmouseover="this.style.background='var(--primary-lighter)'"
+         onmouseout="this.style.background=''"
+         onclick="selectInvoiceClient('${c.id}','${c.name}')">
+      ${c.name} <span style="color:var(--text-muted);font-size:11px;">(${c.type})</span>
+    </div>
+  `).join('');
+  dropdown.style.display = filtered.length > 0 ? 'block' : 'none';
+}
+
+function renderInvoice(clientId) {
+  // Update search input display
+  const client = getClient(clientId);
+  if (!client) return;
+  const searchInput = document.getElementById('invoice-client-search');
+  if (searchInput) searchInput.value = client.name;
+  const hiddenInput = document.getElementById('invoice-client-select-value');
+  if (hiddenInput) hiddenInput.value = clientId;
+
+  // Filter orders for this client
+  const clientOrders = ORDERS.filter(o => o.clientId === clientId);
+
+  // Build items list from all client orders
+  let allItems = [];
+  clientOrders.forEach(o => {
+    o.items.forEach(item => {
+      allItems.push({
+        date: o.date,
+        orderId: o.id,
+        productName: getProductName(item.productId),
+        qty: item.qty,
+        unitPrice: item.unitPrice,
+        amount: item.unitPrice * item.qty
+      });
+    });
+  });
+
+  const subtotal = allItems.reduce((s, i) => s + i.amount, 0);
+  const tax = Math.round(subtotal * 0.1);
+  const grandTotal = subtotal + tax;
+
+  // Receivable data for this client
+  const rec = RECEIVABLES.find(r => r.clientId === clientId);
+  const carryOver = rec ? Math.round(rec.amount * 0.7) : 0;
+  const currentSales = subtotal;
+  const collected = rec ? (carryOver + currentSales - rec.amount) : currentSales;
+  const balance = rec ? rec.amount : 0;
+
+  const itemsRows = allItems.length > 0
+    ? allItems.map(item => `
+        <tr>
+          <td>${formatDate(item.date)}</td>
+          <td class="mono" style="font-size:12px;">${item.orderId}</td>
+          <td>${item.productName}</td>
+          <td class="text-right">${item.qty}</td>
+          <td class="text-right">${formatCurrency(item.unitPrice)}</td>
+          <td class="text-right fw-600">${formatCurrency(item.amount)}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">해당 기간 거래 내역이 없습니다.</td></tr>';
+
+  document.getElementById('invoice-preview-area').innerHTML = `
+    <div class="invoice-preview">
+      <div class="invoice-header">
+        <div>
+          <div class="invoice-title">거 래 명 세 서</div>
+          <div class="invoice-date">발행일: ${formatDateFull(TODAY)}</div>
+        </div>
+        <div class="invoice-logo-area">RTBIO</div>
+      </div>
+
+      <div class="invoice-parties">
+        <div class="invoice-party">
+          <h4>공급받는자</h4>
+          <p class="name">${client.name}</p>
+          <p>${client.address}</p>
+          <p>담당: ${client.manager} | ${client.phone}</p>
+        </div>
+        <div class="invoice-party">
+          <h4>공급자</h4>
+          <p class="name">주식회사 알티바이오</p>
+          <p>서울시 강남구 테헤란로 521 RTBIO빌딩</p>
+          <p>사업자등록번호: 123-45-67890</p>
+        </div>
+      </div>
+
+      <!-- 미수금 요약 -->
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px;border:1px solid var(--border);">
+        <table style="width:100%;font-size:13px;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0;font-weight:600;color:var(--text-secondary);">전월이월</td>
+            <td style="padding:6px 0;text-align:right;">${formatCurrency(carryOver)}</td>
+            <td style="padding:6px 0;font-weight:600;color:var(--text-secondary);padding-left:24px;">당월매출</td>
+            <td style="padding:6px 0;text-align:right;">${formatCurrency(currentSales)}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-weight:600;color:var(--success);">수금액</td>
+            <td style="padding:6px 0;text-align:right;color:var(--success);">${formatCurrency(collected)}</td>
+            <td style="padding:6px 0;font-weight:700;color:var(--danger);padding-left:24px;">미수잔액</td>
+            <td style="padding:6px 0;text-align:right;font-weight:700;color:var(--danger);">${formatCurrency(balance)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="table-wrap" style="border-radius:var(--radius-sm);">
+        <table class="data-table" style="font-size:13px;">
+          <thead><tr>
+            <th>일자</th><th>발주번호</th><th>제품명</th>
+            <th class="text-right">수량</th><th class="text-right">단가</th><th class="text-right">금액</th>
+          </tr></thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+      </div>
+
+      <div class="invoice-totals">
+        <div class="invoice-total-row">
+          <span class="label">공급가액</span>
+          <span class="value">${formatCurrency(subtotal)}</span>
+        </div>
+        <div class="invoice-total-row">
+          <span class="label">부가세 (10%)</span>
+          <span class="value">${formatCurrency(tax)}</span>
+        </div>
+        <div class="invoice-total-row grand">
+          <span class="label">합 계</span>
+          <span class="value">${formatCurrency(grandTotal)}</span>
+        </div>
+      </div>
+
+      <div class="invoice-footer">
+        주식회사 알티바이오 | 서울시 강남구 테헤란로 521 | TEL: 02-1234-5678 | FAX: 02-1234-5679<br>
+        사업자등록번호: 123-45-67890 | 대표: 홍길동
+      </div>
+
+      <div class="invoice-actions">
+        <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')">🖨️ 인쇄</button>
+        <button class="btn btn-primary" onclick="showToast('PDF가 저장되었습니다', 'success')">📄 PDF 저장</button>
+        <button class="btn btn-accent" onclick="sendInvoiceEmail('${clientId}')">📧 메일 발송</button>
+      </div>
+    </div>
+  `;
+}
+
+function sendInvoiceEmail(clientId) {
+  const client = getClient(clientId);
+  if (!client) return;
+  showModal('거래명세서 메일 발송', `
+    <div class="form-group">
+      <label>받는 사람</label>
+      <input type="email" class="form-input" id="invoice-email-to" value="${client.email}">
+    </div>
+    <div class="form-group">
+      <label>참조 (CC)</label>
+      <input type="email" class="form-input" id="invoice-email-cc" placeholder="선택사항">
+    </div>
+    <div class="form-group">
+      <label>제목</label>
+      <input type="text" class="form-input" value="[RTBIO] ${client.name} 거래명세서 (${TODAY.replace(/-/g,'.')})">
+    </div>
+    <div class="form-group">
+      <label>메시지</label>
+      <textarea class="form-textarea" rows="3">${client.manager}님 안녕하세요.\n알티바이오입니다.\n첨부된 거래명세서 확인 부탁드립니다.</textarea>
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); padding:8px 12px; background:var(--bg); border-radius:var(--radius-xs);">
+      📎 첨부: RTBIO_거래명세서_${client.name}_${TODAY}.pdf
+    </div>
+  `, function() {
+    showToast(client.name + ' (' + client.email + ')으로 명세서가 발송되었습니다', 'success');
+  });
+}
+
+// ── P10: Ledger (고도화) ──
+let ledgerMemos = {}; // { clientName: memoText }
+
+function renderLedger() {
+  const sortBy = document.getElementById('ledger-sort')?.value || 'name';
+
+  // Build ledger data per client
+  let ledgerData = CLIENTS.map(c => {
+    const clientOrders = ORDERS.filter(o => o.clientId === c.id);
+    const monthlySales = clientOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+    const rec = RECEIVABLES.find(r => r.clientId === c.id);
+    const receivable = rec ? rec.amount : 0;
+    const carryOver = Math.round(receivable * 0.7);
+    const collected = carryOver + monthlySales - receivable;
+    return {
+      id: c.id,
+      name: c.name,
+      carryOver,
+      monthlySales,
+      collected,
+      receivable
+    };
+  });
+
+  // Sort
+  if (sortBy === 'receivable-desc') ledgerData.sort((a, b) => b.receivable - a.receivable);
+  else if (sortBy === 'receivable-asc') ledgerData.sort((a, b) => a.receivable - b.receivable);
+  else if (sortBy === 'sales-desc') ledgerData.sort((a, b) => b.monthlySales - a.monthlySales);
+  else ledgerData.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  const totals = ledgerData.reduce((acc, d) => ({
+    carryOver: acc.carryOver + d.carryOver,
+    monthlySales: acc.monthlySales + d.monthlySales,
+    collected: acc.collected + d.collected,
+    receivable: acc.receivable + d.receivable
+  }), { carryOver: 0, monthlySales: 0, collected: 0, receivable: 0 });
+
+  const collectionRate = totals.carryOver + totals.monthlySales > 0
+    ? ((totals.collected / (totals.carryOver + totals.monthlySales)) * 100).toFixed(1)
+    : 0;
+
+  // Summary cards
+  document.getElementById('ledger-summary').innerHTML = `
+    <div class="ledger-summary-card">
+      <div class="label">총 매출</div>
+      <div class="value" style="color:var(--primary);">${formatCurrency(totals.monthlySales)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">총 미수금</div>
+      <div class="value" style="color:var(--danger);">${formatCurrency(totals.receivable)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">수금액</div>
+      <div class="value" style="color:var(--success);">${formatCurrency(totals.collected)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">수금율</div>
+      <div class="value" style="color:var(--accent-dark);">${collectionRate}%</div>
+    </div>
+  `;
+
+  // Table with memo column
+  const tbody = document.querySelector('#ledger-table tbody');
+  tbody.innerHTML = ledgerData.map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td class="text-right">${formatCurrency(d.carryOver)}</td>
+      <td class="text-right">${formatCurrency(d.monthlySales)}</td>
+      <td class="text-right" style="color:var(--success);">${formatCurrency(d.collected)}</td>
+      <td class="text-right fw-600" style="color:var(--danger);">${formatCurrency(d.receivable)}</td>
+      <td><input type="text" class="ledger-memo-input" placeholder="메모 입력..."
+           value="${ledgerMemos[d.name] || ''}"
+           onchange="ledgerMemos['${d.name}']=this.value"></td>
+    </tr>
+  `).join('') + `
+    <tr class="totals-row">
+      <td>합 계</td>
+      <td class="text-right">${formatCurrency(totals.carryOver)}</td>
+      <td class="text-right">${formatCurrency(totals.monthlySales)}</td>
+      <td class="text-right" style="color:var(--success);">${formatCurrency(totals.collected)}</td>
+      <td class="text-right" style="color:var(--danger);">${formatCurrency(totals.receivable)}</td>
+      <td></td>
+    </tr>
+  `;
+}
+
+function ledgerSortBy(sortVal) {
+  const sel = document.getElementById('ledger-sort');
+  if (sel) sel.value = sortVal;
+  renderLedger();
+}
+
+function sendLedgerEmail() {
+  showModal('마감원장 이메일 발송', `
+    <div class="form-group">
+      <label>받는 사람</label>
+      <input type="email" class="form-input" value="ceo@rtbio.co.kr">
+    </div>
+    <div class="form-group">
+      <label>참조 (CC)</label>
+      <input type="email" class="form-input" placeholder="선택사항">
+    </div>
+    <div class="form-group">
+      <label>제목</label>
+      <input type="text" class="form-input" value="[RTBIO] 마감원장 (${document.getElementById('ledger-date-from')?.value || ''} ~ ${document.getElementById('ledger-date-to')?.value || ''})">
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); padding:8px 12px; background:var(--bg); border-radius:var(--radius-xs);">
+      📎 첨부: RTBIO_마감원장_${TODAY}.pdf
+    </div>
+  `, function() {
+    showToast('마감원장이 이메일로 발송되었습니다', 'success');
+  });
+}
+
+function confirmLedgerClose() {
+  const dateFrom = document.getElementById('ledger-date-from')?.value || '2026-04-01';
+  const dateTo = document.getElementById('ledger-date-to')?.value || '2026-04-11';
+  showModal(
+    '마감 확정',
+    `<p>${dateFrom} ~ ${dateTo} 기간 마감을 확정하시겠습니까?</p><p class="text-sm text-muted mt-8">확정 후에는 수정이 불가합니다.</p>`,
+    () => {
+      showToast('마감이 확정되었습니다', 'success');
+    }
+  );
+}
+
+// ── P11: Report (고도화) ──
+function renderReport() {
+  const dateFrom = document.getElementById('report-date-from')?.value || '2026-04-01';
+  const dateTo = document.getElementById('report-date-to')?.value || '2026-04-11';
+  const clientType = document.getElementById('report-client-type')?.value || 'all';
+  const managerFilter = document.getElementById('report-manager-filter')?.value || 'all';
+
+  // Populate manager dropdown (once)
+  const mgrSel = document.getElementById('report-manager-filter');
+  if (mgrSel && mgrSel.options.length <= 1) {
+    SALES_REPS.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name;
+      mgrSel.appendChild(opt);
+    });
+  }
+
+  // Filter clients by type & manager
+  let filteredClients = [...CLIENTS];
+  if (clientType !== 'all') filteredClients = filteredClients.filter(c => c.type === clientType);
+  if (managerFilter !== 'all') filteredClients = filteredClients.filter(c => CLIENT_REP_MAP[c.id] === managerFilter);
+  const clientIds = new Set(filteredClients.map(c => c.id));
+
+  // Filter orders by date range and client set
+  const filteredOrders = ORDERS.filter(o => o.date >= dateFrom && o.date <= dateTo && clientIds.has(o.clientId));
+
+  // Calculate metrics
+  const totalRevenue = filteredOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+  const avgOrder = filteredOrders.length > 0 ? Math.round(totalRevenue / filteredOrders.length) : 0;
+  const filteredReceivables = RECEIVABLES.filter(r => clientIds.has(r.clientId));
+  const totalRec = filteredReceivables.reduce((s, r) => s + r.amount, 0);
+
+  // Client revenue table
+  const clientRevenues = filteredClients.map(c => {
+    const orders = filteredOrders.filter(o => o.clientId === c.id);
+    const revenue = orders.reduce((s, o) => s + calcOrderTotal(o), 0);
+    const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[c.id])?.name || '-';
+    return { name: c.name, type: c.type, repName, orderCount: orders.length, revenue };
+  }).sort((a, b) => b.revenue - a.revenue);
+  const totalRev = clientRevenues.reduce((s, c) => s + c.revenue, 0);
+
+  // Brand drilldown data
+  const brandData = {};
+  for (const [brand, info] of Object.entries(BRAND_MAP)) {
+    brandData[brand] = { color: info.color, totalQty: 0, totalRevenue: 0, models: {} };
+    filteredOrders.forEach(o => {
+      o.items.forEach(item => {
+        if (info.products.includes(item.productId)) {
+          const pName = getProductName(item.productId);
+          if (!brandData[brand].models[pName]) brandData[brand].models[pName] = { qty: 0, revenue: 0 };
+          brandData[brand].models[pName].qty += item.qty;
+          brandData[brand].models[pName].revenue += item.unitPrice * item.qty;
+          brandData[brand].totalQty += item.qty;
+          brandData[brand].totalRevenue += item.unitPrice * item.qty;
+        }
+      });
+    });
+  }
+
+  // Manager/rep revenue
+  const repRevenues = SALES_REPS.map(rep => {
+    const repClients = filteredClients.filter(c => CLIENT_REP_MAP[c.id] === rep.id);
+    const repClientIds = new Set(repClients.map(c => c.id));
+    const repOrders = filteredOrders.filter(o => repClientIds.has(o.clientId));
+    const revenue = repOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+    return { name: rep.name, clientCount: repClients.length, orderCount: repOrders.length, revenue };
+  }).filter(r => r.revenue > 0 || r.clientCount > 0);
+
+  // Build client revenue rows
+  const clientRowsHTML = clientRevenues.map(c => {
+    const pct = totalRev > 0 ? ((c.revenue / totalRev) * 100).toFixed(1) : '0.0';
+    const typeBadge = c.type === '대리점'
+      ? '<span class="badge badge-type-dealer" style="font-size:11px;">대리점</span>'
+      : '<span class="badge badge-type-hospital" style="font-size:11px;">병원</span>';
+    return `<tr>
+      <td>${c.name} ${typeBadge}</td>
+      <td class="text-center">${c.repName}</td>
+      <td class="text-right">${c.orderCount}건</td>
+      <td class="text-right fw-600">${formatCurrency(c.revenue)}</td>
+      <td class="text-right">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  // Build brand drilldown rows
+  let brandRowsHTML = '';
+  let brandIdx = 0;
+  for (const [brand, data] of Object.entries(brandData)) {
+    if (data.totalQty === 0) continue;
+    const brandPct = totalRev > 0 ? ((data.totalRevenue / totalRev) * 100).toFixed(1) : '0.0';
+    brandRowsHTML += `<tr class="drilldown-toggle" onclick="toggleBrandDrilldown(this, 'brand-${brandIdx}')">
+      <td style="font-weight:600;">${brand}</td>
+      <td class="text-right">${data.totalQty}개</td>
+      <td class="text-right fw-600">${formatCurrency(data.totalRevenue)}</td>
+      <td class="text-right">${brandPct}%</td>
+    </tr>`;
+    for (const [model, mData] of Object.entries(data.models)) {
+      brandRowsHTML += `<tr class="drilldown-child hidden brand-${brandIdx}">
+        <td>${model}</td>
+        <td class="text-right">${mData.qty}개</td>
+        <td class="text-right">${formatCurrency(mData.revenue)}</td>
+        <td class="text-right"></td>
+      </tr>`;
+    }
+    brandIdx++;
+  }
+
+  // Build rep revenue rows
+  const repRowsHTML = repRevenues.map(r => `<tr>
+    <td class="fw-600">${r.name}</td>
+    <td class="text-right">${r.clientCount}개</td>
+    <td class="text-right">${r.orderCount}건</td>
+    <td class="text-right fw-600">${formatCurrency(r.revenue)}</td>
+  </tr>`).join('');
+
+  // Receivables rows
+  const recRowsHTML = filteredReceivables.map(r => {
+    let riskLabel, riskBadge;
+    if (r.overdueDays === 0) { riskLabel = '정상'; riskBadge = 'badge-complete'; }
+    else if (r.overdueDays <= 14) { riskLabel = '주의'; riskBadge = 'badge-pending'; }
+    else if (r.overdueDays <= 30) { riskLabel = '경고'; riskBadge = 'badge-confirmed'; }
+    else { riskLabel = '위험'; riskBadge = 'badge-danger'; }
+    return `<tr>
+      <td>${getClientName(r.clientId)}</td>
+      <td class="text-right fw-600">${formatCurrency(r.amount)}</td>
+      <td class="text-right">${r.overdueDays}일</td>
+      <td><span class="badge ${riskBadge}">${riskLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Render the document
+  const area = document.getElementById('report-document-area');
+  area.innerHTML = `
+    <div class="report-doc">
+      <!-- Official Doc Header -->
+      <div class="report-doc-header">
+        <div class="company-name">주식회사 알티바이오 (RTBIO)</div>
+        <div class="doc-title">매 출 보 고 서</div>
+        <div class="doc-period">${dateFrom.replace(/-/g,'.')} ~ ${dateTo.replace(/-/g,'.')}${clientType !== 'all' ? ' | ' + clientType + ' 대상' : ''}${managerFilter !== 'all' ? ' | 담당: ' + (SALES_REPS.find(r => r.id === managerFilter)?.name || '') : ''}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">작성일: ${TODAY} | 경영지원팀</div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="stats-row">
+        <div class="stat-box"><div class="val" style="color:var(--primary);">${filteredOrders.length}건</div><div class="lbl">총 발주</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--accent-dark);">${formatCurrency(totalRevenue)}</div><div class="lbl">총 매출</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--warning);">${formatCurrency(avgOrder)}</div><div class="lbl">평균 발주액</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--danger);">${formatCurrency(totalRec)}</div><div class="lbl">미수금 합계</div></div>
+      </div>
+
+      <!-- 1. 거래처별 매출 -->
+      <div class="section-title">1. 거래처별 매출 현황</div>
+      <div class="table-wrap mb-16">
+        <table class="data-table">
+          <thead><tr>
+            <th>거래처</th><th class="text-center">담당자</th><th class="text-right">발주</th>
+            <th class="text-right">매출액</th><th class="text-right">비중</th>
+          </tr></thead>
+          <tbody>${clientRowsHTML}</tbody>
+          <tfoot><tr class="totals-row">
+            <td colspan="2">합 계</td>
+            <td class="text-right">${filteredOrders.length}건</td>
+            <td class="text-right">${formatCurrency(totalRev)}</td>
+            <td class="text-right">100%</td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 2. 브랜드/제품별 매출 (Drilldown) -->
+      <div class="section-title">2. 브랜드/제품별 매출 (클릭하여 상세 펼치기)</div>
+      <div class="table-wrap mb-16">
+        <table class="data-table">
+          <thead><tr>
+            <th>브랜드 / 제품명</th><th class="text-right">수량</th>
+            <th class="text-right">매출액</th><th class="text-right">비중</th>
+          </tr></thead>
+          <tbody>${brandRowsHTML || '<tr><td colspan="4" class="text-center text-muted" style="padding:20px;">해당 기간 데이터 없음</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <!-- 3. 담당자별 매출 -->
+      <div class="section-title">3. 담당자별 매출</div>
+      <div class="table-wrap mb-16">
+        <table class="data-table">
+          <thead><tr>
+            <th>담당자</th><th class="text-right">거래처 수</th>
+            <th class="text-right">발주 건수</th><th class="text-right">매출액</th>
+          </tr></thead>
+          <tbody>${repRowsHTML || '<tr><td colspan="4" class="text-center text-muted" style="padding:20px;">데이터 없음</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <!-- 4. 미수금 현황 -->
+      <div class="section-title">4. 미수금 현황</div>
+      <div class="table-wrap mb-16">
+        <table class="data-table">
+          <thead><tr>
+            <th>거래처</th><th class="text-right">미수금</th>
+            <th class="text-right">연체일수</th><th>위험등급</th>
+          </tr></thead>
+          <tbody>${recRowsHTML || '<tr><td colspan="4" class="text-center text-muted" style="padding:20px;">미수금 없음</td></tr>'}</tbody>
+          <tfoot><tr class="totals-row">
+            <td>합 계</td>
+            <td class="text-right">${formatCurrency(totalRec)}</td>
+            <td colspan="2"></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- Actions -->
+      <div class="report-doc-actions">
+        <button class="btn btn-primary" onclick="showToast('PDF가 다운로드되었습니다', 'success')">📄 PDF 다운로드</button>
+        <button class="btn btn-accent" onclick="sendReportEmail()">📧 이메일 발송</button>
+        <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')">🖨️ 인쇄</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleBrandDrilldown(row, className) {
+  row.classList.toggle('open');
+  document.querySelectorAll('.' + className).forEach(el => el.classList.toggle('hidden'));
+}
+
+function sendReportEmail() {
+  showModal('보고서 이메일 발송', `
+    <div class="form-group">
+      <label>받는 사람</label>
+      <input type="email" class="form-input" value="ceo@rtbio.co.kr">
+    </div>
+    <div class="form-group">
+      <label>참조 (CC)</label>
+      <input type="email" class="form-input" placeholder="선택사항">
+    </div>
+    <div class="form-group">
+      <label>제목</label>
+      <input type="text" class="form-input" value="[RTBIO] 매출 보고서 (${document.getElementById('report-date-from')?.value || ''} ~ ${document.getElementById('report-date-to')?.value || ''})">
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); padding:8px 12px; background:var(--bg); border-radius:var(--radius-xs);">
+      📎 첨부: RTBIO_매출보고서_${TODAY}.pdf
+    </div>
+  `, function() {
+    showToast('보고서가 이메일로 발송되었습니다', 'success');
+  });
+}
+
+// ── P12: Purchases ──
+let purchaseRowCount = 0;
+function renderPurchases() {
+  const dummyRows = [
+    { product: '리코탭플러스 무릎 숏', spec: 'M / 편측', qty: 50, price: 11000 },
+    { product: '리깁스 발목', spec: 'L / 편측', qty: 30, price: 13000 },
+    { product: '리스프린트 손가락', spec: 'S / -', qty: 100, price: 6000 },
+  ];
+  purchaseRowCount = dummyRows.length;
+
+  const tbody = document.getElementById('purchase-grid-body');
+  tbody.innerHTML = dummyRows.map((r, i) => `
+    <tr>
+      <td class="text-center text-muted">${i + 1}</td>
+      <td><select class="form-select" style="min-width:180px;">
+        <option>${r.product}</option>
+        <option>리코탭플러스 무릎 롱</option><option>리깁스 팔꿈치</option>
+        <option>워커 (단족)</option><option>어깨 보조기</option>
+      </select></td>
+      <td><input type="text" value="${r.spec}" style="max-width:120px;"></td>
+      <td><input type="number" value="${r.qty}" onchange="calcPurchaseRow(this)"></td>
+      <td><input type="number" value="${r.price}" onchange="calcPurchaseRow(this)"></td>
+      <td><div class="auto-calc">${formatCurrency(r.qty * r.price)}</div></td>
+    </tr>
+  `).join('') + `
+    <tr>
+      <td class="text-center text-muted">${dummyRows.length + 1}</td>
+      <td><select class="form-select" style="min-width:180px;">
+        <option value="">-- 제품 선택 --</option>
+        <option>리코탭플러스 무릎 숏</option><option>리코탭플러스 무릎 롱</option>
+        <option>리깁스 팔꿈치</option><option>워커 (단족)</option>
+      </select></td>
+      <td><input type="text" placeholder="규격"></td>
+      <td><input type="number" placeholder="0"></td>
+      <td><input type="number" placeholder="0"></td>
+      <td><div class="auto-calc">₩0</div></td>
+    </tr>
+  `;
+
+  const total = dummyRows.reduce((s, r) => s + r.qty * r.price, 0);
+  document.getElementById('purchase-grid-foot').innerHTML = `
+    <tr><td colspan="5" class="text-right">합 계</td>
+    <td class="text-right" style="font-size:15px;">${formatCurrency(total)}</td></tr>
+  `;
+
+  // History table
+  const history = [
+    { date: '2026-04-10', supplier: '메디텍코리아', items: 4, amount: 2850000, status: '확정' },
+    { date: '2026-04-08', supplier: '한국의료기', items: 3, amount: 1920000, status: '확정' },
+    { date: '2026-04-05', supplier: '글로벌메드', items: 5, amount: 3150000, status: '확정' },
+    { date: '2026-04-03', supplier: '메디텍코리아', items: 2, amount: 980000, status: '확정' },
+    { date: '2026-04-01', supplier: '한국의료기', items: 6, amount: 4200000, status: '임시저장' },
+  ];
+  document.getElementById('purchase-history-body').innerHTML = history.map(h => `
+    <tr>
+      <td>${h.date}</td><td>${h.supplier}</td><td class="text-center">${h.items}건</td>
+      <td class="text-right fw-600">${formatCurrency(h.amount)}</td>
+      <td><span class="badge ${h.status === '확정' ? 'badge-complete' : 'badge-pending'}">${h.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+function calcPurchaseRow(el) {
+  const row = el.closest('tr');
+  const inputs = row.querySelectorAll('input[type="number"]');
+  const qty = parseInt(inputs[0].value) || 0;
+  const price = parseInt(inputs[1].value) || 0;
+  row.querySelector('.auto-calc').textContent = formatCurrency(qty * price);
+}
+
+function addPurchaseRow() {
+  purchaseRowCount++;
+  const tbody = document.getElementById('purchase-grid-body');
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = `
+    <td class="text-center text-muted">${purchaseRowCount + 1}</td>
+    <td><select class="form-select" style="min-width:180px;">
+      <option value="">-- 제품 선택 --</option>
+      <option>리코탭플러스 무릎 숏</option><option>리코탭플러스 무릎 롱</option>
+      <option>리깁스 팔꿈치</option><option>워커 (단족)</option>
+    </select></td>
+    <td><input type="text" placeholder="규격"></td>
+    <td><input type="number" placeholder="0"></td>
+    <td><input type="number" placeholder="0"></td>
+    <td><div class="auto-calc">₩0</div></td>
+  `;
+  tbody.appendChild(newRow);
+  showToast('행이 추가되었습니다', 'info');
+}
+
+// ── P13: Payments ──
+function renderPayments() {
+  // Summary stats
+  const thisMonthCollection = 8750000;
+  const totalOutstanding = totalReceivables;
+  const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
+  const avgOverdue = Math.round(RECEIVABLES.reduce((s, r) => s + r.overdueDays, 0) / RECEIVABLES.length);
+
+  document.getElementById('payments-stats').innerHTML = `
+    <div class="stat-card stat-primary">
+      <div class="stat-label">이번 달 수금액</div>
+      <div class="stat-value">${formatCurrency(thisMonthCollection)}</div>
+      <div class="stat-sub">4월 누계</div>
+    </div>
+    <div class="stat-card stat-danger">
+      <div class="stat-label">미수금 총액</div>
+      <div class="stat-value">${formatCurrency(totalOutstanding)}</div>
+      <div class="stat-sub">${RECEIVABLES.length}개 거래처</div>
+    </div>
+    <div class="stat-card stat-warning">
+      <div class="stat-label">연체 건수</div>
+      <div class="stat-value">${overdueCount}건</div>
+      <div class="stat-sub">미수금 중 연체</div>
+    </div>
+    <div class="stat-card stat-accent">
+      <div class="stat-label">평균 연체일수</div>
+      <div class="stat-value">${avgOverdue}일</div>
+      <div class="stat-sub">전체 평균</div>
+    </div>
+  `;
+
+  // Payment register rows (은행 입금 수기)
+  const registerData = [
+    { client: 'C002', bank: '신한은행', payer: '메디팜 의료기', amount: 1870000, date: '2026-04-11', note: '4월 정산', status: '입금완료', expected: 1870000 },
+    { client: 'C004', bank: '국민은행', payer: '(주)미래의료', amount: 980000, date: '2026-04-10', note: '4월 정산', status: '입금완료', expected: 980000 },
+    { client: 'C001', bank: '우리은행', payer: '대한메디칼', amount: 1500000, date: '2026-04-11', note: '부분입금', status: '일부입금', expected: 3200000 },
+  ];
+  const BANKS = ['신한은행','국민은행','우리은행','하나은행','농협','기업은행','카카오뱅크'];
+  document.getElementById('payment-register-body').innerHTML = registerData.map(r => {
+    const statusBadge = r.status === '입금완료'
+      ? '<span class="badge badge-complete">입금완료</span>'
+      : r.status === '일부입금'
+        ? '<span class="badge" style="background:var(--warning-light);color:var(--warning);">일부입금</span>'
+        : '<span class="badge badge-pending">미입금</span>';
+    return `
+    <tr>
+      <td><select class="form-select">
+        ${CLIENTS.map(c => `<option value="${c.id}" ${c.id === r.client ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select></td>
+      <td><select class="form-select">
+        ${BANKS.map(b => `<option ${b === r.bank ? 'selected' : ''}>${b}</option>`).join('')}
+      </select></td>
+      <td><input type="text" value="${r.payer}"></td>
+      <td><input type="number" value="${r.amount}" style="text-align:right;" oninput="updatePartialStatus(this)" data-expected="${r.expected}"></td>
+      <td><input type="date" value="${r.date}"></td>
+      <td><input type="text" value="${r.note}"></td>
+      <td>${statusBadge}</td>
+    </tr>
+  `;}).join('');
+
+  // 대리점별 미수금
+  const outstandingBody = document.getElementById('client-outstanding-body');
+  if (outstandingBody) {
+    const data = CLIENTS.slice(0, 6).map((c, idx) => {
+      const sales = 4500000 + idx * 1200000;
+      const paid = idx % 3 === 0 ? sales : Math.round(sales * (0.5 + (idx * 0.08)));
+      const outstanding = sales - paid;
+      const overdue = outstanding > 0 ? (5 + idx * 8) : 0;
+      const status = outstanding === 0 ? '완납' : (overdue > 60 ? '연체' : overdue > 30 ? '주의' : '정상');
+      return { c, sales, paid, outstanding, overdue, status };
+    });
+    outstandingBody.innerHTML = data.map(d => {
+      const badgeCls = d.status === '완납' ? 'badge-complete'
+        : d.status === '연체' ? 'badge-pending'
+        : d.status === '주의' ? '' : 'badge-complete';
+      const badgeStyle = d.status === '주의' ? 'style="background:var(--warning-light);color:var(--warning);"' : '';
+      return `
+        <tr>
+          <td><strong>${d.c.name}</strong></td>
+          <td>${d.c.type || '-'}</td>
+          <td class="text-right">${formatCurrency(d.sales)}</td>
+          <td class="text-right">${formatCurrency(d.paid)}</td>
+          <td class="text-right" style="color:${d.outstanding > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${formatCurrency(d.outstanding)}</td>
+          <td class="text-right">${d.overdue > 0 ? d.overdue + '일' : '-'}</td>
+          <td><span class="badge ${badgeCls}" ${badgeStyle}>${d.status}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Aging table from RECEIVABLES
+  document.getElementById('aging-body').innerHTML = RECEIVABLES.map(r => {
+    const d = r.overdueDays;
+    const within30 = d <= 30 ? r.amount : 0;
+    const d31_60 = d > 30 && d <= 60 ? r.amount : 0;
+    const d61_90 = d > 60 && d <= 90 ? r.amount : 0;
+    const over90 = d > 90 ? r.amount : 0;
+    let statusLabel, statusCls;
+    if (d === 0) { statusLabel = '정상'; statusCls = 'aging-normal'; }
+    else if (d <= 14) { statusLabel = '주의'; statusCls = 'aging-warning'; }
+    else { statusLabel = '연체'; statusCls = 'aging-danger'; }
+    return `
+      <tr>
+        <td>${getClientName(r.clientId)}</td>
+        <td class="text-right fw-600">${formatCurrency(r.amount)}</td>
+        <td class="text-right">${within30 > 0 ? formatCurrency(within30) : '-'}</td>
+        <td class="text-right">${d31_60 > 0 ? formatCurrency(d31_60) : '-'}</td>
+        <td class="text-right">${d61_90 > 0 ? formatCurrency(d61_90) : '-'}</td>
+        <td class="text-right">${over90 > 0 ? formatCurrency(over90) : '-'}</td>
+        <td><span class="${statusCls}">${statusLabel}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function addPaymentRow() {
+  const tbody = document.getElementById('payment-register-body');
+  const BANKS = ['신한은행','국민은행','우리은행','하나은행','농협','기업은행','카카오뱅크'];
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = `
+    <td><select class="form-select">
+      ${CLIENTS.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+    </select></td>
+    <td><select class="form-select">
+      ${BANKS.map(b => `<option>${b}</option>`).join('')}
+    </select></td>
+    <td><input type="text" placeholder="입금자명"></td>
+    <td><input type="number" placeholder="0" style="text-align:right;" oninput="updatePartialStatus(this)" data-expected="0"></td>
+    <td><input type="date" value="2026-04-11"></td>
+    <td><input type="text" placeholder="적요"></td>
+    <td><span class="badge badge-pending">미입금</span></td>
+  `;
+  tbody.appendChild(newRow);
+  showToast('행이 추가되었습니다', 'info');
+}
+
+function updatePartialStatus(inputEl) {
+  const row = inputEl.closest('tr');
+  if (!row) return;
+  const amount = parseInt(inputEl.value, 10) || 0;
+  const expected = parseInt(inputEl.dataset.expected, 10) || 0;
+  const statusCell = row.children[row.children.length - 1];
+  if (!statusCell) return;
+  if (amount === 0) {
+    statusCell.innerHTML = '<span class="badge badge-pending">미입금</span>';
+  } else if (expected > 0 && amount < expected) {
+    statusCell.innerHTML = '<span class="badge" style="background:var(--warning-light);color:var(--warning);">일부입금</span>';
+  } else {
+    statusCell.innerHTML = '<span class="badge badge-complete">입금완료</span>';
+  }
+}
+
+// ── P14: Tax Invoice ──
+// ── P14: Tax Invoice (B-1 확장) ──
+const TAX_INVOICE_DATA = [
+  { no: 'TI-2026-0401', date: '2026-04-02', clientId: 'C001', supply: 3250000, status: '발행완료', itemSummary: '무릎 보조기 외 2건' },
+  { no: 'TI-2026-0402', date: '2026-04-05', clientId: 'C002', supply: 4520000, status: '발행완료', itemSummary: '상지 보조기 외 4건' },
+  { no: 'TI-2026-0403', date: '2026-04-08', clientId: 'C003', supply: 2150000, status: '발행완료', itemSummary: '하지 보조기 2건' },
+  { no: 'TI-2026-0404', date: '2026-04-10', clientId: 'C001', supply: 1870000, status: '발행완료', itemSummary: '보조기 추가 발주' },
+  { no: 'TI-2026-0405', date: '2026-04-11', clientId: 'C002', supply: 5320000, status: '미발행', itemSummary: '4월 2차 정기 발주' },
+  { no: 'TI-2026-0406', date: '2026-04-12', clientId: 'C004', supply: 980000, status: '미발행', itemSummary: '샘플 공급' },
+];
+
+function populateTaxClientSelect() {
+  const sel = document.getElementById('ti-client');
+  if (!sel || sel.options.length > 1) return;
+  CLIENTS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+}
+
+function renderTaxInvoice() {
+  populateTaxClientSelect();
+  const month = (document.getElementById('ti-month') || {}).value || '2026-04';
+  const clientFilter = (document.getElementById('ti-client') || {}).value || 'all';
+  const statusFilter = (document.getElementById('ti-status') || {}).value || 'all';
+
+  let filtered = TAX_INVOICE_DATA.filter(t => t.date.startsWith(month));
+  if (clientFilter !== 'all') filtered = filtered.filter(t => t.clientId === clientFilter);
+  if (statusFilter !== 'all') filtered = filtered.filter(t => t.status === statusFilter);
+
+  const totalIssued = filtered.filter(t => t.status === '발행완료').length;
+  const totalUnissued = filtered.filter(t => t.status === '미발행').length;
+  const totalIssuedAmount = filtered
+    .filter(t => t.status === '발행완료')
+    .reduce((sum, t) => sum + t.supply + Math.round(t.supply * 0.1), 0);
+
+  document.getElementById('tax-invoice-stats').innerHTML = `
+    <div class="stat-card stat-primary">
+      <div class="stat-label">${month.replace('-','년 ')}월 발행</div>
+      <div class="stat-value">${totalIssued}건</div>
+      <div class="stat-sub">발행 완료</div>
+    </div>
+    <div class="stat-card stat-warning">
+      <div class="stat-label">미발행 건수</div>
+      <div class="stat-value">${totalUnissued}건</div>
+      <div class="stat-sub">발행 필요</div>
+    </div>
+    <div class="stat-card stat-accent">
+      <div class="stat-label">발행 총액</div>
+      <div class="stat-value">${formatCurrency(totalIssuedAmount)}</div>
+      <div class="stat-sub">공급가액 + 세액</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('tax-invoice-body');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">조건에 해당하는 세금계산서가 없습니다</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(t => {
+    const tax = Math.round(t.supply * 0.1);
+    const total = t.supply + tax;
+    const client = getClient(t.clientId);
+    const statusBadge = t.status === '발행완료'
+      ? '<span class="badge badge-complete">발행완료</span>'
+      : t.status === '취소'
+        ? '<span class="badge badge-cancelled" style="background:var(--bg);color:var(--text-muted);">취소</span>'
+        : '<span class="badge badge-pending">미발행</span>';
+    const actions = t.status === '미발행'
+      ? `<button class="btn btn-primary btn-sm" onclick="issueTaxInvoice('${t.no}')">발행</button>
+         <button class="btn btn-outline btn-sm" onclick="showTaxInvoiceDetail('${t.no}')" style="margin-left:4px;">상세</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="showTaxInvoiceDetail('${t.no}')">상세</button>
+         <button class="btn btn-outline btn-sm" onclick="reissueTaxInvoice('${t.no}')" style="margin-left:4px;">재발행</button>
+         <button class="btn btn-outline btn-sm" onclick="cancelTaxInvoice('${t.no}')" style="margin-left:4px;color:var(--danger);">취소</button>`;
+    return `
+      <tr>
+        <td class="mono">${t.no}</td>
+        <td>${t.date}</td>
+        <td>${client ? client.name : t.clientId}</td>
+        <td class="text-right">${formatCurrency(t.supply)}</td>
+        <td class="text-right">${formatCurrency(tax)}</td>
+        <td class="text-right fw-600">${formatCurrency(total)}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space:nowrap;">${actions}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function showNewTaxInvoiceForm() {
+  const clientOptions = CLIENTS.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const body = `
+    <div class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>공급자 (당사)</label>
+          <input type="text" value="알티바이오 주식회사" readonly style="background:var(--bg);">
+        </div>
+        <div class="form-group">
+          <label>작성일자</label>
+          <input type="date" id="nti-date" value="${new Date().toISOString().slice(0,10)}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>공급받는자 (거래처) *</label>
+          <select id="nti-client">${clientOptions}</select>
+        </div>
+        <div class="form-group">
+          <label>품목 요약 *</label>
+          <input type="text" id="nti-summary" placeholder="예: 무릎 보조기 외 2건">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>공급가액 (원) *</label>
+          <input type="number" id="nti-supply" placeholder="0" oninput="document.getElementById('nti-tax').value=Math.round(this.value*0.1);document.getElementById('nti-total').value=parseInt(this.value||0)+Math.round((this.value||0)*0.1);">
+        </div>
+        <div class="form-group">
+          <label>세액 (10% 자동)</label>
+          <input type="number" id="nti-tax" readonly style="background:var(--bg);">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>합계</label>
+          <input type="number" id="nti-total" readonly style="background:var(--bg);">
+        </div>
+        <div class="form-group">
+          <label>비고</label>
+          <input type="text" id="nti-note" placeholder="선택 입력">
+        </div>
+      </div>
+    </div>
+  `;
+  showModal('세금계산서 신규 발행', body, () => {
+    const clientId = document.getElementById('nti-client').value;
+    const supply = parseInt(document.getElementById('nti-supply').value, 10) || 0;
+    const summary = document.getElementById('nti-summary').value.trim();
+    const date = document.getElementById('nti-date').value;
+    if (!supply || !summary) {
+      showToast('공급가액/품목을 입력해주세요', 'error');
+      return;
+    }
+    const newNo = 'TI-2026-' + String(400 + TAX_INVOICE_DATA.length + 1).padStart(4, '0');
+    TAX_INVOICE_DATA.push({ no: newNo, date, clientId, supply, status: '발행완료', itemSummary: summary });
+    renderTaxInvoice();
+    showToast(`${newNo} 발행 완료`);
+  });
+}
+
+function showTaxInvoiceDetail(no) {
+  const t = TAX_INVOICE_DATA.find(x => x.no === no);
+  if (!t) return;
+  const client = getClient(t.clientId);
+  const tax = Math.round(t.supply * 0.1);
+  const body = `
+    <div style="font-size:13px; line-height:1.9;">
+      <div><strong>승인번호:</strong> <span class="mono">${t.no}</span></div>
+      <div><strong>작성일자:</strong> ${t.date}</div>
+      <div><strong>공급자:</strong> 알티바이오 주식회사</div>
+      <div><strong>공급받는자:</strong> ${client ? client.name : t.clientId}</div>
+      <div><strong>품목:</strong> ${t.itemSummary}</div>
+      <div><strong>공급가액:</strong> ${formatCurrency(t.supply)}</div>
+      <div><strong>세액:</strong> ${formatCurrency(tax)}</div>
+      <div><strong>합계:</strong> <span style="font-weight:700;color:var(--primary);">${formatCurrency(t.supply + tax)}</span></div>
+      <div><strong>상태:</strong> ${t.status}</div>
+    </div>
+  `;
+  showModal(`세금계산서 상세 — ${t.no}`, body);
+}
+
+function issueTaxInvoice(no) {
+  const t = TAX_INVOICE_DATA.find(x => x.no === no);
+  if (!t) return;
+  t.status = '발행완료';
+  renderTaxInvoice();
+  showToast(`${no} 발행 완료`);
+}
+
+function reissueTaxInvoice(no) {
+  showModal('재발행 확인', `${no} 세금계산서를 재발행하시겠습니까?`, () => {
+    showToast(`${no} 재발행 완료`);
+  });
+}
+
+function cancelTaxInvoice(no) {
+  showModal('세금계산서 취소', `${no} 세금계산서를 취소하시겠습니까?<br><span style="font-size:12px;color:var(--danger);">취소 건은 국세청 전송되며 수정 불가합니다.</span>`, () => {
+    const t = TAX_INVOICE_DATA.find(x => x.no === no);
+    if (t) t.status = '취소';
+    renderTaxInvoice();
+    showToast(`${no} 취소 처리`, 'info');
+  });
+}
+
+// ── P15: Client Ledger ──
+function renderClientLedger(clientId) {
+  // If called via select onchange, param is string; else default
+  if (typeof clientId === 'undefined') clientId = document.getElementById('client-ledger-select')?.value || 'C001';
+  if (!clientId) clientId = 'C001';
+
+  // Populate dropdown (once)
+  const sel = document.getElementById('client-ledger-select');
+  if (sel.options.length === 0) {
+    CLIENTS.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+  sel.value = clientId;
+
+  // Populate manager filter (B-3) (once)
+  const mgrSel = document.getElementById('ledger-manager-filter');
+  if (mgrSel && mgrSel.options.length === 1) {
+    SALES_REPS.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.name;
+      mgrSel.appendChild(o);
+    });
+  }
+
+  const client = getClient(clientId);
+  if (!client) return;
+
+  // Respect manager filter — if the selected manager doesn't own this client, show notice
+  const mgrFilter = (document.getElementById('ledger-manager-filter') || {}).value || 'all';
+  if (mgrFilter !== 'all' && CLIENT_REP_MAP[clientId] !== mgrFilter) {
+    document.getElementById('client-ledger-summary').innerHTML = `
+      <div style="grid-column:1/-1; padding:24px; text-align:center; color:var(--text-muted); border:1px dashed var(--border); border-radius:8px;">
+        선택한 담당자(${SALES_REPS.find(r => r.id === mgrFilter)?.name || ''})의 거래처가 아닙니다.
+      </div>`;
+    document.getElementById('client-ledger-body').innerHTML = '';
+    return;
+  }
+
+  // Dummy running ledger data
+  const carryOver = 2800000;
+  const ledgerEntries = [
+    { date: '2026-04-01', type: '이월', desc: '전기 이월잔액', debit: 0, credit: 0 },
+    { date: '2026-04-02', type: '매출', desc: 'ORD-0402-001 리코탭플러스 무릎 숏 外', debit: 1250000, credit: 0 },
+    { date: '2026-04-03', type: '수금', desc: '계좌이체 입금', debit: 0, credit: 2000000 },
+    { date: '2026-04-05', type: '매출', desc: 'ORD-0405-002 리깁스 발목 外', debit: 890000, credit: 0 },
+    { date: '2026-04-07', type: '매출', desc: 'ORD-0407-003 리스프린트 손가락 外', debit: 560000, credit: 0 },
+    { date: '2026-04-08', type: '수금', desc: '카드 결제', debit: 0, credit: 1500000 },
+    { date: '2026-04-09', type: '매출', desc: 'ORD-0409-004 무릎 보조기 A타입', debit: 720000, credit: 0 },
+    { date: '2026-04-10', type: '매출', desc: 'ORD-0410-005 리코탭플러스 손목 外', debit: 480000, credit: 0 },
+    { date: '2026-04-11', type: '수금', desc: '계좌이체 입금', debit: 0, credit: 950000 },
+    { date: '2026-04-11', type: '매출', desc: 'ORD-0411-001 리코탭플러스 무릎 숏 外', debit: 650000, credit: 0 },
+  ];
+
+  let balance = carryOver;
+  const totalDebit = ledgerEntries.reduce((s, e) => s + e.debit, 0);
+  const totalCredit = ledgerEntries.reduce((s, e) => s + e.credit, 0);
+  const endBalance = carryOver + totalDebit - totalCredit;
+
+  // Summary cards
+  document.getElementById('client-ledger-summary').innerHTML = `
+    <div class="ledger-summary-card">
+      <div class="label">전기 이월</div>
+      <div class="value" style="color:var(--text);">${formatCurrency(carryOver)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">매출 합계</div>
+      <div class="value" style="color:var(--primary);">${formatCurrency(totalDebit)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">수금 합계</div>
+      <div class="value" style="color:var(--success);">${formatCurrency(totalCredit)}</div>
+    </div>
+    <div class="ledger-summary-card">
+      <div class="label">잔액</div>
+      <div class="value" style="color:var(--danger);">${formatCurrency(endBalance)}</div>
+    </div>
+  `;
+
+  // Running ledger table
+  document.getElementById('client-ledger-body').innerHTML = ledgerEntries.map(e => {
+    if (e.type === '이월') {
+      balance = carryOver;
+    } else {
+      balance = balance + e.debit - e.credit;
+    }
+    const typeBadge = e.type === '매출' ? '<span class="badge badge-confirmed">매출</span>'
+      : e.type === '수금' ? '<span class="badge badge-complete">수금</span>'
+      : '<span class="badge badge-pending">이월</span>';
+    return `
+      <tr>
+        <td>${e.date}</td>
+        <td>${typeBadge}</td>
+        <td>${e.desc}</td>
+        <td class="text-right">${e.debit > 0 ? formatCurrency(e.debit) : ''}</td>
+        <td class="text-right" style="color:var(--success);">${e.credit > 0 ? formatCurrency(e.credit) : ''}</td>
+        <td class="text-right fw-600">${formatCurrency(balance)}</td>
+      </tr>
+    `;
+  }).join('') + `
+    <tr class="totals-row">
+      <td colspan="3" class="text-right">합 계</td>
+      <td class="text-right">${formatCurrency(totalDebit)}</td>
+      <td class="text-right" style="color:var(--success);">${formatCurrency(totalCredit)}</td>
+      <td class="text-right" style="color:var(--danger);">${formatCurrency(endBalance)}</td>
+    </tr>
+  `;
+}
+
+// ── P16: Journal ──
+let currentJournalTab = 'sales';
+function renderJournal(tab) {
+  currentJournalTab = tab || 'sales';
+
+  // Update tab active states
+  document.querySelectorAll('#journal-tab-bar .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === currentJournalTab);
+  });
+
+  // Populate client/manager filter dropdowns (B-3) once
+  const jClientSel = document.getElementById('journal-client-filter');
+  if (jClientSel && jClientSel.options.length === 1) {
+    CLIENTS.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.name; o.textContent = c.name;
+      jClientSel.appendChild(o);
+    });
+  }
+  const jMgrSel = document.getElementById('journal-manager-filter');
+  if (jMgrSel && jMgrSel.options.length === 1) {
+    SALES_REPS.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.name;
+      jMgrSel.appendChild(o);
+    });
+  }
+  const clientFilter = (jClientSel || {}).value || 'all';
+  const mgrFilter = (jMgrSel || {}).value || 'all';
+  const searchTerm = ((document.getElementById('journal-search') || {}).value || '').toLowerCase();
+
+  const thead = document.getElementById('journal-thead');
+  const tbody = document.getElementById('journal-body');
+  const tfoot = document.getElementById('journal-foot');
+
+  if (currentJournalTab === 'sales') {
+    thead.innerHTML = `<tr>
+      <th>일자</th><th>거래처</th><th>담당자</th><th>품목</th><th class="text-right">수량</th>
+      <th class="text-right">단가</th><th class="text-right">공급가액</th>
+      <th class="text-right">세액</th><th class="text-right">합계</th>
+    </tr>`;
+
+    let salesData = [
+      { date: '2026-04-02', client: '메디팜 의료기', clientId:'C001', item: '리코탭플러스 무릎 숏', qty: 10, price: 20900 },
+      { date: '2026-04-03', client: '한빛정형외과', clientId:'C003', item: '리깁스 무릎 숏', qty: 5, price: 24500 },
+      { date: '2026-04-05', client: '대한메디칼', clientId:'C002', item: '리코탭플러스 무릎 롱', qty: 8, price: 23250 },
+      { date: '2026-04-07', client: '세종재활의학과', clientId:'C005', item: '리코탭플러스 손목', qty: 20, price: 18050 },
+      { date: '2026-04-08', client: '한빛정형외과', clientId:'C003', item: '리스프린트 쇄골', qty: 20, price: 15520 },
+      { date: '2026-04-09', client: '미래의료기', clientId:'C004', item: '리코탭플러스 발목', qty: 15, price: 19400 },
+      { date: '2026-04-10', client: '메디팜 의료기', clientId:'C001', item: '워커 (단족)', qty: 3, price: 63050 },
+      { date: '2026-04-11', client: '대한메디칼', clientId:'C002', item: '리깁스 팔꿈치', qty: 5, price: 24440 },
+    ];
+    // Apply filters (B-3)
+    if (clientFilter !== 'all') salesData = salesData.filter(s => s.client === clientFilter);
+    if (mgrFilter !== 'all') salesData = salesData.filter(s => CLIENT_REP_MAP[s.clientId] === mgrFilter);
+    if (searchTerm) salesData = salesData.filter(s => s.item.toLowerCase().includes(searchTerm) || s.client.toLowerCase().includes(searchTerm));
+
+    let totalSupply = 0, totalTax = 0;
+    tbody.innerHTML = salesData.map(s => {
+      const supply = s.qty * s.price;
+      const tax = Math.round(supply * 0.1);
+      totalSupply += supply;
+      totalTax += tax;
+      const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[s.clientId])?.name || '-';
+      return `
+        <tr>
+          <td>${s.date}</td><td>${s.client}</td><td>${repName}</td><td>${s.item}</td>
+          <td class="text-right">${s.qty}</td><td class="text-right">${formatCurrency(s.price)}</td>
+          <td class="text-right">${formatCurrency(supply)}</td>
+          <td class="text-right">${formatCurrency(tax)}</td>
+          <td class="text-right fw-600">${formatCurrency(supply + tax)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    if (salesData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">조건에 해당하는 매출 기록이 없습니다</td></tr>`;
+    }
+
+    tfoot.innerHTML = `<tr>
+      <td colspan="6" class="text-right">합 계</td>
+      <td class="text-right">${formatCurrency(totalSupply)}</td>
+      <td class="text-right">${formatCurrency(totalTax)}</td>
+      <td class="text-right" style="font-size:15px;">${formatCurrency(totalSupply + totalTax)}</td>
+    </tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th>일자</th><th>공급처</th><th>품목</th><th class="text-right">수량</th>
+      <th class="text-right">단가</th><th class="text-right">매입가</th>
+      <th class="text-right">세액</th><th class="text-right">합계</th>
+    </tr>`;
+
+    const purchaseData = [
+      { date: '2026-04-01', supplier: '메디텍코리아', item: '리코탭플러스 무릎 숏 (원자재)', qty: 100, price: 11000 },
+      { date: '2026-04-01', supplier: '한국의료기', item: '리깁스 발목 (원자재)', qty: 60, price: 13000 },
+      { date: '2026-04-03', supplier: '글로벌메드', item: '리스프린트 손가락 (원자재)', qty: 200, price: 6000 },
+      { date: '2026-04-05', supplier: '메디텍코리아', item: '리코탭플러스 손목 (원자재)', qty: 80, price: 9500 },
+      { date: '2026-04-08', supplier: '한국의료기', item: '워커 (단족) (원자재)', qty: 20, price: 32000 },
+      { date: '2026-04-10', supplier: '글로벌메드', item: '어깨 보조기 (원자재)', qty: 15, price: 28000 },
+    ];
+
+    let totalPurchase = 0, totalTax = 0;
+    tbody.innerHTML = purchaseData.map(p => {
+      const purchaseAmt = p.qty * p.price;
+      const tax = Math.round(purchaseAmt * 0.1);
+      totalPurchase += purchaseAmt;
+      totalTax += tax;
+      return `
+        <tr>
+          <td>${p.date}</td><td>${p.supplier}</td><td>${p.item}</td>
+          <td class="text-right">${p.qty}</td><td class="text-right">${formatCurrency(p.price)}</td>
+          <td class="text-right">${formatCurrency(purchaseAmt)}</td>
+          <td class="text-right">${formatCurrency(tax)}</td>
+          <td class="text-right fw-600">${formatCurrency(purchaseAmt + tax)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tfoot.innerHTML = `<tr>
+      <td colspan="5" class="text-right">합 계</td>
+      <td class="text-right">${formatCurrency(totalPurchase)}</td>
+      <td class="text-right">${formatCurrency(totalTax)}</td>
+      <td class="text-right" style="font-size:15px;">${formatCurrency(totalPurchase + totalTax)}</td>
+    </tr>`;
+  }
+}
+
+// ── P17: Settings ──
+let currentSettingsTab = 'basic';
+function renderSettings(tab) {
+  currentSettingsTab = tab || 'basic';
+
+  // Update tab active states
+  document.querySelectorAll('#settings-tab-bar .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === currentSettingsTab);
+  });
+
+  const container = document.getElementById('settings-content');
+
+  if (currentSettingsTab === 'basic') {
+    container.innerHTML = `
+      <div class="settings-form">
+        <div class="settings-section-title">운영 설정</div>
+        <div class="form-group">
+          <label>택배 마감시간</label>
+          <input type="time" class="form-input" value="15:30">
+        </div>
+        <div class="form-group">
+          <label>안전재고 기준 (개)</label>
+          <input type="number" class="form-input" value="10">
+        </div>
+
+        <div class="settings-section-title">보안 설정</div>
+        <div class="form-group">
+          <label>세션 유효시간</label>
+          <select class="form-select">
+            <option>1시간</option><option selected>2시간</option><option>4시간</option><option>8시간</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>로그인 실패 잠금 (회)</label>
+          <input type="number" class="form-input" value="5">
+        </div>
+
+        <div class="settings-section-title">이메일 발신 설정</div>
+        <div class="form-group">
+          <label>SMTP Host</label>
+          <input type="text" class="form-input" value="smtp.rtbio.co.kr">
+        </div>
+        <div class="form-group">
+          <label>SMTP Port</label>
+          <input type="number" class="form-input" value="587">
+        </div>
+        <div class="form-group">
+          <label>발신 이메일</label>
+          <input type="email" class="form-input" value="admin@rtbio.co.kr">
+        </div>
+
+        <div style="margin-top:24px;">
+          <button class="btn btn-primary" onclick="showToast('설정이 저장되었습니다', 'success')">설정 저장</button>
+        </div>
+      </div>
+    `;
+  } else if (currentSettingsTab === 'company') {
+    container.innerHTML = `
+      <div class="settings-form">
+        <div class="settings-section-title">회사 기본 정보</div>
+        <div class="form-group">
+          <label>회사명</label>
+          <input type="text" class="form-input" value="주식회사 알티바이오 (RTBIO)">
+        </div>
+        <div class="form-group">
+          <label>사업자등록번호</label>
+          <input type="text" class="form-input" value="123-45-67890">
+        </div>
+        <div class="form-group">
+          <label>대표자</label>
+          <input type="text" class="form-input" value="홍길동">
+        </div>
+        <div class="form-group">
+          <label>업태</label>
+          <input type="text" class="form-input" value="제조업, 도매업">
+        </div>
+        <div class="form-group">
+          <label>종목</label>
+          <input type="text" class="form-input" value="의료기기, 의료용품">
+        </div>
+
+        <div class="settings-section-title">연락처 정보</div>
+        <div class="form-group">
+          <label>주소</label>
+          <input type="text" class="form-input" value="서울시 강남구 테헤란로 521 RTBIO빌딩" style="max-width:500px;">
+        </div>
+        <div class="form-group">
+          <label>전화번호</label>
+          <input type="text" class="form-input" value="02-1234-5678">
+        </div>
+        <div class="form-group">
+          <label>팩스번호</label>
+          <input type="text" class="form-input" value="02-1234-5679">
+        </div>
+        <p class="text-sm text-muted" style="margin-top:16px;">* 위 정보는 거래명세서 및 세금계산서에 자동으로 표시됩니다.</p>
+        <div style="margin-top:24px;">
+          <button class="btn btn-primary" onclick="showToast('회사정보가 저장되었습니다', 'success')">저장</button>
+        </div>
+      </div>
+    `;
+  } else if (currentSettingsTab === 'suppliers') {
+    const suppliers = [
+      { name: '메디텍코리아', contact: '02-555-1234', manager: '박영수', email: 'park@meditek.co.kr' },
+      { name: '한국의료기', contact: '031-777-5678', manager: '이정환', email: 'lee@hankookmed.co.kr' },
+      { name: '글로벌메드', contact: '02-333-9012', manager: '김미선', email: 'kim@globalmed.co.kr' },
+    ];
+
+    container.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr>
+            <th>업체명</th><th>연락처</th><th>담당자</th><th>이메일</th><th>액션</th>
+          </tr></thead>
+          <tbody>
+            ${suppliers.map(s => `
+              <tr>
+                <td class="fw-600">${s.name}</td>
+                <td>${s.contact}</td>
+                <td>${s.manager}</td>
+                <td>${s.email}</td>
+                <td><button class="btn btn-outline btn-sm" onclick="showToast('수정 모드로 전환되었습니다', 'info')">수정</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="showToast('신규 공급업체 등록 화면이 열렸습니다', 'info')">+ 신규 등록</button>
+      </div>
+    `;
+  }
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  try { renderDashboard(); } catch(e) {}
+  renderOrders('all');
+  renderClients('');
+  initInvoiceClientSearch();
+  renderInvoice('C001');
+  renderLedger();
+  renderReport();
+  renderPurchases();
+  renderPayments();
+  try { renderTaxInvoice(); } catch(e) {}
+  renderClientLedger('C001');
+  renderJournal('sales');
+  renderSettings('basic');
+  goTo('page-dashboard');
+});
+</script>
+</body>
+</html>

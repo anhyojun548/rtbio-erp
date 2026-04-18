@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTBIO 업무 자동화 시스템 — 프로토타입</title>
+<link rel="stylesheet" href="css/shared.css">
+<style>
+  body {
+    background: linear-gradient(160deg, var(--primary) 0%, var(--primary-light) 50%, #1a2a4a 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .hero-logo {
+    margin-bottom: 16px;
+  }
+  .hero-logo img {
+    height: 48px;
+    width: auto;
+    margin: 0 auto;
+    filter: brightness(10);
+  }
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .hero p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.6);
+  }
+  .hero .version {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    max-width: 1080px;
+    width: 100%;
+  }
+
+  .role-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .role-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+  .role-card::before { display: none; }
+
+  .role-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+  .role-client .role-icon { background: var(--accent-light); }
+  .role-admin .role-icon { background: var(--primary-lighter); }
+  .role-qc .role-icon { background: var(--warning-light); }
+  .role-sales .role-icon { background: var(--purple-light); }
+  .role-exec .role-icon { background: var(--success-light); }
+
+  .role-name {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .role-desc {
+    font-size: 13px; color: var(--text-secondary);
+    line-height: 1.5; margin-bottom: 16px;
+  }
+  .role-screens {
+    font-size: 11px; color: var(--text-muted);
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .role-screens span {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+  }
+
+  .role-arrow {
+    position: absolute;
+    right: 20px; top: 50%;
+    transform: translateY(-50%);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  .footer-text {
+    text-align: center;
+    margin-top: 48px;
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+  }
+  .footer-text a {
+    color: rgba(255,255,255,0.5);
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 24px; }
+    .role-grid { grid-template-columns: 1fr; }
+    .role-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-logo">
+    <img src="assets/logo-white.png" alt="RTBIO">
+  </div>
+  <h1>업무 자동화 시스템</h1>
+  <p>클릭 프로토타입 — 역할을 선택하세요</p>
+  <span class="version">Prototype v0.1 · 2026.04.11</span>
+</div>
+
+<div class="role-grid">
+
+  <a href="client-portal.html" class="role-card role-client">
+    <div class="role-icon">🏥</div>
+    <div class="role-name">거래처 (발주)</div>
+    <div class="role-desc">대리점·병원 담당자가 제품을 발주하고 출고 상태를 확인합니다.</div>
+    <div class="role-screens">
+      <span>로그인</span>
+      <span>발주폼</span>
+      <span>발주내역</span>
+      <span>출고상태</span>
+    </div>
+    <div class="role-arrow">→</div>
+  </a>
+
+  <a href="qc-portal.html" class="role-card role-qc">
+    <div class="role-icon">📦</div>
+    <div class="role-name">품질관리팀</div>
+    <div class="role-desc">발주 확정, 담당자 배정, 출고 단계 관리, 재고 현황을 관리합니다.</div>
+    <div class="role-screens">
+      <span>발주확정</span>
+      <span>출고관리</span>
+      <span>재고현황</span>
+      <span>샘플출고</span>
+    </div>
+    <div class="role-arrow">→</div>
+  </a>
+
+  <a href="admin-portal.html" class="role-card role-admin">
+    <div class="role-icon">📊</div>
+    <div class="role-name">경영지원팀</div>
+    <div class="role-desc">발주 관리, 거래처 관리, 거래명세서, 마감 원장, 보고서를 처리합니다.</div>
+    <div class="role-screens">
+      <span>대시보드</span>
+      <span>발주관리</span>
+      <span>거래처관리</span>
+      <span>명세서</span>
+      <span>원장</span>
+    </div>
+    <div class="role-arrow">→</div>
+  </a>
+
+  <a href="exec-portal.html" class="role-card role-sales">
+    <div class="role-icon">💼</div>
+    <div class="role-name">영업팀</div>
+    <div class="role-desc">영업 대시보드, 거래처별 사용량 입력, 거래처 현황을 관리합니다.</div>
+    <div class="role-screens">
+      <span>영업대시보드</span>
+      <span>사용량입력</span>
+      <span>거래처현황</span>
+    </div>
+    <div class="role-arrow">→</div>
+  </a>
+
+
+</div>
+
+<div class="footer-text">
+  <p>RTBIO 업무 자동화 시스템 · Prototype by <a href="ceo-portal.html">HAMADA LABS</a></p>
+  <p style="margin-top:4px;">이 프로토타입은 기능 흐름 확인용이며, 실제 데이터와 연동되지 않습니다.</p>
+</div>
+
+</body>
+</html>

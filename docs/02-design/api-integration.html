@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RTBIO ERP — API / 외부서비스 연동 문서</title>
+<style>
+  :root { --primary:#1B3A5C; --accent:#00A8B5; --bg:#F5F7FA; --text:#222; --muted:#667; --border:#E2E8F0; --danger:#D32F2F; --success:#2E7D32; --warning:#F57C00; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  header { background:var(--primary); color:#fff; padding:24px 40px; }
+  header h1 { margin:0; font-size:22px; }
+  header .sub { font-size:13px; opacity:0.8; margin-top:4px; }
+  nav { background:#fff; border-bottom:1px solid var(--border); padding:12px 40px; display:flex; gap:16px; font-size:13px; position:sticky; top:0; z-index:10;}
+  nav a { color:var(--primary); text-decoration:none; padding:6px 10px; border-radius:4px; }
+  nav a:hover { background:var(--bg); }
+  nav a.active { background:var(--primary); color:#fff; }
+  main { max-width:1200px; margin:0 auto; padding:32px 40px 80px; }
+  h2 { color:var(--primary); margin-top:40px; padding-bottom:8px; border-bottom:2px solid var(--accent); }
+  h3 { color:var(--primary); font-size:16px; margin-top:28px; }
+  .desc { background:#fff; border-left:4px solid var(--accent); padding:12px 16px; margin:12px 0; border-radius:4px; font-size:14px; }
+  .meta { background:#fff; padding:16px 20px; border-radius:8px; border:1px solid var(--border); font-size:13px; margin-bottom:24px; }
+  .meta dt { font-weight:700; color:var(--primary); display:inline-block; width:120px; }
+  .meta dd { display:inline; margin:0; }
+  .meta div { margin:4px 0; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; margin:12px 0; background:#fff; }
+  th, td { border:1px solid var(--border); padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--primary); color:#fff; }
+  code { background:var(--bg); padding:2px 6px; border-radius:3px; font-size:12px; }
+  pre.code { background:#0D1B2A; color:#E0E1DD; padding:14px 16px; border-radius:6px; font-size:12px; overflow:auto; font-family:'Consolas', monospace; line-height:1.5; }
+  .method { display:inline-block; padding:2px 8px; border-radius:3px; font-weight:700; font-size:11px; color:#fff; margin-right:6px; font-family:monospace; }
+  .m-get { background:#2E7D32; }
+  .m-post { background:#1976D2; }
+  .m-patch { background:#F57C00; }
+  .m-delete { background:#D32F2F; }
+  .m-put { background:#7C3AED; }
+  .endpoint { background:#fff; border:1px solid var(--border); border-radius:6px; padding:14px 16px; margin:10px 0; }
+  .endpoint .path { font-family:monospace; font-size:14px; font-weight:700; }
+  .endpoint .summary { font-size:13px; color:var(--muted); margin:6px 0; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:11px; font-weight:700; background:var(--accent); color:#fff; }
+  .badge.scope { background:var(--warning); }
+  .badge.done { background:var(--success); }
+  .badge.plan { background:var(--muted); }
+  .ext-card { background:#fff; border:1px solid var(--border); border-radius:8px; padding:18px 20px; margin:12px 0; }
+  .ext-card h3 { margin-top:0; }
+  .ext-card .status { float:right; }
+  .rule { background:#FFF8E1; border-left:4px solid var(--warning); padding:10px 14px; margin:8px 0; border-radius:4px; font-size:13px; }
+  ul.compact { margin:6px 0; padding-left:20px; }
+  ul.compact li { margin:2px 0; font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔌 RTBIO ERP — API / 외부서비스 연동 문서</h1>
+  <div class="sub">내부 REST API + 외부 연동 (SMTP · 팝빌 · 국세청 · Azure) 카탈로그</div>
+</header>
+
+<nav>
+  <a href="workflow-diagram.html">🔄 워크플로우</a>
+  <a href="sequence-diagram.html">📞 시퀀스</a>
+  <a href="data-structure.html">🗃 데이터구조</a>
+  <a href="api-integration.html" class="active">🔌 API / 외부연동</a>
+</nav>
+
+<main>
+
+<div class="meta">
+  <div><dt>문서</dt><dd>API / 외부서비스 연동 v1.0</dd></div>
+  <div><dt>작성일</dt><dd>2026-04-17</dd></div>
+  <div><dt>기술 스택</dt><dd>Next.js 14 App Router · Route Handlers · Zod 검증 · NextAuth JWT</dd></div>
+  <div><dt>기본 규약</dt><dd>JSON · snake_case 파라미터 · camelCase 응답 · 표준 에러 포맷</dd></div>
+</div>
+
+<h2>1. API 공통 규약</h2>
+
+<h3>1.1 표준 응답</h3>
+<pre class="code">// 성공
+{ "ok": true, "data": { ... } }
+
+// 실패
+{
+  "ok": false,
+  "error": {
+    "code": "VALIDATION_FAILED",    // 에러 코드 (열거형)
+    "message": "수량은 1 이상이어야 합니다",
+    "fields": { "qty": "positive number required" }
+  }
+}</pre>
+
+<h3>1.2 인증 (NextAuth JWT 쿠키)</h3>
+<ul class="compact">
+  <li>모든 <code>/api/*</code> 요청은 <code>next-auth.session-token</code> 쿠키 필요 (<code>/api/auth/*</code>, <code>/api/public/*</code> 제외)</li>
+  <li>세션에서 <code>tenantId</code>, <code>userId</code>, <code>role</code>을 추출해 Prisma 쿼리에 강제 주입</li>
+  <li>RBAC: 데코레이터 <code>requireRole('ADMIN'|'QC'|'EXEC'|'CLIENT')</code></li>
+</ul>
+
+<h3>1.3 에러 코드 (표준)</h3>
+<table>
+  <thead><tr><th>코드</th><th>HTTP</th><th>의미</th></tr></thead>
+  <tbody>
+    <tr><td>UNAUTHENTICATED</td><td>401</td><td>세션 없음 / 만료</td></tr>
+    <tr><td>FORBIDDEN</td><td>403</td><td>권한 부족</td></tr>
+    <tr><td>NOT_FOUND</td><td>404</td><td>리소스 없음</td></tr>
+    <tr><td>VALIDATION_FAILED</td><td>422</td><td>Zod 검증 실패</td></tr>
+    <tr><td>BUSINESS_RULE_VIOLATED</td><td>409</td><td>재고 부족 등 비즈니스 규칙 위반</td></tr>
+    <tr><td>TENANT_MISMATCH</td><td>403</td><td>다른 테넌트 리소스 접근 시도</td></tr>
+    <tr><td>RATE_LIMIT_EXCEEDED</td><td>429</td><td>호출 한도 초과</td></tr>
+    <tr><td>INTERNAL_ERROR</td><td>500</td><td>서버 오류</td></tr>
+  </tbody>
+</table>
+
+<h2>2. 내부 REST API 카탈로그</h2>
+
+<h3>2.1 인증</h3>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/auth/callback/credentials</span> <span class="badge done">구현 예정</span></div>
+  <div class="summary">이메일 + 비밀번호 로그인 (NextAuth)</div>
+  <div>Body: <code>{ email, password, tenantSlug }</code></div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/auth/signout</span></div>
+  <div class="summary">세션 종료</div>
+</div>
+
+<h3>2.2 Orders (발주 관리)</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/orders</span></div>
+  <div class="summary">발주 목록. <code>?status=&dateFrom=&dateTo=&clientId=&staffId=</code></div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/orders</span></div>
+  <div class="summary">신규 발주. 재고 예약 + 가격 스냅샷 + 칸반 카드 생성</div>
+<pre class="code">Body: {
+  "clientId": "c1",
+  "items": [{ "productId":"P001", "size":"M", "qty":10 }],
+  "note": "월말 결제"
+}
+→ 201 { "orderId":"ORD-260417-001", "totalAmount":500000 }</pre>
+</div>
+<div class="endpoint">
+  <div><span class="method m-patch">PATCH</span><span class="path">/api/orders/[id]</span></div>
+  <div class="summary">상태 변경 (접수 → 확정/취소). 확정된 주문의 unitPrice는 불변.</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-patch">PATCH</span><span class="path">/api/kanban/move</span></div>
+  <div class="summary">QC 칸반 단계 이동. done 이동 시 physicalStock 차감</div>
+</div>
+
+<h3>2.3 Invoices / TaxInvoices</h3>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/invoices</span></div>
+  <div class="summary">거래명세서 발급 (Order 기반). invoiceReady=true 인 주문만 가능</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/invoices/[id]/pdf</span></div>
+  <div class="summary">PDF 다운로드. Blob 캐시 우선, 없으면 @react-pdf/renderer로 생성</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/tax-invoices</span> <span class="badge scope">팝빌 연동</span></div>
+  <div class="summary">세금계산서 발행. supply × 0.1 = VAT 자동 계산, 국세청 승인 후 이메일 발송</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-patch">PATCH</span><span class="path">/api/tax-invoices/[id]/cancel</span></div>
+  <div class="summary">세금계산서 취소 (국세청 승인 취소 API 호출)</div>
+</div>
+
+<h3>2.4 Inventory</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/inventory</span></div>
+  <div class="summary">재고 현황 (physicalStock, availableStock, safetyStock)</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/inventory/adjust</span></div>
+  <div class="summary">재고 조정 (반품/실사/파손). InventoryAdjustment + InventoryLog 기록</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-delete">DELETE</span><span class="path">/api/products/[id]</span></div>
+  <div class="summary">제품 삭제 (soft delete: status='DISCONTINUED'). OrderItem 참조 있으면 RESTRICT</div>
+</div>
+
+<h3>2.5 Payments</h3>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/payments</span></div>
+  <div class="summary">은행 입금 수기 등록. 상태 자동 판정 (COMPLETE/PARTIAL/UNPAID)</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/payments/receivables</span></div>
+  <div class="summary">거래처별 미수금 Aging (0-30 / 31-60 / 61-90 / 90+)</div>
+</div>
+
+<h3>2.6 Clients / Reports</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/clients</span></div>
+  <div class="summary">거래처 목록. <code>?type=대리점|병원|기타&staffId=&search=</code></div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/clients</span></div>
+  <div class="summary">거래처 등록. fixedPrices, discounts 포함. loginId/pw 자동 생성</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/reports/client-ledger</span></div>
+  <div class="summary">거래처원장. 매출/입금/잔액, 담당자 필터</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/reports/journal</span></div>
+  <div class="summary">매입매출장. 담당자/기간/거래처 복합 필터</div>
+</div>
+
+<h3>2.7 Dashboard Widgets</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/widgets/[preset]</span></div>
+  <div class="summary">위젯 프리셋 데이터. <code>?range=today|7d|30d|month|custom&from=&to=</code></div>
+  <div>지원 preset: <code>monthly_sales, today_orders, total_ar, active_clients, weekly_sales, client_share, today_order_list, product_mix, monthly_trend, sales_target, low_stock, ar_clients, client_reps</code></div>
+</div>
+
+<h3>2.8 Conferences (학회/방명록)</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/conferences</span></div>
+  <div class="summary">학회 목록 + 집계 캐시 (visitors/contacted/newClients)</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/conferences/[id]/visitors</span></div>
+  <div class="summary">방명록 개별 등록 (이름/연락처/소속/담당자/상태/비고)</div>
+</div>
+
+<h3>2.9 Settings (QC 포털 설정)</h3>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/settings/qc</span></div>
+  <div class="summary">업무시간, 택배 마감, 재고 임계치</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-put">PUT</span><span class="path">/api/settings/qc</span></div>
+  <div class="summary">설정 저장 (ADMIN/QC만)</div>
+</div>
+
+<h2>3. 외부 서비스 연동</h2>
+
+<div class="ext-card">
+  <h3>📧 Daum SMTP (Nodemailer) <span class="status badge done">확정</span></h3>
+  <ul class="compact">
+    <li>호스트: <code>smtp.daum.net:465 (SSL)</code></li>
+    <li>계정: 알티바이오 기존 daum.net 이메일 (운영 시 전달)</li>
+    <li>용도: 거래명세서/세금계산서 PDF 첨부, 미수금 연체 리마인드, 신규 계정 비밀번호 통지</li>
+    <li>환경변수: <code>SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM</code></li>
+    <li>월 1,000건 초과 시 Azure Communication Services Email / SendGrid로 전환 (Phase 7 이후)</li>
+  </ul>
+  <div class="rule">⚠️ Daum SMTP는 일별 발송 한도가 있으므로 배치 발송 시 큐(Bull) + 지수백오프 필수.</div>
+</div>
+
+<div class="ext-card">
+  <h3>🧾 팝빌 (Popbill) API — 전자세금계산서 <span class="status badge plan">Phase 4 도입</span></h3>
+  <ul class="compact">
+    <li>엔드포인트: <code>https://popbill.linkhub.co.kr</code></li>
+    <li>핵심 API: <code>Taxinvoice_RegistIssue()</code>, <code>Taxinvoice_Cancel()</code>, <code>Taxinvoice_GetPDF()</code></li>
+    <li>국세청 전송 자동화 (공인인증서 관리 위임)</li>
+    <li>환경변수: <code>POPBILL_LINK_ID, POPBILL_SECRET_KEY, POPBILL_CORP_NUM</code></li>
+    <li>테스트/운영 모드 분리 (<code>IsTest</code> 플래그)</li>
+  </ul>
+</div>
+
+<div class="ext-card">
+  <h3>🏦 은행 입금 조회 (수기 → 향후 Open API) <span class="status badge plan">Phase 5+</span></h3>
+  <ul class="compact">
+    <li>1단계 (MVP): 경영지원이 admin-portal에서 수기 입력 (현재 프로토타입)</li>
+    <li>2단계: 농협 OpenAPI / 기업은행 OpenAPI 연동 — 입금 내역 자동 매칭</li>
+    <li>매칭 키: 입금자명 + 금액 + 날짜 → Client.payerAliases 배열로 다중 별칭 대응</li>
+  </ul>
+</div>
+
+<div class="ext-card">
+  <h3>☁️ Azure 인프라 <span class="status badge done">2026-04-15 확정</span></h3>
+  <ul class="compact">
+    <li><b>Container Apps</b> — Next.js 앱 호스팅. 자동 스케일 (min=1, max=10).</li>
+    <li><b>PostgreSQL Flexible Server B2ms</b> — RAM 8GB, 2 vCore. 자동 백업 7일.</li>
+    <li><b>Blob Storage</b> — PDF (거래명세서/세금계산서), 첨부파일. SAS URL 15분.</li>
+    <li><b>Front Door</b> — CDN + WAF. 서브도메인 와일드카드 <code>*.rtbio-erp.com</code>.</li>
+    <li><b>Application Insights</b> — APM, 에러 추적, 쿼리 성능.</li>
+    <li><b>Key Vault</b> — DB/SMTP/팝빌 비밀키 보관. Managed Identity로 앱에서 조회.</li>
+  </ul>
+  <div class="rule">💡 Microsoft for Startups 크레딧 $6,000 신청 (법인 등록 후) — 1단계 비용 $155/월 × 12 = $1,860 커버</div>
+</div>
+
+<div class="ext-card">
+  <h3>📊 Application Insights (모니터링) <span class="status badge plan">Phase 7</span></h3>
+  <ul class="compact">
+    <li>Next.js 미들웨어에 @azure/monitor-opentelemetry 계측</li>
+    <li>커스텀 이벤트: <code>order.created</code>, <code>invoice.issued</code>, <code>payment.partial</code></li>
+    <li>대시보드: API 레이턴시 p95, DB 쿼리 슬로우로그, 에러율</li>
+  </ul>
+</div>
+
+<div class="ext-card">
+  <h3>🔐 NextAuth.js <span class="status badge done">확정</span></h3>
+  <ul class="compact">
+    <li>Strategy: JWT (쿠키 저장)</li>
+    <li>Provider: Credentials (bcrypt) · 추후 Google Workspace SSO 검토</li>
+    <li>세션 payload: <code>{ sub, email, tenantId, role, salesStaffId }</code></li>
+    <li>Callback: <code>session()</code>에서 tenantId 주입, <code>jwt()</code>에서 role 갱신</li>
+  </ul>
+</div>
+
+<h2>4. 배포/운영 API (내부 관리자용)</h2>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/admin/tenant</span> <span class="badge scope">SUPERADMIN</span></div>
+  <div class="summary">신규 테넌트 생성 (스키마 + 초기 User + seed 데이터)</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-post">POST</span><span class="path">/api/admin/migration</span></div>
+  <div class="summary">특정 테넌트에 prisma migrate 수동 트리거 (배포 시 자동화)</div>
+</div>
+<div class="endpoint">
+  <div><span class="method m-get">GET</span><span class="path">/api/health</span></div>
+  <div class="summary">헬스체크 (DB ping, SMTP ping, Blob ping)</div>
+</div>
+
+<h2>5. 레이트 리밋 / 쿼터</h2>
+<table>
+  <thead><tr><th>엔드포인트</th><th>제한</th><th>주기</th></tr></thead>
+  <tbody>
+    <tr><td>POST /api/auth/*</td><td>10회/IP</td><td>분</td></tr>
+    <tr><td>POST /api/orders</td><td>100회/User</td><td>시간</td></tr>
+    <tr><td>GET /api/invoices/*/pdf</td><td>30회/User</td><td>분</td></tr>
+    <tr><td>POST /api/tax-invoices</td><td>50회/Tenant</td><td>분 (팝빌 쿼터)</td></tr>
+    <tr><td>그 외</td><td>1000회/User</td><td>시간</td></tr>
+  </tbody>
+</table>
+
+<h2>6. 향후 확장 (2단계 이상)</h2>
+<ul>
+  <li><b>Webhook 송신</b>: <code>order.shipped</code>, <code>invoice.issued</code> → 거래처 ERP 연동</li>
+  <li><b>실시간 업데이트</b>: Azure SignalR Service로 QC 칸반 실시간 동기화</li>
+  <li><b>데이터 내보내기</b>: <code>GET /api/exports/journal.xlsx</code> (매입매출장 엑셀)</li>
+  <li><b>OAuth2 SSO</b>: 병원/대리점 관리자 — Google Workspace / Microsoft 365</li>
+  <li><b>KakaoTalk 알림톡</b>: 주문 확정/출고 완료 자동 알림 (카카오 비즈니스 연계)</li>
+</ul>
+
+
+<h2>7. 데이터 이관 계획 (얼마에요 → RTBIO ERP)</h2>
+
+<div class="desc">
+  알티바이오 기존 시스템("얼마에요")에서 약 3년치 데이터를 RTBIO ERP로 일괄 이관합니다.
+  Phase 1 DB 스키마 확정 이후 이관 스크립트를 작성하며, 이관 기간 중 기존 시스템을 병행 운영합니다.
+</div>
+
+<h3>7.1 이관 대상 테이블</h3>
+<table>
+  <thead><tr><th>테이블</th><th>도메인</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td><code>clients</code></td><td>거래처</td><td>fixedPrices, discounts 포함</td></tr>
+    <tr><td><code>products</code></td><td>제품</td><td>기준단가, 사이즈별 규격</td></tr>
+    <tr><td><code>orders</code></td><td>주문이력</td><td>스냅샷 컬럼(unitPrice, basePriceAtOrder) 복원</td></tr>
+    <tr><td><code>inventory</code></td><td>재고현황</td><td>physicalStock / availableStock 초기값</td></tr>
+    <tr><td><code>payments</code></td><td>수금이력</td><td>입금일, 금액, 잔액 매칭</td></tr>
+  </tbody>
+</table>
+
+<h3>7.2 이관 제외 항목</h3>
+<ul class="compact">
+  <li>세금계산서 원본 — 국세청 홈택스 조회로 대체 (팝빌 연동 이후 재발행 없음)</li>
+  <li>기타 파일 첨부 (사진, 스캔본 등) — 필요 시 수동 업로드</li>
+</ul>
+
+<h3>7.3 이관 방식 및 절차</h3>
+<div class="desc">
+  <b>엑셀 Export</b> → <b>정제 스크립트</b> (Node.js/Python) → <b>Prisma Seed</b> → <b>검증</b>
+</div>
+<ol style="font-size:13px; padding-left:20px; margin:8px 0;">
+  <li>기존 시스템에서 테이블별 엑셀 Export</li>
+  <li>데이터 정제 스크립트 작성 — 인코딩 정규화, 필드 매핑, 중복 제거</li>
+  <li>테넌트 스키마 대상 <code>prisma db seed</code> 실행 (트랜잭션 단위)</li>
+  <li>레코드 수 대조 및 샘플 검증 (거래처 10건, 주문 50건 이상 수동 확인)</li>
+</ol>
+
+<h3>7.4 일정 및 주의사항</h3>
+<table>
+  <thead><tr><th>단계</th><th>시점</th><th>예상 소요</th></tr></thead>
+  <tbody>
+    <tr><td>DB 스키마 확정</td><td>Phase 1 착수 후</td><td>—</td></tr>
+    <tr><td>이관 스크립트 작성 및 테스트</td><td>스키마 확정 직후</td><td>1~2일</td></tr>
+    <tr><td>스테이징 환경 이관 검증</td><td>스크립트 완료 후</td><td>1일</td></tr>
+    <tr><td>운영 환경 Cut-over</td><td>별도 협의</td><td>1~2일 (병행 운영 포함)</td></tr>
+  </tbody>
+</table>
+<div class="rule">⚠️ Cut-over 날짜는 알티바이오와 별도 협의 필요. 이관 완료 전까지 기존 시스템("얼마에요") 병행 운영 필수 — 데이터 유실 방지를 위해 단방향 이관(기존→신규)만 허용하며, 신규 ERP 데이터의 역방향 동기화는 지원하지 않음.</div>
+
+</main>
+
+</body>
+</html>

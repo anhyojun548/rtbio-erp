@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTBIO 업무 자동화 시스템 — 설계 문서 v1.2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+  :root {
+    --blue: #2B5797;
+    --dark: #1B3A5C;
+    --gray: #666;
+    --light-gray: #f7f8fa;
+    --border: #ddd;
+    --bg: #fff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #333;
+    background: #eef1f5;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 40px rgba(0,0,0,0.08);
+  }
+
+  /* Cover */
+  .cover {
+    background: linear-gradient(135deg, var(--dark) 0%, var(--blue) 100%);
+    color: #fff;
+    text-align: center;
+    padding: 120px 60px 80px;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 52px; font-weight: 700; margin-bottom: 8px; letter-spacing: -1px; }
+  .cover .subtitle { font-size: 26px; font-weight: 400; opacity: 0.9; margin-bottom: 4px; }
+  .cover .sub2 { font-size: 20px; font-weight: 400; opacity: 0.7; margin-bottom: 40px; }
+  .cover .divider { width: 80px; height: 2px; background: rgba(255,255,255,0.4); margin: 0 auto 40px; }
+  .cover .meta { font-size: 14px; opacity: 0.7; line-height: 2; }
+
+  /* Content */
+  .content { padding: 50px 60px 80px; }
+
+  h2 {
+    font-size: 26px; font-weight: 700; color: var(--dark);
+    margin: 50px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--blue);
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 19px; font-weight: 700; color: var(--blue);
+    margin: 32px 0 12px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 16px; font-weight: 700; color: #444;
+    margin: 24px 0 8px;
+    page-break-after: avoid;
+  }
+
+  p { margin-bottom: 12px; }
+
+  ul, ol { margin: 0 0 16px 24px; }
+  li { margin-bottom: 6px; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 14px;
+    page-break-inside: avoid;
+  }
+  thead th {
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--light-gray); }
+  tbody tr:hover { background: #edf2f9; }
+
+  /* Quote / Callout */
+  .quote {
+    border-left: 4px solid var(--blue);
+    background: #f0f4fa;
+    padding: 14px 20px;
+    margin: 16px 0 20px;
+    border-radius: 0 6px 6px 0;
+    font-style: italic;
+    color: #333;
+    page-break-inside: avoid;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    white-space: pre;
+    color: #333;
+    page-break-inside: avoid;
+  }
+
+  /* Architecture Diagram */
+  .arch-diagram {
+    margin: 20px 0 28px;
+    page-break-inside: avoid;
+  }
+  .arch-box {
+    border: 2px solid var(--blue);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 0 0 0;
+    background: #fff;
+    position: relative;
+  }
+  .arch-box.external {
+    background: #f0f4fa;
+    border-color: #8fafd4;
+  }
+  .arch-box.frontend {
+    background: #e8f5e9;
+    border-color: #4caf50;
+  }
+  .arch-box.backend {
+    background: #fff3e0;
+    border-color: #ff9800;
+  }
+  .arch-box .box-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--dark);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .arch-box .box-items {
+    font-size: 13px;
+    color: #444;
+    line-height: 1.8;
+  }
+  .arch-box .box-items span {
+    display: block;
+    padding-left: 8px;
+  }
+  .arch-arrow {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 22px;
+    color: var(--blue);
+    line-height: 1;
+  }
+  .arch-arrow .label {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 500;
+    display: block;
+    margin-top: 2px;
+  }
+  .arch-bottom {
+    display: flex;
+    gap: 16px;
+    margin-top: 0;
+  }
+  .arch-bottom .arch-box {
+    flex: 1;
+    text-align: center;
+  }
+  .arch-bottom .arch-box.db {
+    background: #ede7f6;
+    border-color: #7e57c2;
+  }
+  .arch-bottom .arch-box.services {
+    background: #fce4ec;
+    border-color: #e91e63;
+  }
+  .arch-bottom .arch-box .box-title {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .arch-bottom .arch-box .box-sub {
+    font-size: 12px;
+    color: var(--gray);
+  }
+
+  /* Checklist */
+  .checklist { list-style: none; margin-left: 0; padding-left: 0; }
+  .checklist li { padding-left: 28px; position: relative; margin-bottom: 8px; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    font-size: 16px;
+    color: var(--blue);
+  }
+
+  /* Section number badge */
+  h2 .num {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    width: 32px; height: 32px;
+    text-align: center;
+    line-height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  /* Print styles */
+  @media print {
+    body { background: #fff; }
+    .container { box-shadow: none; max-width: 100%; }
+    .cover { padding: 160px 60px 120px; }
+    .content { padding: 40px 50px 60px; }
+    h2 { page-break-before: auto; }
+    table, .quote, .code-block { page-break-inside: avoid; }
+  }
+
+  /* TOC */
+  .toc { margin: 0 0 40px; }
+  .toc h3 { color: var(--dark); margin-bottom: 16px; }
+  .toc ul { list-style: none; margin: 0; padding: 0; }
+  .toc li { padding: 6px 0; border-bottom: 1px dotted #ccc; }
+  .toc a { text-decoration: none; color: var(--blue); font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ========== COVER ========== -->
+<div class="cover">
+  <h1>RTBIO</h1>
+  <div class="subtitle">업무 자동화 시스템</div>
+  <div class="sub2">설계 문서</div>
+  <div class="divider"></div>
+  <div class="meta">
+    버전: v1.2<br>
+    작성일: 2026년 4월 3일<br>
+    작성: 하마다랩스<br>
+    상태: 검토 중
+  </div>
+</div>
+
+<!-- ========== CONTENT ========== -->
+<div class="content">
+
+<!-- TOC -->
+<div class="toc">
+  <h3>목차</h3>
+  <ul>
+    <li><a href="#s1">1. 프로젝트 개요</a></li>
+    <li><a href="#s2">2. 기존 ERP 관련 방향 선택</a></li>
+    <li><a href="#s3">3. 시스템 아키텍처</a></li>
+    <li><a href="#s4">4. 웹 vs 앱 판단</a></li>
+    <li><a href="#s5">5. 사용자 역할 및 유저 플로우</a></li>
+    <li><a href="#s6">6. 단계별 기능 로드맵</a></li>
+    <li><a href="#s7">7. DB 구조</a></li>
+    <li><a href="#s8">8. 보안 설계</a></li>
+    <li><a href="#s9">9. 서비스 운영 및 지원</a></li>
+    <li><a href="#s10">10. 가격 및 계약</a></li>
+    <li><a href="#s11">11. 후속 협의 사항</a></li>
+  </ul>
+</div>
+
+<!-- ===== 1. 프로젝트 개요 ===== -->
+<h2 id="s1"><span class="num">1</span>프로젝트 개요</h2>
+
+<h3>배경</h3>
+<p>RTBIO는 현재 발주 접수, 재고 관리, 정산, 영업 데이터 관리 등 핵심 운영 업무를 엑셀·수기 중심으로 처리하고 있다. 이로 인해 중복 입력, 오기입, 실시간 현황 파악 불가 등의 문제가 발생하고 있으며, 향후 의료기기 2등급 제품 판매 확대 시 납품 이력 및 추적 관리 요구도 증가할 것으로 예상된다.</p>
+
+<h3>목표</h3>
+<ul>
+  <li>경영지원팀 수기 업무(하루 약 30건 발주 처리)를 시스템 기반으로 자동화</li>
+  <li>부서별 데이터를 하나의 통합 시스템으로 관리</li>
+  <li>향후 앱 확장, 의료기기 추적, 생산 연동까지 단계적으로 확장 가능한 구조 구축</li>
+</ul>
+
+<h3>사업적 포지셔닝</h3>
+<p>본 시스템은 RTBIO의 업무 흐름에 100% 맞춤 설계된 <strong>커스텀 ERP</strong>다. 기존 범용 ERP 대비 아래와 같은 차별점을 갖는다.</p>
+
+<table>
+  <thead><tr><th>항목</th><th>기존 ERP (더존, SAP 등)</th><th>본 시스템</th></tr></thead>
+  <tbody>
+    <tr><td>커스터마이징</td><td>어렵고 비쌈</td><td>RTBIO 업무에 100% 맞춤</td></tr>
+    <tr><td>UI/UX</td><td>복잡한 구조</td><td>실무자 중심 단순 설계</td></tr>
+    <tr><td>확장</td><td>모듈 구매 필요</td><td>필요 기능 직접 추가</td></tr>
+    <tr><td>비용 구조</td><td>라이선스 비용 지속 발생</td><td>유지보수 계약으로 전환</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 2. 기존 ERP 관련 방향 선택 ===== -->
+<h2 id="s2"><span class="num">2</span>기존 ERP 관련 방향 선택</h2>
+
+<p>본 시스템 구축 방식에 대해 두 가지 옵션을 제시한다.</p>
+
+<h3>옵션 A — 독립 시스템 구축 (권장)</h3>
+<p>기존 ERP와 별도로 완전히 새로운 시스템을 구축한다. 기존 ERP의 데이터는 엑셀 내보내기를 통해 초기 마이그레이션 방식으로 이전한다.</p>
+<p><strong>장점</strong></p>
+<ul>
+  <li>RTBIO 업무 흐름에 100% 맞춤 설계 가능</li>
+  <li>기존 ERP 구조에 종속되지 않음</li>
+  <li>장기적으로 유지보수·확장이 용이</li>
+  <li>운영 시스템 단일화로 담당자 혼선 제거</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+  <li>초기 데이터 마이그레이션 작업 필요</li>
+  <li>기존 ERP와 병행 운영 기간 발생 가능</li>
+</ul>
+
+<h3>옵션 B — 기존 ERP 연동형</h3>
+<p>기존 ERP를 유지하면서 본 시스템을 프론트엔드 + 자동화 레이어로 연결한다.</p>
+<p><strong>장점</strong></p>
+<ul>
+  <li>기존 ERP 데이터 즉시 활용 가능</li>
+  <li>전환 리스크 낮음</li>
+</ul>
+<p><strong>단점</strong></p>
+<ul>
+  <li>기존 ERP 구조에 맞춰야 해 커스터마이징 제한</li>
+  <li>두 시스템 간 데이터 정합성 관리 필요</li>
+  <li>기존 ERP 벤더 의존도 유지</li>
+</ul>
+
+<div class="quote">
+  <strong>권장안: 옵션 A</strong> — 기존 ERP는 엑셀로 데이터를 내보낼 수 있어 초기 마이그레이션이 가능하다. 장기적으로 RTBIO 업무 확장성과 시스템 단일화를 고려할 때 독립 구축이 더 유리하다.
+</div>
+
+<!-- ===== 3. 시스템 아키텍처 ===== -->
+<h2 id="s3"><span class="num">3</span>시스템 아키텍처</h2>
+
+<h3>3-1. 전체 구조</h3>
+<div class="arch-diagram">
+  <div class="arch-box external">
+    <div class="box-title">외부 사용자</div>
+    <div class="box-items" style="text-align:center;">대리점 / 병원 (웹폼 or 카카오톡/엑셀)</div>
+  </div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-box frontend">
+    <div class="box-title">Next.js (Web Frontend)</div>
+    <div class="box-items">
+      <span>- 경영지원팀 대시보드</span>
+      <span>- 품질관리팀 재고 현황</span>
+      <span>- 영업부 매출/미수금 조회</span>
+      <span>- 외부 거래처 발주 웹폼 (발주 옵션 A 선택 시)</span>
+    </div>
+  </div>
+  <div class="arch-arrow">▼<span class="label">REST API</span></div>
+  <div class="arch-box backend">
+    <div class="box-title">NestJS (Backend API)</div>
+    <div class="box-items">
+      <span>- 인증/권한 (JWT + RBAC)</span>
+      <span>- 발주 처리 / 재고 / 정산 / 거래처 모듈</span>
+      <span>- 알림/메일 발송 모듈</span>
+      <span>- (발주 옵션 B 선택 시) AI 파싱 모듈</span>
+    </div>
+  </div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-bottom">
+    <div class="arch-box db">
+      <div class="box-title">PostgreSQL</div>
+      <div class="box-sub">(메인 DB)</div>
+    </div>
+    <div class="arch-box services">
+      <div class="box-title">외부 서비스</div>
+      <div class="box-sub">AWS SES (메일) · AWS S3 (파일) · AI API (옵션 B)</div>
+    </div>
+  </div>
+</div>
+
+<h3>3-2. 기술 스택</h3>
+<table>
+  <thead><tr><th>영역</th><th>기술</th><th>선택 이유</th></tr></thead>
+  <tbody>
+    <tr><td>프론트엔드</td><td>Next.js (React)</td><td>반응형 웹, 빠른 렌더링</td></tr>
+    <tr><td>백엔드 API</td><td>NestJS (Node.js, TypeScript)</td><td>구조적 모듈 설계, 확장성</td></tr>
+    <tr><td>데이터베이스</td><td>PostgreSQL</td><td>관계형 데이터 처리, RLS 보안 지원</td></tr>
+    <tr><td>인증</td><td>JWT + RBAC</td><td>역할 기반 접근 제어</td></tr>
+    <tr><td>메일 발송</td><td>AWS SES</td><td>대량 발송, 안정성</td></tr>
+    <tr><td>파일 저장</td><td>AWS S3</td><td>PDF 거래명세서 저장</td></tr>
+    <tr><td>AI 파싱</td><td>AI API (벤더 미정, PIPA 검토 후 확정)</td><td>발주 옵션 B 선택 시만 적용</td></tr>
+    <tr><td>인프라</td><td>AWS (컨테이너 기반)</td><td>확장성, 보안, 가용성</td></tr>
+  </tbody>
+</table>
+
+<h3>3-3. 설계 원칙</h3>
+<table>
+  <thead><tr><th>원칙</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td><strong>단일 데이터</strong></td><td>모든 부서가 같은 DB 공유, 뷰/권한만 부서별 분리</td></tr>
+    <tr><td><strong>RBAC 권한 관리</strong></td><td>역할별 접근 범위 명확히 분리</td></tr>
+    <tr><td><strong>API-first</strong></td><td>향후 모바일 앱이 동일 NestJS API 재사용 가능</td></tr>
+    <tr><td><strong>모듈 확장</strong></td><td>Phase별 모듈 추가 방식으로 기능 확장</td></tr>
+    <tr><td><strong>보안</strong></td><td>HTTPS, JWT 토큰 만료 관리, 민감 데이터 암호화, 접근 로그 기록</td></tr>
+    <tr><td><strong>소프트 딜리트</strong></td><td>데이터 삭제 없이 이력 보존 (의료기기 추적 대비)</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 4. 웹 vs 앱 판단 ===== -->
+<h2 id="s4"><span class="num">4</span>웹 vs 앱 판단</h2>
+
+<div class="quote"><strong>결론:</strong> 1단계는 반응형 웹으로 구축. 앱은 2단계 이후 필요성 검토 후 결정.</div>
+
+<h3>판단 근거</h3>
+<table>
+  <thead><tr><th>기준</th><th>웹 (반응형)</th><th>네이티브 앱</th></tr></thead>
+  <tbody>
+    <tr><td>경영지원팀 내부 업무</td><td>✅ PC 중심, 웹으로 충분</td><td>불필요</td></tr>
+    <tr><td>대리점/병원 발주</td><td>✅ 링크 접속, 설치 불필요</td><td>설치 거부감 있을 수 있음</td></tr>
+    <tr><td>영업사원 외근 중 조회</td><td>⚠️ 가능하나 경험 다소 낮음</td><td>✅ 더 편함</td></tr>
+    <tr><td>푸시 알림</td><td>⚠️ 웹푸시 가능하나 제한적</td><td>✅ 네이티브 푸시</td></tr>
+    <tr><td>개발 비용</td><td>낮음</td><td>높음 (iOS + Android)</td></tr>
+    <tr><td>배포 속도</td><td>즉시</td><td>앱스토어 심사 필요</td></tr>
+  </tbody>
+</table>
+
+<h3>앱 전환 검토 시점 (Phase 2 이후)</h3>
+<p>아래 조건 중 2개 이상 해당 시 앱 개발 착수를 권장한다.</p>
+<ul>
+  <li>영업사원이 외근 중 실시간 조회를 자주 하는가?</li>
+  <li>거래처가 앱 설치를 원하는가?</li>
+  <li>푸시 알림이 업무에 실질적으로 필요한가?</li>
+</ul>
+
+<h3>앱 전환 시 비용 최소화 전략</h3>
+<p>1단계 웹 서비스를 API-first 구조로 설계하기 때문에, 앱 전환 시 <strong>NestJS 백엔드를 그대로 재사용</strong>할 수 있다. React Native로 앱 UI만 추가하면 iOS/Android 동시 출시가 가능하여 추가 개발 비용을 최소화한다.</p>
+
+<!-- ===== 5. 사용자 역할 및 유저 플로우 ===== -->
+<h2 id="s5"><span class="num">5</span>사용자 역할 및 유저 플로우</h2>
+
+<h3>5-1. 권한별 사용자 역할 및 데이터 소유권</h3>
+<table>
+  <thead><tr><th>역할</th><th>대상</th><th>접근 범위</th></tr></thead>
+  <tbody>
+    <tr><td>슈퍼어드민</td><td>RTBIO 관리자</td><td>전체 시스템</td></tr>
+    <tr><td>경영지원팀</td><td>RTBIO 내부 담당자</td><td>발주·거래명세서·정산·마감</td></tr>
+    <tr><td>품질관리팀</td><td>RTBIO 내부 담당자</td><td>재고 입출고·현황 대시보드</td></tr>
+    <tr><td>영업부</td><td>RTBIO 영업 직원</td><td>거래처 매출·미수금 조회 (읽기 전용)</td></tr>
+    <tr><td>외부거래처</td><td>대리점 / 병원 담당자</td><td>발주 입력 + 본인 거래 내역 조회</td></tr>
+  </tbody>
+</table>
+
+<div class="quote">
+  <strong>데이터 소유권:</strong> 시스템 내 모든 데이터의 소유권은 RTBIO에 귀속된다. 시스템 인수인계 완료 후 슈퍼어드민 계정은 RTBIO로 이전되며, 하마다랩스는 유지보수 계약 기간 중 인프라 모니터링 및 장애 대응 목적에 한정된 별도 관리 계정을 보유한다. 해당 계정은 RTBIO의 요청 시 언제든 접근 로그를 제공하며, 계약 종료 시 즉시 폐기한다.
+</div>
+
+<h3>5-2. 핵심 플로우 — 발주 → 출고 → 정산</h3>
+<div class="code-block">[외부거래처: 대리점/병원]
+  │  발주 옵션 A: 웹폼 직접 입력
+  │  발주 옵션 B: 카카오톡/엑셀 전송 → AI 파싱
+  ▼
+[발주 접수] ── 자동 발주번호 생성
+  ▼
+[경영지원팀 확인]
+  - 품목·수량·배송비 자동 계산
+  - 거래처별 예외 정책 자동 적용
+  - 이상 있으면 수동 수정 후 확정
+  ▼
+[출고 확인] ── (Phase 2부터 재고 자동 차감 연동)
+  - Phase 1: 경영지원팀이 수동으로 출고 확인
+  - Phase 2 이후: 품질관리팀 재고 시스템과 자동 연동
+  ▼
+[거래명세서 자동 생성] → PDF + 메일 발송
+  ▼
+[정산 관리] → 거래처별 정산 주기 자동 적용
+  ▼
+[월 마감 보고서 자동 생성]</div>
+
+<h3>5-3. 발주 옵션 비교</h3>
+
+<h4>옵션 A — 웹폼 직접 입력 (권장)</h4>
+<p>거래처 담당자가 URL로 접속하여 직접 발주하는 방식이다.</p>
+<div class="code-block">어드민이 거래처 계정 등록 → 초대 메일 자동 발송 → 거래처 담당자 비밀번호 설정
+→ URL 접속 → 로그인 → 품목 선택 → 수량 입력 → 배송지 확인 → 제출
+→ 접수 확인 문자/메일 자동 발송</div>
+
+<table>
+  <thead><tr><th>항목</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>장점</td><td>데이터 정형화, 자동화 처리 용이, 오류 최소화</td></tr>
+    <tr><td>단점</td><td>거래처 담당자 초기 적응 기간 필요</td></tr>
+    <tr><td>추가 비용</td><td>없음</td></tr>
+  </tbody>
+</table>
+
+<h4>옵션 B — 기존 방식 유지 + AI 파싱</h4>
+<p>거래처는 기존처럼 카카오톡·엑셀로 발주하고, 내부에서 AI가 자동 파싱하는 방식이다.</p>
+<table>
+  <thead><tr><th>항목</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>장점</td><td>거래처 변화 없음, 기존 방식 유지</td></tr>
+    <tr><td>단점</td><td>AI 파싱 정확도 한계, 수동 수정 필요 케이스 발생</td></tr>
+    <tr><td>추가 비용</td><td>AI API 토큰 비용 발생 (발주 건수 비례)</td></tr>
+  </tbody>
+</table>
+
+<div class="quote"><strong>권장안:</strong> 옵션 A를 기본으로 제공한다. 옵션 B는 특정 거래처의 강한 요청이 있을 경우 별도 추가 계약으로 적용한다. (옵션 A 단독 / 옵션 A + 옵션 B 병행 중 선택)</div>
+
+<h3>5-4. 배송비 자동 계산</h3>
+<ul>
+  <li><strong>기본 기준:</strong> 품목군별 고정 배송비 적용</li>
+  <li><strong>거래처별 면제 조건:</strong> 특정 거래처에 배송비 면제 또는 별도 기준 설정 가능</li>
+  <li><strong>금액 기준 면제:</strong> 주문 금액 일정 기준 이상 시 배송비 자동 면제 설정 가능</li>
+  <li><strong>설정 주체:</strong> 경영지원팀 어드민 화면에서 직접 등록·수정</li>
+</ul>
+
+<h3>5-5. 거래처별 예외 정책</h3>
+<p><code>partner_policies</code> 테이블에서 거래처별로 아래 유형의 예외를 설정·관리한다.</p>
+<ul>
+  <li>할인율 (품목별 또는 전체 적용)</li>
+  <li>배송비 면제 여부 및 기준</li>
+  <li>외상 한도 (미수금 허용 한도)</li>
+  <li>정산 주기 (월말 마감, 60일, 입금 확인 후 등 자유 설정)</li>
+  <li>특정 품목군 접근 제한</li>
+</ul>
+
+<h3>5-6. 정산 주기 관리</h3>
+<table>
+  <thead><tr><th>정산 유형</th><th>예시 적용 거래처</th></tr></thead>
+  <tbody>
+    <tr><td>월말 일괄 마감</td><td>대부분의 대리점</td></tr>
+    <tr><td>N일 후 정산 (예: 60일)</td><td>일부 병원</td></tr>
+    <tr><td>입금 확인 후 정산</td><td>소규모 거래처</td></tr>
+    <tr><td>개별 발주 건별 정산</td><td>특수 계약 거래처</td></tr>
+  </tbody>
+</table>
+<p>정산 주기는 어드민에서 거래처별로 자유롭게 설정하며, 마감 시점이 되면 시스템이 자동으로 해당 기간 발주를 집계하여 정산 내역을 생성한다.</p>
+
+<h3>5-7. 경영지원팀 일별 업무 플로우</h3>
+<div class="code-block">출근
+ ├─ 1. 대시보드에서 신규 발주 확인
+ ├─ 2. 발주 내용 검토 및 확정 (클릭 한 번)
+ ├─ 3. 출고 확인 후 거래명세서 자동 발송
+ ├─ 4. 미수금·정산 현황 확인
+ └─ (월말) 마감 보고서 자동 생성 → 발송</div>
+<p>현재: 하루 약 30건 수기 처리 → <strong>목표: 확정 클릭만으로 처리</strong></p>
+
+<!-- ===== 6. 단계별 기능 로드맵 ===== -->
+<h2 id="s6"><span class="num">6</span>단계별 기능 로드맵</h2>
+
+<div class="quote" style="background:#fff3cd; border-left:4px solid #ffc107; padding:16px 20px; margin:20px 0;">
+  <strong>📌 현장 프로세스 파악 후 기능 확정 안내</strong><br><br>
+  아래 기능 목록은 현재까지 파악된 정보를 기반으로 작성한 <strong>초안(예비 프레임워크)</strong>이다. 계약 확정 후 하마다랩스 PM이 RTBIO 현장에 상주하며 각 부서 실무자와 함께 <strong>실제 업무 프로세스를 직접 파악</strong>한다. 이 과정에서 기존 엑셀·수기 업무의 세부 흐름, 예외 케이스, 현장 요구사항 등을 반영하여 기능을 <strong>재정의·추가·조정</strong>할 예정이다.<br><br>
+  따라서 Phase별 세부 기능은 현장 프로세스 파악 완료 후 <strong>최종 확정</strong>되며, 현재 명시된 항목은 변경될 수 있다.
+</div>
+
+<h3>Phase 1 — 경영지원팀 자동화 (1차 계약 범위)</h3>
+<div class="quote">목표: 하루 30건 수기 처리 → 클릭 기반 자동 처리 / 예상 개발 기간: 별도 견적서 참조</div>
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>거래처 관리</td><td>대리점/병원 등록, 결제 조건·배송비 기준·예외 정책 설정</td></tr>
+    <tr><td>품목 관리</td><td>품목군별 등록, 사이즈·색상·가격 관리</td></tr>
+    <tr><td>발주 접수</td><td>발주 옵션 A(웹폼) 기본 제공, 발주 옵션 B(AI 파싱)는 추가 계약</td></tr>
+    <tr><td>발주 처리</td><td>자동 발주번호 생성, 배송비 자동 계산, 예외 정책 자동 적용</td></tr>
+    <tr><td>거래명세서</td><td>PDF 자동 생성 + 메일 자동 발송</td></tr>
+    <tr><td>정산 관리</td><td>거래처별 정산 주기 관리, 미수금 집계</td></tr>
+    <tr><td>월 마감</td><td>거래처별 원장 자동 산출, 보고서 생성</td></tr>
+    <tr><td>어드민 대시보드</td><td>신규 발주 현황, 처리 대기 목록, 미수금 요약</td></tr>
+    <tr><td>권한/계정 관리</td><td>역할별 접근 제어 (RBAC), 거래처 계정 초대 발송</td></tr>
+  </tbody>
+</table>
+
+<h3>Phase 2 — 품질관리팀 재고 자동화</h3>
+<div class="quote">목표: 엑셀 수기 재고 관리 → 실시간 자동 반영</div>
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>재고 자동 반영</td><td>발주 확정 시 출고 재고 자동 차감</td></tr>
+    <tr><td>입고 관리</td><td>입고 등록, 이력 관리</td></tr>
+    <tr><td>출고 관리</td><td>출고 전 재고 확인, 부족 시 경고</td></tr>
+    <tr><td>재고 현황 대시보드</td><td>품목·사이즈·색상별 실시간 조회</td></tr>
+    <tr><td>일별 재고 보고</td><td>자동 집계 및 보고서 생성</td></tr>
+  </tbody>
+</table>
+
+<h3>Phase 3 — 영업부 대시보드</h3>
+<div class="quote">목표: 경영지원팀이 대신 처리하던 영업 데이터 → 영업부 셀프 조회</div>
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>거래처별 매출 현황</td><td>기간별 매출 조회</td></tr>
+    <tr><td>미수금 현황</td><td>거래처별 미수금 및 결제 상태</td></tr>
+    <tr><td>결제 조건 조회</td><td>거래처별 계약 조건 확인</td></tr>
+    <tr><td>영업 대시보드</td><td>영업사원별 실적 요약</td></tr>
+  </tbody>
+</table>
+
+<h3>Phase 4 — 베트남 생산·해외 재고 연동</h3>
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>생산 재고 데이터 연동</td><td>베트남 공장 재고 업로드/연동</td></tr>
+    <tr><td>원자재 소진 예측</td><td>판매 추이 기반 부족 시점 예측</td></tr>
+    <tr><td>부족 예상 알림</td><td>임계치 도달 시 자동 알림</td></tr>
+    <tr><td>생산·판매 데이터 통합 조회</td><td>국내 재고 + 해외 생산 통합 뷰</td></tr>
+  </tbody>
+</table>
+
+<h3>Phase 5 — 규제 대응·의료기기 추적 (장기)</h3>
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>공급 내역 보고</td><td>병원 납품 이력 자동 기록</td></tr>
+    <tr><td>장비 추적 시스템</td><td>시리얼 기반 장비 이력 관리</td></tr>
+    <tr><td>유지보수 이력</td><td>장비별 A/S 이력 관리</td></tr>
+    <tr><td>UDI 대응</td><td>의료기기 고유식별자 관리</td></tr>
+  </tbody>
+</table>
+
+<h3>전체 타임라인 (안)</h3>
+<div class="code-block">Phase 1  ── 경영지원팀 자동화       ← 1차 계약 범위  (견적서 참조)
+Phase 2  ── 품질관리팀 재고 자동화   ← Phase 1 완료 후 추가 계약
+Phase 3  ── 영업부 대시보드         ← Phase 2 완료 후 추가 계약
+Phase 4  ── 베트남 생산·해외 재고    ← 필요 시점에 추가 계약
+Phase 5  ── 규제 대응·의료기기 추적  ← 장기 과제</div>
+<div class="quote">Phase 1 납품 후 현장 피드백을 반영하면서 Phase 2부터는 추가 계약으로 진행하는 구조를 권장한다.</div>
+
+<!-- ===== 7. DB 구조 ===== -->
+<h2 id="s7"><span class="num">7</span>DB 구조</h2>
+
+<h3>설계 원칙</h3>
+<ul>
+  <li><strong>단일 PostgreSQL DB</strong> — 모든 부서 공유, 뷰/권한으로 분리</li>
+  <li><strong>도메인 단위 테이블 설계</strong> — Phase별 테이블 추가 방식으로 확장</li>
+  <li><strong>소프트 딜리트</strong> — 데이터 삭제 없이 <code>deleted_at</code> 처리 (이력 보존)</li>
+  <li><strong>감사 로그</strong> — 주요 테이블 전체에 <code>created_by</code>, <code>updated_by</code>, <code>created_at</code>, <code>updated_at</code> 적용</li>
+</ul>
+
+<h3>Phase 1 핵심 테이블</h3>
+
+<h4>인증/권한</h4>
+<table>
+  <thead><tr><th>테이블</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td><code>users</code></td><td>계정 (내부 직원 + 외부 거래처 통합)</td></tr>
+    <tr><td><code>roles</code></td><td>역할 정의</td></tr>
+    <tr><td><code>user_roles</code></td><td>유저-역할 매핑</td></tr>
+  </tbody>
+</table>
+
+<h4>거래처</h4>
+<table>
+  <thead><tr><th>테이블</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td><code>partners</code></td><td>대리점/병원 기본 정보</td></tr>
+    <tr><td><code>partner_policies</code></td><td>거래처별 결제 조건·정산 주기·예외 정책</td></tr>
+    <tr><td><code>partner_contacts</code></td><td>거래처 담당자 연락처</td></tr>
+  </tbody>
+</table>
+
+<h4>품목</h4>
+<table>
+  <thead><tr><th>테이블</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td><code>products</code></td><td>품목 기본 정보 (품목군, 단가)</td></tr>
+    <tr><td><code>product_variants</code></td><td>사이즈·색상별 SKU</td></tr>
+    <tr><td><code>shipping_rules</code></td><td>품목군별 배송비 기준</td></tr>
+  </tbody>
+</table>
+
+<h4>발주</h4>
+<table>
+  <thead><tr><th>테이블</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td><code>orders</code></td><td>발주 헤더 (발주번호, 거래처, 상태)</td></tr>
+    <tr><td><code>order_items</code></td><td>발주 품목 상세 (품목, 수량, 단가)</td></tr>
+    <tr><td><code>order_logs</code></td><td>발주 상태 변경 이력</td></tr>
+  </tbody>
+</table>
+
+<h4>정산</h4>
+<table>
+  <thead><tr><th>테이블</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td><code>invoices</code></td><td>거래명세서 (발주 연결, PDF 경로)</td></tr>
+    <tr><td><code>settlements</code></td><td>정산 회차별 합산</td></tr>
+    <tr><td><code>payments</code></td><td>입금 기록</td></tr>
+    <tr><td><code>receivables</code></td><td>미수금 집계</td></tr>
+  </tbody>
+</table>
+
+<h3>테이블 관계 요약</h3>
+<div class="code-block">partners ──< orders ──< order_items >── product_variants
+                │                              │
+                ▼                              ▼
+            invoices                        products
+                │
+                ▼
+          settlements
+                │
+                ▼
+            payments</div>
+
+<!-- ===== 8. 보안 설계 ===== -->
+<h2 id="s8"><span class="num">8</span>보안 설계</h2>
+
+<table>
+  <thead><tr><th>항목</th><th>방식</th></tr></thead>
+  <tbody>
+    <tr><td>비밀번호</td><td>bcrypt 해싱</td></tr>
+    <tr><td>개인정보</td><td>민감 컬럼 AES 암호화</td></tr>
+    <tr><td>접근 제어</td><td>Row-level Security (RLS) — 외부 거래처는 본인 데이터만 조회</td></tr>
+    <tr><td>API 보안</td><td>JWT 토큰 만료 관리, Refresh Token 적용</td></tr>
+    <tr><td>감사 로그</td><td>주요 데이터 변경 시 <code>audit_logs</code> 테이블 자동 기록</td></tr>
+    <tr><td>통신</td><td>HTTPS 필수</td></tr>
+    <tr><td>백업</td><td>일별 자동 백업, 30일 보관</td></tr>
+    <tr><td>개인정보보호법</td><td>개인정보보호법(PIPA) 준수, 개인정보 처리방침 적용</td></tr>
+    <tr><td>의료기기 규제</td><td>Phase 5 이후 식약처 관련 규제 대응 구조 확보 예정</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 9. 서비스 운영 및 지원 ===== -->
+<h2 id="s9"><span class="num">9</span>서비스 운영 및 지원</h2>
+
+<h3>인프라 운영</h3>
+<p>시스템 인프라(서버, DB, 스토리지, 모니터링, 배포)는 <strong>하마다랩스가 전담 운영</strong>한다. RTBIO는 인프라를 직접 관리할 필요 없이, <strong>월 구독료</strong>에 아래 항목이 모두 포함된다.</p>
+<table>
+  <thead><tr><th>포함 항목</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>AWS 인프라</td><td>서버(컨테이너), DB, S3 스토리지, SES 메일 발송</td></tr>
+    <tr><td>모니터링·배포</td><td>서버 상태 모니터링, 장애 감지, 배포 관리</td></tr>
+    <tr><td>백업</td><td>일별 자동 백업, 30일 보관</td></tr>
+    <tr><td>AI LLM 토큰 비용</td><td>발주 옵션 B(AI 파싱) 사용 시 발생하는 AI API 토큰 비용 포함</td></tr>
+  </tbody>
+</table>
+<div class="quote">RTBIO는 별도 인프라 비용 없이 월 구독료 하나로 시스템 전체를 이용할 수 있다.</div>
+
+<h3>장애 대응 기준</h3>
+<table>
+  <thead><tr><th>등급</th><th>기준</th><th>대응 목표 시간</th></tr></thead>
+  <tbody>
+    <tr><td>긴급 (P1)</td><td>시스템 전체 다운, 발주 처리 불가</td><td>4시간 이내 복구 목표</td></tr>
+    <tr><td>높음 (P2)</td><td>주요 기능 일부 오작동</td><td>1영업일 이내 대응</td></tr>
+    <tr><td>일반 (P3)</td><td>기능 개선, 비핵심 오류</td><td>협의 후 처리</td></tr>
+  </tbody>
+</table>
+<ul>
+  <li>지원 채널: 업무 시간 내 담당자 직통 연락</li>
+  <li>백업 복구: RPO(복구 시점 목표) 24시간, RTO(복구 시간 목표) 8시간</li>
+  <li><strong>계약 종료 시 데이터 처리:</strong> 계약 종료 시 백업 데이터를 포함한 모든 데이터를 RTBIO에 이관하거나 RTBIO의 요청에 따라 삭제한다.</li>
+</ul>
+
+<h3>유지보수 계약 구조</h3>
+<p>Phase 1 납품 후 유지보수 계약을 별도 체결한다. 유지보수 범위 및 월 비용은 견적서에서 확인한다.</p>
+<table>
+  <thead><tr><th>항목</th><th>포함 여부</th></tr></thead>
+  <tbody>
+    <tr><td>버그 수정</td><td>✅ 포함</td></tr>
+    <tr><td>보안 패치</td><td>✅ 포함</td></tr>
+    <tr><td>인프라 운영</td><td>✅ 월 구독료에 포함 (AWS + AI LLM 토큰)</td></tr>
+    <tr><td>기능 개선·추가</td><td>별도 견적</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 10. 가격 및 계약 ===== -->
+<h2 id="s10"><span class="num">10</span>가격 및 계약</h2>
+
+<div class="quote">상세 가격은 <strong>별도 견적서</strong>를 참조한다.</div>
+<p>아래는 계약 구조의 기본 방향이다.</p>
+<table>
+  <thead><tr><th>항목</th><th>방식</th></tr></thead>
+  <tbody>
+    <tr><td>Phase 1 개발비</td><td>고정 견적 (범위 기준)</td></tr>
+    <tr><td>Phase 2~ 추가 기능</td><td>Phase별 추가 계약</td></tr>
+    <tr><td>월 구독료 (납품 후)</td><td>인프라 운영 + 유지보수 + AI LLM 토큰 비용 일괄 포함</td></tr>
+    <tr><td>발주 옵션 B (AI 파싱) 개발비</td><td>별도 추가 견적 (운영 시 토큰 비용은 월 구독료에 포함)</td></tr>
+  </tbody>
+</table>
+
+<!-- ===== 11. 후속 협의 사항 ===== -->
+<h2 id="s11"><span class="num">11</span>후속 협의 사항</h2>
+
+<p>아래 항목은 계약 전 RTBIO와 추가 확인이 필요하다.</p>
+<ul class="checklist">
+  <li>발주 방식 최종 선택 (옵션 A 단독 / 옵션 A + 옵션 B 병행)</li>
+  <li>기존 ERP 활용 범위 및 데이터 마이그레이션 범위 확정</li>
+  <li>기존 발주서·거래명세서·재고 엑셀·마감 자료 샘플 공유</li>
+  <li>거래처별 결제 조건·배송비 기준·예외 정책 정리 자료 공유</li>
+  <li>Phase 1 납기 및 계약 범위 최종 합의 (견적서 기준)</li>
+  <li>월 구독료 금액 및 범위 최종 합의</li>
+</ul>
+
+</div><!-- /content -->
+</div><!-- /container -->
+</body>
+</html>

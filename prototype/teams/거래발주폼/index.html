@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RTBIO 거래처 발주 포탈</title>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/client.css">
+<link rel="stylesheet" href="css/ai-assistant.css">
+<style>
+/* ── Page-specific overrides ── */
+.page { padding-bottom: 0; }
+.page:not(#page-login) { padding-bottom: calc(80px + var(--safe-bottom)); }
+
+/* ── Dashboard Mini Cards ── */
+.dash-welcome {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: var(--radius); padding: 24px; color: #fff; margin-bottom: 20px;
+}
+.dash-welcome h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.dash-welcome p { font-size: 14px; opacity: 0.8; }
+.dash-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.dash-action-btn {
+  background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: var(--radius-sm); padding: 14px 16px; color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer; text-align: center;
+  font-family: inherit; transition: background 0.15s;
+}
+.dash-action-btn:hover { background: rgba(255,255,255,0.25); }
+.dash-action-btn .icon { font-size: 24px; display: block; margin-bottom: 6px; }
+
+.dash-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.dash-stat {
+  background: var(--surface); border-radius: var(--radius-sm);
+  padding: 16px; border: 1px solid var(--border);
+}
+.dash-stat .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.dash-stat .value { font-size: 20px; font-weight: 700; }
+
+.recent-orders-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+
+/* ── Excel-style Order Form ── */
+.excel-form-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.excel-section { margin-bottom: 20px; }
+.excel-section-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; font-size: 14px; font-weight: 700;
+  background: var(--primary); color: #fff; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  position: sticky; left: 0;
+}
+.excel-section-header .cat-icon { font-size: 18px; }
+.excel-table {
+  width: 100%; border-collapse: collapse; background: var(--surface);
+  border: 1px solid var(--border); border-top: none; font-size: 13px;
+  min-width: 600px;
+}
+.excel-table thead th {
+  padding: 8px 6px; font-size: 11px; font-weight: 700; text-align: center;
+  background: var(--primary-lighter); color: var(--primary);
+  border: 1px solid var(--border); position: sticky; top: 0;
+  text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+}
+.excel-table thead th.col-name { text-align: left; padding-left: 12px; min-width: 180px; }
+.excel-table thead th.col-size { width: 56px; min-width: 56px; }
+.excel-table thead th.col-price { width: 80px; min-width: 80px; }
+.excel-table thead th.col-subtotal { width: 90px; min-width: 90px; }
+.excel-table tbody tr { transition: background 0.1s; }
+.excel-table tbody tr:hover { background: #F8FAFC; }
+.excel-table tbody tr.has-qty { background: var(--accent-light); }
+.excel-table tbody td {
+  padding: 6px; border: 1px solid var(--border); vertical-align: middle;
+}
+.excel-table tbody td.td-name {
+  padding: 8px 12px; font-weight: 600; font-size: 13px; line-height: 1.3;
+  white-space: nowrap;
+}
+.excel-table tbody td.td-name .sub { font-weight: 400; font-size: 11px; color: var(--text-secondary); display: block; }
+.excel-table tbody td.td-size { text-align: center; padding: 4px 2px; }
+.excel-table tbody td.td-price {
+  text-align: right; padding-right: 10px; font-size: 12px; white-space: nowrap;
+}
+.excel-table tbody td.td-price .discount { color: var(--danger); font-weight: 600; font-size: 10px; }
+.excel-table tbody td.td-subtotal {
+  text-align: right; padding-right: 10px; font-weight: 700; font-size: 13px;
+  color: var(--primary);
+}
+.excel-table tbody td.td-disabled { background: #F3F4F6; }
+
+/* Excel qty input */
+.excel-qty {
+  width: 48px; height: 30px; border: 1.5px solid var(--border); border-radius: 4px;
+  text-align: center; font-size: 13px; font-weight: 600; font-family: inherit;
+  color: var(--text); background: var(--surface); transition: border-color 0.15s;
+}
+.excel-qty:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(0,168,181,0.15); }
+.excel-qty.has-value { background: var(--accent-light); border-color: var(--accent); color: var(--primary); }
+.excel-qty::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* Category quick nav */
+.cat-quicknav {
+  display: flex; gap: 6px; overflow-x: auto; padding: 0 0 12px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.cat-quicknav::-webkit-scrollbar { display: none; }
+.cat-quicknav a {
+  padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; white-space: nowrap; transition: all 0.15s; text-decoration: none;
+}
+.cat-quicknav a:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Confirm Page ── */
+.confirm-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+.confirm-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.confirm-table { width: 100%; border-collapse: collapse; }
+.confirm-table th { text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg); }
+.confirm-table td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid var(--border); }
+.confirm-table .text-right { text-align: right; }
+.confirm-total { display: flex; justify-content: space-between; padding: 16px 0 0; border-top: 2px solid var(--primary); margin-top: 8px; }
+.confirm-total .label { font-size: 16px; font-weight: 600; }
+.confirm-total .amount { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+.radio-group { display: flex; flex-direction: column; gap: 10px; }
+.radio-item { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.radio-item input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
+.alt-address-fields { margin-top: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius-xs); display: none; }
+.alt-address-fields.show { display: block; }
+
+/* ── History Page ── */
+.month-header { font-size: 15px; font-weight: 700; color: var(--text-secondary); padding: 8px 0 12px; }
+
+/* ── History Date Filter ── */
+.history-filter { margin-bottom: 16px; }
+.history-presets {
+  display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto;
+  padding-bottom: 4px; margin-bottom: 10px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.history-presets::-webkit-scrollbar { display: none; }
+.hist-preset {
+  flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap;
+}
+.hist-preset.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.hist-preset:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+.history-custom-date {
+  display: none; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.history-custom-date.show { display: flex; }
+.history-custom-date input[type="date"] {
+  flex: 1; padding: 9px 10px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+  color: var(--text-primary); background: var(--surface);
+  -webkit-appearance: none; appearance: none;
+}
+.history-custom-date input[type="date"]:focus {
+  outline: none; border-color: var(--primary);
+}
+.history-custom-date .date-sep { color: var(--text-secondary); font-size: 14px; flex-shrink: 0; }
+.history-date-label { font-size: 13px; color: var(--text-secondary); padding: 0 0 8px; }
+.order-card {
+  background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);
+  padding: 16px; margin-bottom: 10px; cursor: pointer; transition: box-shadow 0.15s;
+}
+.order-card:hover { box-shadow: var(--shadow-md); }
+.order-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.order-card .order-id { font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 14px; font-weight: 700; color: var(--primary); }
+.order-card .order-date { font-size: 12px; color: var(--text-secondary); }
+.order-card .order-items-summary { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+.order-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.order-card .order-total { font-size: 16px; font-weight: 700; }
+.order-card .edit-link { font-size: 13px; color: var(--accent-dark); font-weight: 600; cursor: pointer; }
+.order-card .edit-link.disabled { color: var(--text-muted); cursor: not-allowed; text-decoration: line-through; }
+
+/* ── Status Page ── */
+.status-header { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+.status-header .back-btn { background: none; border: none; font-size: 14px; color: var(--text-secondary); cursor: pointer; font-family: inherit; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; padding: 0; }
+.status-header .back-btn:hover { color: var(--primary); }
+.status-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.status-info .info-item { }
+.status-info .info-label { font-size: 12px; color: var(--text-secondary); }
+.status-info .info-value { font-size: 14px; font-weight: 600; }
+
+.tracking-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+.tracking-no { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--primary-lighter); border-radius: var(--radius-xs); font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 14px; font-weight: 600; color: var(--primary); }
+
+/* ── Desktop order sidebar ── */
+.order-sidebar { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+.sidebar-header { padding: 16px 20px; font-size: 16px; font-weight: 700; border-bottom: 1px solid var(--border); background: var(--primary); color: #fff; }
+.sidebar-items { max-height: 400px; overflow-y: auto; }
+.sidebar-item { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.sidebar-item .item-name { font-weight: 600; flex: 1; min-width: 0; }
+.sidebar-item .item-qty { color: var(--text-secondary); margin: 0 8px; white-space: nowrap; }
+.sidebar-item .item-price { font-weight: 700; white-space: nowrap; }
+.sidebar-empty { padding: 32px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.sidebar-totals { padding: 16px 20px; border-top: 2px solid var(--border); }
+.sidebar-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+.sidebar-row.total { font-size: 18px; font-weight: 700; color: var(--primary); padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border); }
+.sidebar-submit { padding: 16px 20px; border-top: 1px solid var(--border); }
+
+/* ── Mobile Order Summary (in-flow) ── */
+.mobile-order-summary {
+  background: var(--surface); border-radius: var(--radius);
+  border: 2px solid var(--primary); padding: 20px;
+  margin-top: 20px; margin-bottom: 20px;
+}
+.mobile-summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; font-size: 14px;
+}
+.mobile-summary-row .mobile-summary-label { color: var(--text-secondary); }
+.mobile-summary-row .mobile-summary-value { font-weight: 600; }
+.mobile-summary-row.total {
+  border-top: 2px solid var(--primary); padding-top: 12px; margin-top: 8px;
+}
+.mobile-summary-row.total .mobile-summary-label { font-size: 16px; font-weight: 700; color: var(--text); }
+.mobile-summary-row.total .mobile-summary-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+@media (min-width: 1024px) {
+  .mobile-order-summary { display: none !important; }
+}
+
+/* ── Mobile Excel table adjustments ── */
+@media (max-width: 1023px) {
+  /* Excel table: compact for mobile */
+  .excel-table { min-width: 520px; }
+  .excel-table thead th.col-name { min-width: 130px; }
+  .excel-table thead th.col-size { width: 44px; min-width: 44px; }
+  .excel-table thead th.col-price { width: 70px; min-width: 70px; }
+  .excel-table thead th.col-subtotal { width: 76px; min-width: 76px; }
+  .excel-qty { width: 40px; height: 28px; font-size: 13px; }
+  .excel-table tbody td.td-name { padding: 6px 8px; font-size: 12px; }
+  .excel-table tbody td.td-name .sub { font-size: 10px; }
+  .excel-table tbody td.td-price { font-size: 11px; padding-right: 6px; }
+  .excel-table tbody td.td-subtotal { font-size: 12px; padding-right: 6px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 1: P01 — Login
+     ═══════════════════════════════════════════════════ -->
+<div class="page active" id="page-login">
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-banner">
+          <img src="assets/logo-white.png" alt="RTBIO">
+        </div>
+        <p>거래처 발주 시스템</p>
+      </div>
+      <div class="form-group">
+        <label>아이디</label>
+        <input type="text" class="form-input" id="login-id" value="medipharm" placeholder="아이디 입력">
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" class="form-input" id="login-pw" value="0010" placeholder="비밀번호 입력">
+      </div>
+      <div class="form-group" style="margin-top: 24px;">
+        <button class="login-btn" onclick="doLogin()">로그인</button>
+      </div>
+      <div style="text-align:center; margin-top:16px;">
+        <span class="text-sm text-muted">로그인 문의: 070-1234-5678</span>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:#F8F9FB;border-radius:8px;font-size:12px;color:#6B7280;text-align:center;line-height:1.6;">
+        💡 아이디/비밀번호는 <strong>알티바이오에서 발급</strong>해드립니다.<br>
+        비밀번호 분실 시 담당자에게 문의하세요.
+      </div>
+    </div>
+    <div class="login-footer">
+      &copy; 2026 RTBIO Inc. All rights reserved.<br>
+      고객센터 070-1234-5678 (평일 09:00~18:00)
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     App Header (shown after login)
+     ═══════════════════════════════════════════════════ -->
+<div class="client-header" id="app-header" style="display:none">
+  <div class="logo">
+    <img src="assets/rtbio-logo.png" alt="RTBIO" style="height:24px;width:auto;filter:brightness(0) saturate(100%);">
+  </div>
+  <nav class="desktop-nav" style="display:none">
+    <a data-page="page-dashboard" class="active" onclick="goTo('page-dashboard');updateNav(this)">홈</a>
+    <a data-page="page-order" onclick="goTo('page-order');updateNav(this)">발주하기</a>
+    <a data-page="page-history" onclick="goTo('page-history');updateNav(this)">발주내역</a>
+  </nav>
+  <button class="user-btn" id="user-btn" onclick="showUserMenu()" title="사용자 메뉴">김</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 2a: Dashboard (mini)
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="client-content">
+    <div class="dash-welcome" id="dash-welcome">
+      <h2 id="dash-greeting">안녕하세요, 김대리님</h2>
+      <p id="dash-company">메디팜 의료기</p>
+      <div class="dash-actions">
+        <button class="dash-action-btn" onclick="goTo('page-order');highlightNav('page-order')">
+          <span class="icon">🛒</span>발주하기
+        </button>
+        <button class="dash-action-btn" onclick="goTo('page-history');highlightNav('page-history')">
+          <span class="icon">📋</span>발주내역
+        </button>
+      </div>
+    </div>
+
+    <div class="dash-stats" id="dash-stats">
+      <div class="dash-stat">
+        <div class="label">이번 달 발주</div>
+        <div class="value" id="dash-order-count">0건</div>
+      </div>
+      <div class="dash-stat">
+        <div class="label">이번 달 금액</div>
+        <div class="value" id="dash-order-amount">₩0</div>
+      </div>
+    </div>
+
+    <div class="recent-orders-title">최근 발주</div>
+    <div id="dash-recent-orders"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 2: P02 — 발주폼
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-order">
+  <div class="client-content" style="padding-bottom: calc(160px + var(--safe-bottom));">
+    <!-- Time bar -->
+    <div class="time-bar" id="time-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="time-text"></span>
+    </div>
+
+    <!-- Category quick nav -->
+    <div class="cat-quicknav" style="margin-top:12px;">
+      <a onclick="scrollToCat('knee')">🦵 무릎</a>
+      <a onclick="scrollToCat('upper')">💪 상지</a>
+      <a onclick="scrollToCat('lower')">🦶 하지</a>
+      <a onclick="scrollToCat('sprint')">🩹 스프린트</a>
+    </div>
+
+    <!-- Free shipping banner -->
+    <div class="free-ship-banner not-met" id="free-ship-banner"></div>
+
+    <div class="order-layout" style="margin-top:0;">
+      <!-- Main column: Excel Form -->
+      <div>
+        <div class="excel-form-wrap" id="excel-form"></div>
+
+        <!-- Mobile bottom summary (always in flow) -->
+        <div class="mobile-order-summary" id="mobile-summary" style="display:none;">
+          <div class="mobile-summary-row">
+            <span class="mobile-summary-label">선택 품목</span>
+            <span class="mobile-summary-value" id="ms-items">0개 품목 0개</span>
+          </div>
+          <div class="mobile-summary-row">
+            <span class="mobile-summary-label">소계</span>
+            <span class="mobile-summary-value" id="ms-subtotal">₩0</span>
+          </div>
+          <div class="mobile-summary-row">
+            <span class="mobile-summary-label">배송비</span>
+            <span class="mobile-summary-value" id="ms-shipping">₩4,000</span>
+          </div>
+          <div class="mobile-summary-row total">
+            <span class="mobile-summary-label">합계</span>
+            <span class="mobile-summary-value" id="ms-total">₩0</span>
+          </div>
+          <button class="btn btn-accent btn-full btn-lg" onclick="goToConfirm()" style="margin-top:12px;font-size:17px;padding:16px;">발주하기</button>
+        </div>
+      </div>
+
+      <!-- Desktop sidebar -->
+      <div class="order-sidebar" id="order-sidebar">
+        <div class="sidebar-header">주문 요약</div>
+        <div class="sidebar-items" id="sidebar-items">
+          <div class="sidebar-empty">수량을 입력해주세요</div>
+        </div>
+        <div class="sidebar-totals" id="sidebar-totals">
+          <div class="sidebar-row"><span>소계</span><span id="sidebar-subtotal">₩0</span></div>
+          <div class="sidebar-row"><span>배송비</span><span id="sidebar-shipping">₩4,000</span></div>
+          <div class="sidebar-row total"><span>합계</span><span id="sidebar-total">₩0</span></div>
+        </div>
+        <div class="sidebar-submit">
+          <button class="btn btn-accent btn-full btn-lg" onclick="goToConfirm()">발주하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 3: P03 — 발주 확인
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-confirm">
+  <div class="client-content">
+    <h2 class="text-h1" style="margin-bottom:20px;">발주 확인</h2>
+
+    <!-- Order items -->
+    <div class="confirm-section">
+      <h3>주문 제품</h3>
+      <div style="overflow-x:auto;">
+        <table class="confirm-table" id="confirm-items">
+          <thead>
+            <tr><th>제품명</th><th>사이즈</th><th class="text-right">단가</th><th class="text-right">수량</th><th class="text-right">금액</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="confirm-total">
+        <span class="label">합계 금액</span>
+        <span class="amount" id="confirm-total-amount"></span>
+      </div>
+    </div>
+
+    <!-- Delivery address -->
+    <div class="confirm-section">
+      <h3>배송 정보</h3>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="addr-type" value="default" checked onchange="toggleAltAddress()">
+          <span>기본 배송지</span>
+        </label>
+        <div style="padding-left:26px; font-size:14px; color:var(--text-secondary);" id="default-address"></div>
+        <label class="radio-item" style="margin-top:4px;">
+          <input type="radio" name="addr-type" value="alt" onchange="toggleAltAddress()">
+          <span>다른 주소로 배송</span>
+        </label>
+        <div class="alt-address-fields" id="alt-address-fields">
+          <div class="form-group" style="margin-bottom:8px;">
+            <input type="text" class="form-input" placeholder="받는 분" id="alt-name">
+          </div>
+          <div class="form-group" style="margin-bottom:8px;">
+            <input type="text" class="form-input" placeholder="연락처" id="alt-phone">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <input type="text" class="form-input" placeholder="배송 주소" id="alt-addr">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delivery method -->
+    <div class="confirm-section">
+      <h3>배송 방법</h3>
+      <div class="radio-group">
+        <label class="radio-item"><input type="radio" name="ship-method" value="택배" checked><span>택배</span></label>
+        <label class="radio-item"><input type="radio" name="ship-method" value="방문수령"><span>방문수령</span></label>
+        <label class="radio-item"><input type="radio" name="ship-method" value="퀵"><span>퀵 (추가비용 별도)</span></label>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="confirm-section">
+      <h3>비고 / 메모</h3>
+      <textarea class="form-textarea" id="confirm-notes" placeholder="배송 요청사항이나 참고사항을 입력해주세요"></textarea>
+    </div>
+
+    <!-- Total + buttons -->
+    <div class="confirm-section" style="background: var(--primary-lighter);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="text-sm text-muted">최종 결제 금액</div>
+          <div id="confirm-final-total" style="font-size:24px; font-weight:700; color:var(--primary);"></div>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary);" id="confirm-shipping-note"></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <button class="btn btn-outline btn-lg" style="flex:1;" onclick="goTo('page-order');highlightNav('page-order')">이전으로</button>
+      <button class="btn btn-accent btn-lg" style="flex:2;" onclick="submitOrder()">발주 제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 4: P04 — 발주 내역
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="client-content">
+    <h2 class="text-h1" style="margin-bottom:16px;">발주 내역</h2>
+
+    <!-- 기간 필터 -->
+    <div class="history-filter">
+      <div class="history-presets">
+        <button class="hist-preset active" onclick="setHistoryPreset('month',this)">이번달</button>
+        <button class="hist-preset" onclick="setHistoryPreset('1m',this)">1개월</button>
+        <button class="hist-preset" onclick="setHistoryPreset('3m',this)">3개월</button>
+        <button class="hist-preset" onclick="setHistoryPreset('all',this)">전체</button>
+        <button class="hist-preset" onclick="setHistoryPreset('custom',this)">직접설정</button>
+      </div>
+      <div class="history-custom-date" id="history-custom-date">
+        <input type="date" id="hist-from" onchange="renderHistory()">
+        <span class="date-sep">~</span>
+        <input type="date" id="hist-to" onchange="renderHistory()">
+      </div>
+      <div class="history-date-label" id="history-date-label"></div>
+    </div>
+
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Screen 5: P05 — 출고 상태
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-status">
+  <div class="client-content">
+    <!-- Header -->
+    <div class="status-header">
+      <button class="back-btn" onclick="goTo('page-history');highlightNav('page-history')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        발주 내역으로
+      </button>
+      <h2 class="text-h2" id="status-order-id" style="margin-bottom: 12px;"></h2>
+      <div class="status-info" id="status-info"></div>
+    </div>
+
+    <!-- Tracking number -->
+    <div class="tracking-section" id="tracking-section" style="display:none;">
+      <div class="text-sm text-muted" style="margin-bottom:8px;">송장번호</div>
+      <div class="tracking-no" id="tracking-no"></div>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="confirm-section">
+      <h3>출고 진행 상태</h3>
+      <div class="steps" id="status-steps"></div>
+    </div>
+
+    <!-- Order items -->
+    <div class="confirm-section">
+      <h3>주문 상세</h3>
+      <div style="overflow-x:auto;">
+        <table class="confirm-table" id="status-items">
+          <thead>
+            <tr><th>제품명</th><th>사이즈</th><th class="text-right">단가</th><th class="text-right">수량</th><th class="text-right">금액</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="confirm-total" id="status-total"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Mobile Order Summary Bar
+     ═══════════════════════════════════════════════════ -->
+<div class="order-summary-bar" id="order-bar" style="display:none;">
+  <div>
+    <div class="summary-text" id="bar-text">0개 품목 0개</div>
+    <div class="summary-amount" id="bar-amount">₩0</div>
+  </div>
+  <button class="summary-btn" onclick="goToConfirm()">발주하기 &gt;</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     Bottom Navigation
+     ═══════════════════════════════════════════════════ -->
+<nav class="bottom-nav" id="app-nav" style="display:none">
+  <a data-page="page-dashboard" class="active" onclick="goTo('page-dashboard');highlightNav('page-dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>홈</span>
+  </a>
+  <a data-page="page-order" onclick="goTo('page-order');highlightNav('page-order')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+    <span>발주</span>
+  </a>
+  <a data-page="page-history" onclick="goTo('page-history');highlightNav('page-history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span>내역</span>
+  </a>
+  <a data-page="page-status" onclick="if(currentViewOrder){goTo('page-status');highlightNav('page-status');}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    <span>출고</span>
+  </a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     Scripts
+     ═══════════════════════════════════════════════════ -->
+<script src="js/data.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/ai-assistant.js"></script>
+<script>
+// ── State ──
+let currentClient = null;
+let quantities = {};      // { productId: qty }
+let selectedSizes = {};   // { productId: sizeStr }
+let activeCat = 'all';
+let currentViewOrder = null;
+
+// ── History date filter state ──
+let historyPreset = 'month';
+let historyFrom = null;   // 'YYYY-MM-DD'
+let historyTo = null;     // 'YYYY-MM-DD'
+
+function _initHistoryRange() {
+  const today = new Date();
+  const y = today.getFullYear(), m = today.getMonth();
+  const pad = n => String(n).padStart(2, '0');
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  historyFrom = `${y}-${pad(m + 1)}-01`;
+  historyTo   = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+}
+_initHistoryRange();
+
+function setHistoryPreset(preset, btn) {
+  historyPreset = preset;
+  document.querySelectorAll('.hist-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const customDiv = document.getElementById('history-custom-date');
+
+  if (preset === 'month') {
+    const y = today.getFullYear(), m = today.getMonth();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    historyFrom = `${y}-${pad(m+1)}-01`;
+    historyTo   = `${y}-${pad(m+1)}-${pad(lastDay)}`;
+    customDiv.classList.remove('show');
+
+  } else if (preset === '1m') {
+    const from = new Date(today);
+    from.setMonth(from.getMonth() - 1);
+    historyFrom = toStr(from);
+    historyTo   = toStr(today);
+    customDiv.classList.remove('show');
+
+  } else if (preset === '3m') {
+    const from = new Date(today);
+    from.setMonth(from.getMonth() - 3);
+    historyFrom = toStr(from);
+    historyTo   = toStr(today);
+    customDiv.classList.remove('show');
+
+  } else if (preset === 'all') {
+    historyFrom = null;
+    historyTo   = null;
+    customDiv.classList.remove('show');
+
+  } else if (preset === 'custom') {
+    customDiv.classList.add('show');
+    const fromEl = document.getElementById('hist-from');
+    const toEl   = document.getElementById('hist-to');
+    if (!fromEl.value) fromEl.value = historyFrom || toStr(new Date(today.getFullYear(), today.getMonth(), 1));
+    if (!toEl.value)   toEl.value   = historyTo   || toStr(today);
+    historyFrom = fromEl.value || null;
+    historyTo   = toEl.value   || null;
+  }
+
+  renderHistory();
+}
+
+// ══════════════════════════════════════
+// Login
+// ══════════════════════════════════════
+function doLogin() {
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw').value.trim();
+  const client = CLIENTS.find(c => c.loginId === id && c.pw === pw);
+  if (!client) {
+    showToast('아이디 또는 비밀번호가 올바르지 않습니다.', 'error');
+    return;
+  }
+  currentClient = client;
+  initApp();
+  goTo('page-dashboard');
+  highlightNav('page-dashboard');
+  showToast(`${client.name} (${client.manager}님) 로그인 완료`, 'success');
+}
+
+function initApp() {
+  document.getElementById('app-header').style.display = '';
+  document.getElementById('app-nav').style.display = '';
+  document.getElementById('user-btn').textContent = currentClient.manager.charAt(0);
+  initDashboard();
+  initOrderForm();
+  renderHistory();
+}
+
+// ══════════════════════════════════════
+// Dashboard
+// ══════════════════════════════════════
+function initDashboard() {
+  document.getElementById('dash-greeting').textContent = `안녕하세요, ${currentClient.manager}님`;
+  document.getElementById('dash-company').textContent = currentClient.name;
+
+  const myOrders = ORDERS.filter(o => o.clientId === currentClient.id);
+  const monthOrders = myOrders.filter(o => o.date.startsWith('2026-04'));
+  const monthTotal = monthOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+
+  document.getElementById('dash-order-count').textContent = monthOrders.length + '건';
+  document.getElementById('dash-order-amount').textContent = formatCurrency(monthTotal);
+
+  // Recent orders (max 3)
+  const recent = myOrders.slice(0, 3);
+  const container = document.getElementById('dash-recent-orders');
+  if (recent.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">발주 내역이 없습니다</div></div>';
+    return;
+  }
+  container.innerHTML = recent.map(o => {
+    const total = calcOrderTotal(o);
+    const itemsSummary = o.items.map(i => getProductName(i.productId)).join(', ');
+    return `
+      <div class="order-card" onclick="viewOrderStatus('${o.id}')">
+        <div class="order-card-header">
+          <span class="order-id">${o.id}</span>
+          ${statusBadge(o.status)}
+        </div>
+        <div class="order-items-summary">${truncate(itemsSummary, 40)}</div>
+        <div class="order-card-footer">
+          <span class="order-total">${formatCurrency(total)}</span>
+          <span class="order-date">${o.date} ${o.time}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function truncate(str, len) {
+  return str.length > len ? str.substring(0, len) + '...' : str;
+}
+
+// ══════════════════════════════════════
+// Order Form
+// ══════════════════════════════════════
+// All size columns for the Excel grid
+const ALL_SIZES = ['S', 'M', 'L', 'XL', 'Free'];
+
+function initOrderForm() {
+  // Reset quantities — key format: "PID_SIZE"
+  quantities = {};
+  selectedSizes = {}; // kept for compat but not used in Excel mode
+  PRODUCTS.forEach(p => {
+    p.sizes.forEach(sz => { quantities[p.id + '_' + sz] = 0; });
+    selectedSizes[p.id] = p.sizes[0];
+  });
+
+  // Time bar
+  updateTimeBar();
+
+  // Render Excel form
+  renderExcelForm();
+
+  // Update summary
+  updateSummary();
+}
+
+function updateTimeBar() {
+  const t = getTimeInfo();
+  const bar = document.getElementById('time-bar');
+  bar.className = 'time-bar ' + t.level;
+  document.getElementById('time-text').textContent =
+    `현재 ${t.current} | 택배 마감 ${t.cutoff} (${t.remainText} 남음)`;
+}
+
+function scrollToCat(catId) {
+  const el = document.getElementById('cat-section-' + catId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function getClientPrice(product, client) {
+  // Priority: fixedPrices > category discount > basePrice
+  if (client.fixedPrices && client.fixedPrices[product.id] !== undefined) {
+    return {
+      price: client.fixedPrices[product.id],
+      discountType: 'fixed',
+      discountPct: Math.round((1 - client.fixedPrices[product.id] / product.basePrice) * 100)
+    };
+  }
+  const catDiscount = client.discounts[product.cat] || 0;
+  if (catDiscount > 0) {
+    const discounted = Math.round(product.basePrice * (1 - catDiscount / 100));
+    return { price: discounted, discountType: 'category', discountPct: catDiscount };
+  }
+  return { price: product.basePrice, discountType: null, discountPct: 0 };
+}
+
+function renderExcelForm() {
+  const container = document.getElementById('excel-form');
+  const cats = CATEGORIES.filter(c => c.id !== 'all');
+  // Determine which size columns to show (exclude 'Free' from column headers — handle inline)
+  const sizeCols = ['S', 'M', 'L', 'XL'];
+
+  container.innerHTML = cats.map(cat => {
+    const catProducts = PRODUCTS.filter(p => p.cat === cat.id);
+    return `
+      <div class="excel-section" id="cat-section-${cat.id}">
+        <div class="excel-section-header">
+          <span class="cat-icon">${cat.icon}</span> ${cat.name}
+          <span style="font-weight:400;font-size:12px;opacity:0.8;margin-left:auto;">${catProducts.length}개 제품</span>
+        </div>
+        <table class="excel-table">
+          <thead>
+            <tr>
+              <th class="col-name">제품명</th>
+              ${sizeCols.map(sz => `<th class="col-size">${sz}</th>`).join('')}
+              <th class="col-price">단가</th>
+              <th class="col-subtotal">소계</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${catProducts.map(p => renderExcelRow(p, sizeCols)).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderExcelRow(p, sizeCols) {
+  const priceInfo = getClientPrice(p, currentClient);
+  const setNote = p.setQty > 1 ? `(편측 ${p.setQty}개)` : (p.side === '양측' ? '(양측)' : '');
+  const isFree = p.sizes.length === 1 && p.sizes[0] === 'Free';
+
+  // Price display
+  let priceHTML = formatCurrency(priceInfo.price);
+  if (priceInfo.discountType) {
+    priceHTML = `<span class="discount">-${priceInfo.discountPct}%</span> ${formatCurrency(priceInfo.price)}`;
+  }
+
+  // Calculate row subtotal
+  const rowTotal = getRowSubtotal(p, priceInfo);
+
+  // Size cells
+  let sizeCells = '';
+  if (isFree) {
+    // Free size: single input spanning all size columns
+    const key = p.id + '_Free';
+    const val = quantities[key] || 0;
+    sizeCells = `<td class="td-size" colspan="${sizeCols.length}" style="text-align:center;">
+      <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">Free</span>
+      <input type="number" class="excel-qty ${val > 0 ? 'has-value' : ''}" value="${val > 0 ? val : ''}"
+             min="0" max="999" placeholder="0"
+             data-key="${key}" data-pid="${p.id}"
+             onfocus="this.select()"
+             oninput="onExcelInput('${key}','${p.id}',this)">
+    </td>`;
+  } else {
+    sizeCells = sizeCols.map(sz => {
+      if (p.sizes.includes(sz)) {
+        const key = p.id + '_' + sz;
+        const val = quantities[key] || 0;
+        return `<td class="td-size">
+          <input type="number" class="excel-qty ${val > 0 ? 'has-value' : ''}" value="${val > 0 ? val : ''}"
+                 min="0" max="999" placeholder="0"
+                 data-key="${key}" data-pid="${p.id}"
+                 onfocus="this.select()"
+                 oninput="onExcelInput('${key}','${p.id}',this)">
+        </td>`;
+      } else {
+        return `<td class="td-size td-disabled"></td>`;
+      }
+    }).join('');
+  }
+
+  return `<tr data-pid="${p.id}" class="${rowTotal > 0 ? 'has-qty' : ''}">
+    <td class="td-name">${p.name} ${setNote}<span class="sub">${p.sku}</span></td>
+    ${sizeCells}
+    <td class="td-price">${priceHTML}</td>
+    <td class="td-subtotal" data-subtotal="${p.id}">${rowTotal > 0 ? formatCurrency(rowTotal) : ''}</td>
+  </tr>`;
+}
+
+function getRowSubtotal(p, priceInfo) {
+  let total = 0;
+  p.sizes.forEach(sz => {
+    const qty = quantities[p.id + '_' + sz] || 0;
+    total += qty * priceInfo.price;
+  });
+  return total;
+}
+
+function onExcelInput(key, pid, inputEl) {
+  const val = Math.max(0, parseInt(inputEl.value) || 0);
+  quantities[key] = val;
+
+  // Toggle input style
+  inputEl.classList.toggle('has-value', val > 0);
+
+  // Update row highlight & subtotal
+  const row = inputEl.closest('tr');
+  const p = PRODUCTS.find(x => x.id === pid);
+  const priceInfo = getClientPrice(p, currentClient);
+  const rowTotal = getRowSubtotal(p, priceInfo);
+  row.classList.toggle('has-qty', rowTotal > 0);
+  const subtotalCell = row.querySelector(`[data-subtotal="${pid}"]`);
+  if (subtotalCell) subtotalCell.textContent = rowTotal > 0 ? formatCurrency(rowTotal) : '';
+
+  updateSummary();
+}
+
+function updateSummary() {
+  const items = getOrderItems();
+  const subtotal = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const itemCount = items.length;
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+
+  // Determine shipping
+  const shippingFee = calculateShipping(items);
+  const grandTotal = subtotal + shippingFee;
+
+  // Mobile bar
+  const bar = document.getElementById('order-bar');
+  document.getElementById('bar-text').textContent = `${itemCount}개 품목 ${totalQty}개`;
+  document.getElementById('bar-amount').textContent = formatCurrency(grandTotal);
+  if (itemCount > 0) {
+    bar.style.display = '';
+    requestAnimationFrame(() => bar.classList.add('show'));
+  } else {
+    bar.classList.remove('show');
+    setTimeout(() => { if (!bar.classList.contains('show')) bar.style.display = 'none'; }, 250);
+  }
+
+  // Desktop sidebar
+  const sidebarItems = document.getElementById('sidebar-items');
+  if (items.length === 0) {
+    sidebarItems.innerHTML = '<div class="sidebar-empty">제품을 선택해주세요</div>';
+  } else {
+    sidebarItems.innerHTML = items.map(i => {
+      const p = PRODUCTS.find(x => x.id === i.productId);
+      return `<div class="sidebar-item">
+        <span class="item-name truncate">${p.name}</span>
+        <span class="item-qty">${i.size} x${i.qty}</span>
+        <span class="item-price">${formatCurrency(i.unitPrice * i.qty)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('sidebar-subtotal').textContent = formatCurrency(subtotal);
+  document.getElementById('sidebar-shipping').textContent = shippingFee === 0 ? '무료' : formatCurrency(shippingFee);
+  document.getElementById('sidebar-total').textContent = formatCurrency(grandTotal);
+
+  // Mobile in-flow summary
+  const ms = document.getElementById('mobile-summary');
+  if (ms) {
+    if (itemCount > 0) {
+      ms.style.display = '';
+      document.getElementById('ms-items').textContent = `${itemCount}개 품목 · ${totalQty}개`;
+      document.getElementById('ms-subtotal').textContent = formatCurrency(subtotal);
+      document.getElementById('ms-shipping').textContent = shippingFee === 0 ? '무료' : formatCurrency(shippingFee);
+      document.getElementById('ms-total').textContent = formatCurrency(grandTotal);
+    } else {
+      ms.style.display = 'none';
+    }
+  }
+
+  // Free shipping banner
+  updateFreeShipBanner();
+}
+
+function getOrderItems() {
+  const items = [];
+  PRODUCTS.forEach(p => {
+    const priceInfo = getClientPrice(p, currentClient);
+    p.sizes.forEach(sz => {
+      const qty = quantities[p.id + '_' + sz] || 0;
+      if (qty > 0) {
+        items.push({
+          productId: p.id,
+          size: sz,
+          qty: qty,
+          unitPrice: priceInfo.price,
+          cat: p.cat
+        });
+      }
+    });
+  });
+  return items;
+}
+
+function calculateShipping(items) {
+  if (!items || items.length === 0) return 0;
+  // Check if any category meets free shipping threshold
+  const catQtys = {};
+  items.forEach(i => {
+    catQtys[i.cat] = (catQtys[i.cat] || 0) + i.qty;
+  });
+  for (const cat of Object.keys(catQtys)) {
+    if (FREE_SHIP_MIN[cat] && catQtys[cat] >= FREE_SHIP_MIN[cat]) {
+      return 0; // free shipping if any category meets threshold
+    }
+  }
+  return SHIPPING_FEE;
+}
+
+function updateFreeShipBanner() {
+  const banner = document.getElementById('free-ship-banner');
+  const items = getOrderItems();
+  const catQtys = {};
+  items.forEach(i => { catQtys[i.cat] = (catQtys[i.cat] || 0) + i.qty; });
+
+  let bestMsg = '';
+  let met = false;
+
+  // Check all categories
+  for (const cat of Object.keys(FREE_SHIP_MIN)) {
+    const min = FREE_SHIP_MIN[cat];
+    if (!min) continue;
+    const current = catQtys[cat] || 0;
+    const catName = CATEGORIES.find(c => c.id === cat)?.name || cat;
+    if (current >= min) {
+      bestMsg = `${catName} 무료배송 달성! (${current}/${min}개)`;
+      met = true;
+      break;
+    } else if (!bestMsg && current > 0) {
+      const remaining = min - current;
+      bestMsg = `${catName} 제품 ${remaining}개 더 추가하면 무료배송!`;
+    }
+  }
+
+  if (!bestMsg) {
+    bestMsg = `카테고리별 기준 수량 이상 주문 시 무료배송 (무릎 ${FREE_SHIP_MIN.knee}개, 상지 ${FREE_SHIP_MIN.upper}개, 하지 ${FREE_SHIP_MIN.lower}개, 스프린트 ${FREE_SHIP_MIN.sprint}개)`;
+  }
+
+  banner.className = 'free-ship-banner ' + (met ? 'met' : 'not-met');
+  banner.innerHTML = `<span>${met ? '🎉' : '🚚'}</span><span>${bestMsg}</span>`;
+}
+
+function goToConfirm() {
+  const items = getOrderItems();
+  if (items.length === 0) {
+    showToast('주문할 제품을 선택해주세요.', 'error');
+    return;
+  }
+  renderConfirmPage(items);
+  goTo('page-confirm');
+}
+
+// ══════════════════════════════════════
+// Confirm Page
+// ══════════════════════════════════════
+function renderConfirmPage(items) {
+  const tbody = document.querySelector('#confirm-items tbody');
+  let subtotal = 0;
+  tbody.innerHTML = items.map(i => {
+    const p = PRODUCTS.find(x => x.id === i.productId);
+    const lineTotal = i.unitPrice * i.qty;
+    subtotal += lineTotal;
+    return `<tr>
+      <td>${p.name}</td>
+      <td>${i.size}</td>
+      <td class="text-right">${formatCurrency(i.unitPrice)}</td>
+      <td class="text-right">${i.qty}</td>
+      <td class="text-right fw-600">${formatCurrency(lineTotal)}</td>
+    </tr>`;
+  }).join('');
+
+  const shipping = calculateShipping(items);
+  const total = subtotal + shipping;
+  document.getElementById('confirm-total-amount').textContent = formatCurrency(subtotal);
+  document.getElementById('confirm-final-total').textContent = formatCurrency(total);
+  document.getElementById('confirm-shipping-note').textContent =
+    shipping === 0 ? '배송비 무료' : `배송비 ${formatCurrency(shipping)} 포함`;
+
+  // Default address
+  document.getElementById('default-address').textContent = currentClient.address;
+}
+
+function toggleAltAddress() {
+  const isAlt = document.querySelector('input[name="addr-type"][value="alt"]').checked;
+  document.getElementById('alt-address-fields').classList.toggle('show', isAlt);
+}
+
+function submitOrder() {
+  const items = getOrderItems();
+  if (items.length === 0) return;
+  const total = items.reduce((s, i) => s + i.unitPrice * i.qty, 0) + calculateShipping(items);
+  const method = document.querySelector('input[name="ship-method"]:checked').value;
+
+  showModal(
+    '발주 완료',
+    `<div style="text-align:center;">
+      <div style="font-size:48px; margin-bottom:12px;">✅</div>
+      <div style="font-size:18px; font-weight:700; margin-bottom:8px;">발주가 성공적으로 접수되었습니다</div>
+      <div style="font-size:14px; color:var(--text-secondary); margin-bottom:16px;">
+        ${items.length}개 품목 | ${method} | ${formatCurrency(total)}
+      </div>
+      <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:13px; color:var(--text-secondary);">
+        주문번호: <strong style="color:var(--primary);">ORD-0411-NEW</strong><br>
+        택배 마감 15:30 이전 접수분은 당일 출고됩니다.
+      </div>
+    </div>`,
+    function() {
+      // Reset quantities
+      initOrderForm();
+      goTo('page-history');
+      highlightNav('page-history');
+    }
+  );
+}
+
+// ══════════════════════════════════════
+// 거래처용 간소화 상태 뱃지 (4단계)
+// ══════════════════════════════════════
+function clientStatusBadge(order) {
+  if (order.status === '취소') return '<span class="badge" style="background:#FEE2E2;color:#DC2626;">취소</span>';
+  if (!order.stage || order.status === '접수') {
+    return '<span class="badge" style="background:#DBEAFE;color:#1D4ED8;">📥 접수</span>';
+  }
+  const idx = mapToClientStage(order.stage);
+  const stage = CLIENT_STAGES[idx];
+  const colors = [
+    { bg: '#DBEAFE', fg: '#1D4ED8' },   // 접수
+    { bg: '#FEF3C7', fg: '#B45309' },   // 확인중
+    { bg: '#F3E8FF', fg: '#7C3AED' },   // 준비중
+    { bg: '#DCFCE7', fg: '#15803D' },   // 출고완료
+  ];
+  const c = colors[idx];
+  return `<span class="badge" style="background:${c.bg};color:${c.fg};">${stage.icon} ${stage.name}</span>`;
+}
+
+// ══════════════════════════════════════
+// History Page
+// ══════════════════════════════════════
+function renderHistory() {
+  const container = document.getElementById('history-list');
+
+  // custom 프리셋이면 입력값 반영
+  if (historyPreset === 'custom') {
+    const fromEl = document.getElementById('hist-from');
+    const toEl   = document.getElementById('hist-to');
+    if (fromEl) historyFrom = fromEl.value || null;
+    if (toEl)   historyTo   = toEl.value   || null;
+  }
+
+  // 거래처 + 기간 필터
+  const myOrders = ORDERS.filter(o => {
+    if (o.clientId !== currentClient.id) return false;
+    if (historyFrom && o.date < historyFrom) return false;
+    if (historyTo   && o.date > historyTo)   return false;
+    return true;
+  }).sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+
+  // 기간 라벨 업데이트
+  const labelEl = document.getElementById('history-date-label');
+  if (labelEl) {
+    const cnt = `${myOrders.length}건`;
+    if (historyPreset === 'all' || (!historyFrom && !historyTo)) {
+      labelEl.textContent = `전체 기간 · ${cnt}`;
+    } else if (historyPreset === 'month') {
+      const d = new Date(historyFrom + 'T00:00:00');
+      labelEl.textContent = `${d.getFullYear()}년 ${d.getMonth()+1}월 · ${cnt}`;
+    } else if (historyPreset === '1m') {
+      labelEl.textContent = `최근 1개월 · ${cnt}`;
+    } else if (historyPreset === '3m') {
+      labelEl.textContent = `최근 3개월 · ${cnt}`;
+    } else {
+      labelEl.textContent = `${historyFrom || '?'} ~ ${historyTo || '?'} · ${cnt}`;
+    }
+  }
+
+  if (myOrders.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">해당 기간에 발주 내역이 없습니다</div></div>';
+    return;
+  }
+
+  const timeInfo = getTimeInfo();
+
+  container.innerHTML = myOrders.map(o => {
+    const total = calcOrderTotal(o);
+    const itemNames = o.items.map(i => getProductName(i.productId));
+    const summary = itemNames.length <= 2
+      ? itemNames.join(', ')
+      : `${itemNames[0]} 외 ${itemNames.length - 1}건`;
+
+    const canEdit = o.status === '접수' && !timeInfo.isPastCutoff;
+    const editHTML = o.status === '접수'
+      ? `<span class="edit-link ${canEdit ? '' : 'disabled'}" onclick="${canEdit ? 'event.stopPropagation();showToast(\'수정 기능은 데모에서 지원하지 않습니다\',\'info\')' : 'event.stopPropagation()'}">${canEdit ? '수정' : '마감'}</span>`
+      : '';
+
+    return `<div class="order-card" onclick="viewOrderStatus('${o.id}')">
+      <div class="order-card-header">
+        <span class="order-id">${o.id}</span>
+        ${clientStatusBadge(o)}
+      </div>
+      <div class="order-items-summary">${summary} | ${o.shippingType}</div>
+      <div class="order-card-footer">
+        <span class="order-total">${formatCurrency(total)}</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          ${editHTML}
+          <span class="order-date">${o.date} ${o.time}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// Status Page
+// ══════════════════════════════════════
+function viewOrderStatus(orderId) {
+  const order = ORDERS.find(o => o.id === orderId);
+  if (!order) return;
+  currentViewOrder = order;
+
+  // Header
+  document.getElementById('status-order-id').textContent = order.id;
+  document.getElementById('status-info').innerHTML = `
+    <div class="info-item"><div class="info-label">거래처</div><div class="info-value">${getClientName(order.clientId)}</div></div>
+    <div class="info-item"><div class="info-label">발주일시</div><div class="info-value">${order.date} ${order.time}</div></div>
+    <div class="info-item"><div class="info-label">배송방법</div><div class="info-value">${order.shippingType}</div></div>
+    <div class="info-item"><div class="info-label">상태</div><div class="info-value">${clientStatusBadge(order)}</div></div>
+  `;
+
+  // Tracking number
+  const trackSection = document.getElementById('tracking-section');
+  if (order.trackingNo) {
+    trackSection.style.display = '';
+    document.getElementById('tracking-no').textContent = order.trackingNo;
+  } else {
+    trackSection.style.display = 'none';
+  }
+
+  // Steps
+  renderSteps(order);
+
+  // Items table
+  const tbody = document.querySelector('#status-items tbody');
+  let total = 0;
+  tbody.innerHTML = order.items.map(i => {
+    const p = PRODUCTS.find(x => x.id === i.productId);
+    const lineTotal = i.unitPrice * i.qty;
+    total += lineTotal;
+    return `<tr>
+      <td>${p ? p.name : i.productId}</td>
+      <td>${i.size}</td>
+      <td class="text-right">${formatCurrency(i.unitPrice)}</td>
+      <td class="text-right">${i.qty}</td>
+      <td class="text-right fw-600">${formatCurrency(lineTotal)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('status-total').innerHTML = `
+    <span class="label">합계</span>
+    <span class="amount">${formatCurrency(total)}</span>`;
+
+  goTo('page-status');
+  highlightNav('page-status');
+}
+
+// 내부 6단계 → 거래처용 4단계 매핑
+// waiting/barcode → "접수", setting → "확인중", packing → "준비중", invoice/done → "출고완료"
+const CLIENT_STAGES = [
+  { id: 'received', name: '접수', icon: '📥', internals: ['waiting', 'barcode'] },
+  { id: 'checking', name: '확인중', icon: '🔍', internals: ['setting'] },
+  { id: 'preparing', name: '준비중', icon: '📦', internals: ['packing'] },
+  { id: 'shipped', name: '출고완료', icon: '✅', internals: ['invoice', 'done'] },
+];
+
+function mapToClientStage(internalStageId) {
+  for (let i = 0; i < CLIENT_STAGES.length; i++) {
+    if (CLIENT_STAGES[i].internals.includes(internalStageId)) return i;
+  }
+  return 0;
+}
+
+function renderSteps(order) {
+  const container = document.getElementById('status-steps');
+
+  if (!order.stage) {
+    // No stage yet (접수 status)
+    container.innerHTML = CLIENT_STAGES.map((s, i) => `
+      <div class="step future">
+        ${i < CLIENT_STAGES.length - 1 ? '<div class="step-line"></div>' : ''}
+        <div class="step-circle">${i + 1}</div>
+        <div class="step-label">${s.name}</div>
+        <div class="step-time">-</div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  const currentIdx = mapToClientStage(order.stage);
+
+  // Demo timestamps for completed steps
+  const demoTimes = ['08:30', '10:00', '11:30', '12:00'];
+
+  container.innerHTML = CLIENT_STAGES.map((s, i) => {
+    let cls, icon, timeText;
+    if (i < currentIdx) {
+      cls = 'completed';
+      icon = '&#10003;';
+      timeText = demoTimes[i];
+    } else if (i === currentIdx) {
+      cls = 'current';
+      icon = s.icon;
+      timeText = '진행중';
+    } else {
+      cls = 'future';
+      icon = `${i + 1}`;
+      timeText = '-';
+    }
+
+    return `<div class="step ${cls}">
+      ${i < CLIENT_STAGES.length - 1 ? '<div class="step-line"></div>' : ''}
+      <div class="step-circle">${icon}</div>
+      <div class="step-label">${s.name}</div>
+      <div class="step-time">${timeText}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// Navigation Helpers
+// ══════════════════════════════════════
+function highlightNav(pageId) {
+  // Bottom nav
+  document.querySelectorAll('.bottom-nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === pageId);
+  });
+  // Desktop nav
+  document.querySelectorAll('.desktop-nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === pageId);
+  });
+  // Show/hide order bar
+  toggleOrderBar(pageId);
+}
+
+function toggleOrderBar(pageId) {
+  const bar = document.getElementById('order-bar');
+  if (pageId === 'page-order' && getOrderItems().length > 0) {
+    bar.style.display = '';
+    requestAnimationFrame(() => bar.classList.add('show'));
+  } else {
+    bar.classList.remove('show');
+    setTimeout(() => { if (!bar.classList.contains('show')) bar.style.display = 'none'; }, 250);
+  }
+}
+
+function updateNav(el) {
+  document.querySelectorAll('.desktop-nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function showUserMenu() {
+  showModal(
+    '계정 정보',
+    `<div style="line-height:2;">
+      <strong>${currentClient.name}</strong><br>
+      담당자: ${currentClient.manager}<br>
+      유형: ${currentClient.type}<br>
+      이메일: ${currentClient.email}<br>
+      결제조건: ${currentClient.paymentType}<br>
+      마감기간: ${currentClient.closingPeriod}
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-outline btn-full btn-sm" onclick="doLogout()">로그아웃</button>
+    </div>`
+  );
+}
+
+function doLogout() {
+  currentClient = null;
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-nav').style.display = 'none';
+  document.getElementById('order-bar').classList.remove('show');
+  // Close modal
+  document.querySelector('.modal-overlay')?.remove();
+  goTo('page-login');
+}
+
+// ── Override goTo to handle bar visibility ──
+const _originalGoTo = goTo;
+goTo = function(pageId) {
+  _originalGoTo(pageId);
+  toggleOrderBar(pageId);
+};
+
+// ── Keyboard: Enter on login ──
+document.getElementById('login-pw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-id').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

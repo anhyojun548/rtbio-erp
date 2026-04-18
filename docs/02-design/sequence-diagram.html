@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RTBIO ERP — 시퀀스 다이어그램</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root { --primary:#1B3A5C; --accent:#00A8B5; --bg:#F5F7FA; --text:#222; --muted:#667; --border:#E2E8F0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  header { background:var(--primary); color:#fff; padding:24px 40px; }
+  header h1 { margin:0; font-size:22px; }
+  header .sub { font-size:13px; opacity:0.8; margin-top:4px; }
+  nav { background:#fff; border-bottom:1px solid var(--border); padding:12px 40px; display:flex; gap:16px; font-size:13px; position:sticky; top:0; z-index:10;}
+  nav a { color:var(--primary); text-decoration:none; padding:6px 10px; border-radius:4px; }
+  nav a:hover { background:var(--bg); }
+  nav a.active { background:var(--primary); color:#fff; }
+  main { max-width:1100px; margin:0 auto; padding:32px 40px 80px; }
+  h2 { color:var(--primary); margin-top:40px; padding-bottom:8px; border-bottom:2px solid var(--accent); }
+  h3 { color:var(--primary); font-size:16px; margin-top:28px; }
+  .diagram-box { background:#fff; border:1px solid var(--border); border-radius:8px; padding:24px; margin:16px 0; overflow:auto; }
+  .desc { background:#fff; border-left:4px solid var(--accent); padding:12px 16px; margin:12px 0; border-radius:4px; font-size:14px; }
+  .meta { background:#fff; padding:16px 20px; border-radius:8px; border:1px solid var(--border); font-size:13px; margin-bottom:24px; }
+  .meta dt { font-weight:700; color:var(--primary); display:inline-block; width:120px; }
+  .meta dd { display:inline; margin:0; }
+  .meta div { margin:4px 0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0; background:#fff; }
+  th, td { border:1px solid var(--border); padding:8px 12px; text-align:left; }
+  th { background:var(--primary); color:#fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📞 RTBIO ERP — 시퀀스 다이어그램</h1>
+  <div class="sub">포털 ↔ API ↔ DB 주요 상호작용 시나리오</div>
+</header>
+
+<nav>
+  <a href="workflow-diagram.html">🔄 워크플로우</a>
+  <a href="sequence-diagram.html" class="active">📞 시퀀스</a>
+  <a href="data-structure.html">🗃 데이터구조</a>
+  <a href="api-integration.html">🔌 API / 외부연동</a>
+</nav>
+
+<main>
+
+<div class="meta">
+  <div><dt>문서</dt><dd>시퀀스 다이어그램 v1.0</dd></div>
+  <div><dt>작성일</dt><dd>2026-04-17</dd></div>
+  <div><dt>전제</dt><dd>Next.js 14 App Router + NextAuth.js + Prisma + PostgreSQL (멀티테넌시: 스키마 분리)</dd></div>
+</div>
+
+<h2>1. 로그인 (NextAuth.js + 서브도메인 테넌트)</h2>
+<div class="desc">사용자가 <code>{tenant}.rtbio-erp.com</code>에 접근하면 미들웨어가 테넌트를 식별하고, NextAuth가 bcrypt로 패스워드를 검증한다.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant B as Browser
+  participant M as Middleware<br/>(Next.js)
+  participant A as NextAuth API
+  participant P as PostgreSQL<br/>(public.User)
+  participant S as Session
+
+  U->>B: {tenant}.rtbio-erp.com/login
+  B->>M: GET /login
+  M->>M: 서브도메인 파싱 → tenantId
+  M-->>B: 로그인 페이지 (tenant context 주입)
+  U->>B: email, password 입력
+  B->>A: POST /api/auth/callback/credentials
+  A->>P: User.findUnique({email, tenantId})
+  P-->>A: user + hashedPassword
+  A->>A: bcrypt.compare(pw, hashed)
+  alt 검증 성공
+    A->>S: JWT 발급 (tenantId, role, userId)
+    S-->>B: Set-Cookie next-auth.session-token
+    B->>U: /dashboard 리다이렉트
+  else 실패
+    A-->>B: 401
+  end
+</pre>
+</div>
+
+<h2>2. 거래처 발주 → QC 칸반 반영</h2>
+<div class="desc">client-portal 발주 → 재고 예약(availableStock 차감) → QC 칸반에 waiting 카드 생성. 모든 변경은 InventoryLog에 기록.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant C as Client Portal
+  participant API as /api/orders
+  participant ZOD as Zod 검증
+  participant DB as Prisma / tenant_{id}
+  participant K as QC 칸반 WebSocket
+
+  C->>API: POST /api/orders {items[], note}
+  API->>ZOD: OrderCreateSchema.parse(body)
+  ZOD-->>API: validated
+  API->>DB: BEGIN TRANSACTION
+  API->>DB: Product.findMany({ids})
+  API->>DB: 가격 계산 (fixedPrices > discounts > basePrice)
+  API->>DB: Order.create({unitPrice, basePriceAtOrder})
+  API->>DB: Inventory.update availableStock -= qty
+  API->>DB: InventoryLog.create(reason='주문예약')
+  API->>DB: AuditLog.create(action='ORDER_CREATE')
+  API->>DB: COMMIT
+  API->>K: publish('kanban.update', {orderId, stage:'waiting'})
+  K-->>K: QC 포털 실시간 리렌더
+  API-->>C: 201 { orderId, totalAmount }
+</pre>
+</div>
+
+<h2>3. QC 칸반 단계 이동 (drag & drop)</h2>
+<div class="desc">카드를 다음 단계로 드래그하면 stage 필드만 갱신. 출고완료(done)로 이동 시 physicalStock 차감과 거래명세서 발급 가능 플래그가 활성화된다.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant QC as QC Portal
+  participant API as /api/kanban/move
+  participant DB as Prisma
+  participant INV as /api/invoice
+  participant ADM as Admin Portal
+
+  QC->>API: PATCH /api/kanban/move {orderId, stage:'done'}
+  API->>DB: Order.update(stage:'done', doneAt:NOW())
+  alt stage == 'done'
+    API->>DB: Inventory.update physicalStock -= qty
+    API->>DB: InventoryLog.create(reason='출고')
+    API->>DB: Order.invoiceReady = true
+  end
+  API-->>QC: 200 ok
+  Note over QC: 카드에 📄 버튼 활성화
+
+  ADM->>INV: POST /api/invoice { orderId }
+  INV->>DB: Invoice.create(...)
+  INV->>DB: Order.invoiceIssued = true
+  INV-->>ADM: 200 { invoiceId, pdfUrl }
+</pre>
+</div>
+
+<h2>4. 거래명세서 PDF 생성 (@react-pdf/renderer)</h2>
+<div class="desc">PDF는 실시간 렌더(다운로드 요청 시 생성). Blob Storage에 캐시 저장.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant API as /api/invoice/[id]/pdf
+  participant RP as @react-pdf/renderer
+  participant BS as Azure Blob Storage
+  participant DB as PostgreSQL
+
+  U->>API: GET /api/invoice/{id}/pdf
+  API->>BS: blob.exists(invoice_{id}.pdf)
+  alt 캐시 존재
+    BS-->>API: URL
+    API-->>U: 302 → Blob URL (SAS)
+  else 신규 생성
+    API->>DB: Invoice + Order + Items + Client 조회
+    API->>RP: renderToStream(InvoicePDF props)
+    RP-->>API: PDF Buffer
+    API->>BS: blob.uploadData(buffer)
+    BS-->>API: blob URL
+    API-->>U: 200 PDF binary + Cache-Control
+  end
+</pre>
+</div>
+
+<h2>5. 세금계산서 발행 (admin-portal → 국세청 연계 대비)</h2>
+<div class="desc">⚠️ <strong>현재 보류</strong>: 사업자 등록 전까지 기능 비활성화 (백엔드설계서 §1.5). Phase 4에서 팝빌 API 연동 예정 (bizno, approvalNumber 반환).</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant A as Admin Portal
+  participant API as /api/tax-invoice
+  participant POP as Popbill API (향후)
+  participant DB as PostgreSQL
+  participant MAIL as Nodemailer<br/>(Daum SMTP)
+
+  A->>API: POST /api/tax-invoice {clientId, items[], supplyAmount}
+  API->>API: VAT = supply × 0.1
+  API->>DB: TaxInvoice.create(status:'DRAFT')
+  API->>POP: registerIssue(...) (실서비스)
+  POP-->>API: approvalNumber, ntsConfirm=true
+  API->>DB: TaxInvoice.update(status:'ISSUED', approvalNumber)
+  API->>MAIL: sendMail(to=client.email, attach=PDF)
+  MAIL-->>API: accepted
+  API-->>A: 201 { approvalNumber, pdfUrl }
+</pre>
+</div>
+
+<h2>6. 입금 수기 등록 → 미수금 자동 반영</h2>
+<div class="desc">admin-portal 수금 페이지에서 은행 입금 내역을 수기로 입력 → 입금액 vs 예상금액 비교 → 상태 자동 판정(입금완료/일부입금/미입금).</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant A as Admin Portal
+  participant API as /api/payments
+  participant DB as PostgreSQL
+  participant MAIL as Nodemailer
+
+  A->>API: POST /api/payments {clientId, amount, date, bank, payer}
+  API->>DB: Receivable.findOne(clientId, openBalance)
+  API->>API: 상태 판정 (amount vs expected)
+  alt amount == expected
+    API->>DB: Payment.create(status:'COMPLETE')
+    API->>DB: Receivable.amount = 0
+  else amount < expected
+    API->>DB: Payment.create(status:'PARTIAL')
+    API->>DB: Receivable.amount = expected - amount
+  end
+  API->>DB: AuditLog.create(action='PAYMENT_REG')
+  API-->>A: 200 { status, remaining }
+
+  Note over A,MAIL: 연체 30일 경과 시 배치로 리마인드 이메일
+  API->>MAIL: sendMail(client, overdueTemplate)
+</pre>
+</div>
+
+<h2>7. 대시보드 전역 기간 변경 → 위젯 일괄 리렌더</h2>
+<div class="desc">C-1 요구사항: 전역 기간 변경 시 모든 위젯의 개별 override가 리셋되고 리렌더.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant D as Dashboard UI
+  participant LS as localStorage
+  participant API as /api/widget/[preset]
+  participant DB as PostgreSQL
+
+  U->>D: 전역 기간 select change (30d → month)
+  D->>D: 어떤 위젯에 override 있는지 확인
+  alt override 존재
+    D->>U: confirm('override 리셋됩니다. 계속?')
+    U-->>D: yes
+  end
+  D->>LS: globalDateRange = 'month'
+  D->>LS: rtbio_dashboard (override 전부 '')
+  loop 모든 위젯
+    D->>API: GET /api/widget/{preset}?range=month
+    API->>DB: 집계 쿼리
+    DB-->>API: rows
+    API-->>D: JSON
+    D->>D: renderWidgetContent(...)
+  end
+</pre>
+</div>
+
+<h2>8. 시나리오 요약표</h2>
+<table>
+  <thead><tr><th>#</th><th>시나리오</th><th>주요 API</th><th>Side Effect</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>로그인</td><td>POST /api/auth/callback/credentials</td><td>JWT 발급, 세션 쿠키</td></tr>
+    <tr><td>2</td><td>발주</td><td>POST /api/orders</td><td>재고 예약, 칸반 생성, AuditLog</td></tr>
+    <tr><td>3</td><td>칸반 이동</td><td>PATCH /api/kanban/move</td><td>재고 차감, invoiceReady</td></tr>
+    <tr><td>4</td><td>명세서 PDF</td><td>GET /api/invoice/[id]/pdf</td><td>Blob 캐시, 다운로드</td></tr>
+    <tr><td>5</td><td>세금계산서</td><td>POST /api/tax-invoice</td><td>팝빌 연계, 이메일 발송</td></tr>
+    <tr><td>6</td><td>입금 등록</td><td>POST /api/payments</td><td>미수금 갱신, 상태 판정</td></tr>
+    <tr><td>7</td><td>대시보드 기간 변경</td><td>GET /api/widget/*</td><td>localStorage 갱신, 전 위젯 리렌더</td></tr>
+  </tbody>
+</table>
+
+</main>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', sequence: { mirrorActors: false, actorMargin: 50 }, themeVariables: { fontFamily: 'Malgun Gothic' } });
+</script>
+
+</body>
+</html>

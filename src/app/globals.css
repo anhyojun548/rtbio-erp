@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rtbio-primary: #0ea5e9;
+}
+
+html,
+body {
+  height: 100%;
+}

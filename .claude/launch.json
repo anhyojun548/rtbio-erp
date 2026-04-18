@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mockup",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "mockup", "-p", "3457", "-L"],
+      "port": 3457
+    },
+    {
+      "name": "proposal",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "proposal", "-p", "3458", "-L"],
+      "port": 3458
+    },
+    {
+      "name": "meeting",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "meeting", "-p", "3459", "-L"],
+      "port": 3459
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".", "-p", "3460", "-L"],
+      "port": 3460
+    },
+    {
+      "name": "prototype",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "prototype", "-p", "3461", "-L"],
+      "port": 3461
+    }
+  ]
+}

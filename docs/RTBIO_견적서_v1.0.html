@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>견적서 · 과업명세서 — RTBIO 업무 자동화 시스템 | HAMADA LABS</title>
+<style>
+  :root {
+    --primary: #1B3A5C;
+    --primary-light: #2B5797;
+    --primary-lighter: #E8EEF5;
+    --accent: #00A8B5;
+    --accent-dark: #00838F;
+    --accent-light: #E0F7FA;
+    --success: #2E7D32;
+    --success-light: #E8F5E9;
+    --warning: #F57C00;
+    --warning-light: #FFF3E0;
+    --text: #1A1A2E;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --border: #E5E7EB;
+    --bg: #F8F9FB;
+    --white: #FFFFFF;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, 'Malgun Gothic', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+
+  /* ===== HEADER ===== */
+  .doc-header {
+    background: var(--primary);
+    color: white;
+    padding: 48px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 30px;
+    background: var(--bg);
+    border-radius: 30px 30px 0 0;
+  }
+  .doc-header .logo {
+    height: 48px;
+    width: auto;
+    filter: invert(1);
+    margin-bottom: 20px;
+  }
+  .doc-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .doc-header .subtitle {
+    font-size: 16px;
+    opacity: 0.8;
+  }
+
+  /* ===== META INFO ===== */
+  .meta-bar {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .meta-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+  }
+  .meta-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .meta-card .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .meta-card .row .label { color: var(--text-secondary); }
+  .meta-card .row .value { font-weight: 600; }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 40px;
+  }
+  .section-label {
+    display: inline-block;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .section p {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-size: 15px;
+  }
+  .section p strong { color: var(--text); }
+
+  .divider {
+    max-width: 860px;
+    margin: 0 auto;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ===== SCOPE TABLE ===== */
+  .scope-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .scope-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .scope-badge {
+    width: 56px;
+    height: 56px;
+    background: var(--primary-lighter);
+    color: var(--primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .scope-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+  .scope-card .desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .scope-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .scope-tags span {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* ===== OPTIONS COMPARISON ===== */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .option-card {
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .option-card.recommended {
+    border-color: var(--accent);
+  }
+  .option-card .badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: white;
+    padding: 2px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .option-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .option-card .option-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .option-card .price-main {
+    text-align: center;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .price-main .amount {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .price-main .amount small {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .price-main .price-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .option-detail {
+    margin-bottom: 16px;
+  }
+  .option-detail h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .option-detail .line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .option-detail .line:last-child { border-bottom: none; }
+  .option-detail .line .label { color: var(--text-secondary); }
+  .option-detail .line .value { font-weight: 600; color: var(--text); }
+  .option-detail .line.total {
+    border-top: 2px solid var(--primary);
+    border-bottom: none;
+    margin-top: 4px;
+    padding-top: 10px;
+  }
+  .option-detail .line.total .value { color: var(--primary); font-size: 15px; }
+
+  .option-pros {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+  }
+  .option-pros h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--success);
+    margin-bottom: 6px;
+  }
+  .option-pros ul {
+    list-style: none;
+    padding: 0;
+  }
+  .option-pros li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 2px 0;
+    padding-left: 18px;
+    position: relative;
+  }
+  .option-pros li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--success);
+    font-weight: 700;
+  }
+
+  /* ===== AI COST NOTE ===== */
+  .ai-note {
+    background: var(--warning-light);
+    border: 1px solid #FFE0B2;
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    margin-top: 24px;
+  }
+  .ai-note h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--warning);
+    margin-bottom: 8px;
+  }
+  .ai-note p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .timeline-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .timeline-card .week {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .timeline-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .timeline-card p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 0;
+  }
+
+  /* ===== TERMS ===== */
+  .terms-list {
+    margin-top: 16px;
+  }
+  .terms-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .terms-item:last-child { border-bottom: none; }
+  .terms-item .t-label {
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .terms-item .t-value {
+    color: var(--text-secondary);
+  }
+  .terms-item .t-value strong { color: var(--text); }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 32px 20px 40px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  footer img {
+    height: 28px;
+    width: auto;
+    opacity: 0.3;
+    margin-bottom: 8px;
+  }
+
+  /* ===== COMPARISON TABLE ===== */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+  }
+  .compare-table th {
+    background: var(--primary);
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .compare-table th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+  .compare-table th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+  .compare-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+  }
+  .compare-table tr:last-child td:first-child { border-radius: 0 0 0 var(--radius-sm); }
+  .compare-table tr:last-child td:last-child { border-radius: 0 0 var(--radius-sm) 0; }
+  .compare-table tr:last-child td {
+    font-weight: 700;
+    color: var(--primary);
+    border-bottom: none;
+    border-top: 2px solid var(--primary);
+  }
+  .compare-table .highlight { color: var(--accent-dark); font-weight: 700; }
+
+  /* ===== MONTHLY SUMMARY ===== */
+  .monthly-summary {
+    background: var(--primary-lighter);
+    border: 1px solid #C8D6E5;
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    margin-top: 20px;
+  }
+  .monthly-summary h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+  .monthly-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .monthly-grid .m-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 6px 12px;
+    background: var(--white);
+    border-radius: 8px;
+  }
+  .monthly-grid .m-item .label { color: var(--text-secondary); }
+  .monthly-grid .m-item .value { font-weight: 700; color: var(--primary); }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { background: white; font-size: 14px; }
+    .doc-header { padding: 32px 20px; }
+    .doc-header::after { display: none; }
+    .section { padding: 24px 20px; }
+    .options-grid { break-inside: avoid; }
+    .scope-card { break-inside: avoid; }
+    footer { padding: 16px; }
+  }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 768px) {
+    .doc-header { padding: 36px 20px; }
+    .doc-header h1 { font-size: 24px; }
+    .meta-bar { grid-template-columns: 1fr; padding: 16px 20px; }
+    .section { padding: 28px 20px; }
+    .options-grid { grid-template-columns: 1fr; }
+    .timeline-grid { grid-template-columns: 1fr 1fr; }
+    .scope-card { grid-template-columns: 40px 1fr; }
+    .scope-badge { width: 40px; height: 40px; font-size: 12px; }
+    .terms-item { grid-template-columns: 110px 1fr; font-size: 13px; }
+    .monthly-grid { grid-template-columns: 1fr; }
+    .compare-table { font-size: 13px; }
+    .compare-table th, .compare-table td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="doc-header">
+  <img src="../proposal/hamada-logo.png" alt="HAMADA LABS" class="logo">
+  <h1>견적서 · 과업명세서</h1>
+  <div class="subtitle">RTBIO 업무 자동화 시스템</div>
+</div>
+
+<!-- ===== META INFO ===== -->
+<div class="meta-bar">
+  <div class="meta-card">
+    <h3>공급자</h3>
+    <div class="row"><span class="label">상호</span><span class="value">하마다랩스</span></div>
+    <div class="row"><span class="label">대표</span><span class="value">방승애</span></div>
+    <div class="row"><span class="label">연락처</span><span class="value">010-8888-0180</span></div>
+    <div class="row"><span class="label">이메일</span><span class="value">victoria@hamadalabs.com</span></div>
+  </div>
+  <div class="meta-card">
+    <h3>수신</h3>
+    <div class="row"><span class="label">상호</span><span class="value">알티바이오</span></div>
+    <div class="row"><span class="label">견적일</span><span class="value">2026년 4월 10일</span></div>
+    <div class="row"><span class="label">유효기간</span><span class="value">발행일로부터 30일</span></div>
+  </div>
+</div>
+
+<!-- ===== 1. PROJECT OVERVIEW ===== -->
+<div class="section">
+  <span class="section-label">Project Overview</span>
+  <h2>프로젝트 개요</h2>
+  <p>
+    현재 카카오톡 발주 접수 → 얼마에요 수기 입력 → 엑셀 마감 처리로 운영되는 <strong>RTBIO의 전체 업무 프로세스</strong>를
+    웹 기반 통합 시스템으로 전환합니다. 발주 접수부터 거래명세서 발행, 재고 관리, 월 마감 정산까지
+    <strong>수기 작업을 제거</strong>하고 자동화하는 것이 핵심 목표입니다.
+  </p>
+  <p>
+    거래처는 <strong>웹 발주폼</strong>으로 직접 주문하고, 내부 팀은 <strong>부서별 전용 대시보드</strong>에서
+    발주 확인 · 출고 · 정산 · 재고를 통합 관리합니다.
+    기존 얼마에요 데이터(약 3년치)를 신규 시스템으로 이관하여 <strong>완전한 ERP 전환</strong>을 진행합니다.
+  </p>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 2. SCOPE ===== -->
+<div class="section">
+  <span class="section-label">Scope of Work</span>
+  <h2>제공 범위</h2>
+  <p>1차~3차를 통합 진행하여 <strong>2개월 이내</strong>에 전체 시스템을 구축합니다.</p>
+
+  <div class="scope-grid">
+    <div class="scope-card">
+      <div class="scope-badge">1차</div>
+      <div>
+        <h4>경영지원팀 자동화</h4>
+        <div class="desc">메인 시스템 + DB 인프라 구축 포함. 하루 30건 수기 입력을 클릭 기반 자동 처리로 전환.</div>
+        <div class="scope-tags">
+          <span>거래처 발주 포털</span>
+          <span>거래처 관리</span>
+          <span>품목 관리</span>
+          <span>발주 접수/처리</span>
+          <span>거래명세서 자동 발행</span>
+          <span>정산 관리</span>
+          <span>월 마감</span>
+          <span>UDI 관리</span>
+          <span>권한/계정 관리</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scope-card">
+      <div class="scope-badge">2차</div>
+      <div>
+        <h4>품질관리팀 재고 자동화</h4>
+        <div class="desc">발주 확정 시 재고 자동 차감, 입출고 관리, 부족 시 경고, 실시간 재고 대시보드.</div>
+        <div class="scope-tags">
+          <span>재고 자동 반영</span>
+          <span>입고 관리</span>
+          <span>출고 관리</span>
+          <span>재고 현황 대시보드</span>
+          <span>일별 재고 보고</span>
+          <span>담당자 배정</span>
+          <span>작업 상태 관리</span>
+          <span>샘플/미팅 출고</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scope-card">
+      <div class="scope-badge">3차</div>
+      <div>
+        <h4>영업부 대시보드</h4>
+        <div class="desc">영업사원이 거래처별 매출·미수금·실적을 직접 조회하는 권한 분리형 대시보드.</div>
+        <div class="scope-tags">
+          <span>거래처별 매출 현황</span>
+          <span>미수금 현황</span>
+          <span>결제 조건 조회</span>
+          <span>영업 대시보드</span>
+          <span>사용량 입력</span>
+          <span>기간별 매출 보고서</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 3. PRICING OPTIONS ===== -->
+<div class="section">
+  <span class="section-label">Pricing</span>
+  <h2>가격 옵션</h2>
+  <p>두 가지 결제 방식 중 선택하실 수 있습니다. 모든 옵션은 <strong>동일한 기능과 품질</strong>을 제공합니다.</p>
+
+  <div class="options-grid">
+    <!-- Option A -->
+    <div class="option-card">
+      <h3>Option A</h3>
+      <div class="option-sub">일시불 모델</div>
+      <div class="price-main">
+        <div class="amount">2,000<small>만원</small></div>
+        <div class="price-note">개발비 일시불 + 월 운영비 별도</div>
+      </div>
+
+      <div class="option-detail">
+        <h4>개발비</h4>
+        <div class="line">
+          <span class="label">착수금 (계약 시)</span>
+          <span class="value">1,000만원</span>
+        </div>
+        <div class="line">
+          <span class="label">잔금 (최종 납품 시)</span>
+          <span class="value">1,000만원</span>
+        </div>
+        <div class="line total">
+          <span class="label">개발비 합계</span>
+          <span class="value">2,000만원</span>
+        </div>
+      </div>
+
+      <div class="option-detail">
+        <h4>월 운영비 (납품 후)</h4>
+        <div class="line">
+          <span class="label">무상 유지보수</span>
+          <span class="value">3개월</span>
+        </div>
+        <div class="line">
+          <span class="label">이후 인프라 + 유지보수</span>
+          <span class="value">월 20만원</span>
+        </div>
+      </div>
+
+      <div class="option-pros">
+        <h4>이 옵션의 장점</h4>
+        <ul>
+          <li>장기적으로 총 비용이 가장 낮음</li>
+          <li>추가 결제 의무 없이 시스템 소유</li>
+          <li>3개월 무상 유지보수 포함</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Option B -->
+    <div class="option-card recommended">
+      <div class="badge">초기 부담 최소화</div>
+      <h3>Option B</h3>
+      <div class="option-sub">구독형 모델 (36개월)</div>
+      <div class="price-main">
+        <div class="amount">1,000<small>만원</small></div>
+        <div class="price-note">초기 개발비 + 월 58만원 구독</div>
+      </div>
+
+      <div class="option-detail">
+        <h4>초기 개발비</h4>
+        <div class="line">
+          <span class="label">착수금 (계약 시)</span>
+          <span class="value">500만원</span>
+        </div>
+        <div class="line">
+          <span class="label">잔금 (1차 납품 시)</span>
+          <span class="value">500만원</span>
+        </div>
+        <div class="line total">
+          <span class="label">개발비 합계</span>
+          <span class="value">1,000만원</span>
+        </div>
+      </div>
+
+      <div class="option-detail">
+        <h4>월 구독료 (36개월)</h4>
+        <div class="line">
+          <span class="label">인프라 + 유지보수 + 업데이트</span>
+          <span class="value">월 58만원</span>
+        </div>
+        <div class="line">
+          <span class="label">구독 기간</span>
+          <span class="value">36개월</span>
+        </div>
+        <div class="line">
+          <span class="label">구독료 소계</span>
+          <span class="value">2,088만원</span>
+        </div>
+        <div class="line total">
+          <span class="label">36개월 총 비용</span>
+          <span class="value">3,088만원</span>
+        </div>
+      </div>
+
+      <div class="option-pros">
+        <h4>이 옵션의 장점</h4>
+        <ul>
+          <li>초기 비용 절반으로 시작 가능</li>
+          <li>월 정액 요금으로 예산 계획 용이</li>
+          <li>유지보수 및 기능 업데이트 포함</li>
+          <li>약정 기간 내 우선 기술지원</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Cost Note -->
+  <div class="ai-note">
+    <h4>AI/LLM 사용료 안내 (양쪽 옵션 공통)</h4>
+    <p>
+      본 시스템은 AI 기능(자동 분류, 수요 예측 등)을 포함하며, 이에 따른 LLM API 사용료가 별도로 발생합니다.
+      <strong>예상 월 비용은 약 5만원</strong>이며, 1차 납품 후 실제 사용량을 측정하여 정확한 금액을 안내드립니다.
+      AI 사용료는 <strong>실비 기준으로 별도 청구</strong>됩니다.
+    </p>
+  </div>
+
+  <!-- Monthly Summary -->
+  <div class="monthly-summary">
+    <h4>월 실질 부담 비교 (납품 완료 후)</h4>
+    <div class="monthly-grid">
+      <div class="m-item">
+        <span class="label">Option A 월 비용</span>
+        <span class="value">약 25만원/월</span>
+      </div>
+      <div class="m-item">
+        <span class="label">Option B 월 비용</span>
+        <span class="value">58만원/월 + AI 실비</span>
+      </div>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">
+      * 운영비(또는 구독료) + AI 사용료(~5만원) 합산 기준. Option A는 무상 유지보수 3개월 이후 기준.
+    </p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 4. COMPARISON TABLE ===== -->
+<div class="section">
+  <span class="section-label">Comparison</span>
+  <h2>옵션 상세 비교</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>항목</th>
+        <th>Option A (일시불)</th>
+        <th>Option B (구독형)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>초기 비용</td>
+        <td>2,000만원</td>
+        <td class="highlight">1,000만원</td>
+      </tr>
+      <tr>
+        <td>결제 방식</td>
+        <td>착수금 1,000 + 잔금 1,000</td>
+        <td>착수금 500 + 잔금 500</td>
+      </tr>
+      <tr>
+        <td>월 비용 (AI 제외)</td>
+        <td>20만원 (4개월차부터)</td>
+        <td>58만원 (납품 직후부터)</td>
+      </tr>
+      <tr>
+        <td>AI 사용료</td>
+        <td>실비 별도</td>
+        <td>실비 별도</td>
+      </tr>
+      <tr>
+        <td>무상 유지보수</td>
+        <td>3개월</td>
+        <td>구독 기간 전체</td>
+      </tr>
+      <tr>
+        <td>약정 기간</td>
+        <td>없음</td>
+        <td>36개월</td>
+      </tr>
+      <tr>
+        <td>기능 업데이트</td>
+        <td>별도 견적</td>
+        <td>구독 기간 내 포함</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 5. TIMELINE ===== -->
+<div class="section">
+  <span class="section-label">Timeline</span>
+  <h2>개발 일정</h2>
+  <p>1~3차 통합 진행으로 <strong>착수일로부터 8주(약 2개월) 이내</strong>에 전체 시스템을 납품합니다.</p>
+
+  <div class="timeline-grid">
+    <div class="timeline-card">
+      <div class="week">Week 1~3</div>
+      <h4>1차 개발</h4>
+      <p>경영지원팀 자동화<br>거래처 발주 포털<br>DB 인프라 구축</p>
+    </div>
+    <div class="timeline-card">
+      <div class="week">Week 4~5</div>
+      <h4>2차 개발</h4>
+      <p>품질관리팀 재고<br>입출고 관리<br>작업 상태 관리</p>
+    </div>
+    <div class="timeline-card">
+      <div class="week">Week 6~7</div>
+      <h4>3차 개발</h4>
+      <p>영업부 대시보드<br>매출/미수금 조회<br>보고서 자동화</p>
+    </div>
+    <div class="timeline-card">
+      <div class="week">Week 8</div>
+      <h4>통합 테스트</h4>
+      <p>QA 및 버그 수정<br>데이터 이관<br>배포 및 교육</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 6. CONTRACT TERMS ===== -->
+<div class="section">
+  <span class="section-label">Terms</span>
+  <h2>계약 조건</h2>
+
+  <div class="terms-list">
+    <div class="terms-item">
+      <div class="t-label">개발 범위</div>
+      <div class="t-value">상기 제공 범위(1~3차)를 기본 골격으로 하며, 세부 기능은 <strong>2차 미팅 완료 후 최종 확정</strong>합니다. 확정 범위 내 자잘한 기능 조정은 <strong>무상으로 반영</strong>하되, 신규 모듈 등 대규모 기능 추가는 <strong>별도 견적</strong>으로 진행합니다.</div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">납품 기준</div>
+      <div class="t-value">각 단계별 기능 완성 및 RTBIO 담당자 <strong>테스트 확인 후 납품 완료</strong> 처리.</div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">데이터 이관</div>
+      <div class="t-value">얼마에요 엑셀 내보내기 데이터(약 3년치)를 신규 시스템 DB로 이관. <strong>이관 비용은 개발비에 포함.</strong></div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">유지보수</div>
+      <div class="t-value">Option A: 최종 납품 후 <strong>3개월 무상</strong>, 이후 월 운영비 별도 계약.<br>Option B: <strong>36개월 구독 기간 내 유지보수 포함.</strong></div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">소유권</div>
+      <div class="t-value">Option A: 개발비 완납 시 <strong>소스코드 및 시스템 소유권 이전.</strong><br>Option B: 구독 기간 중 <strong>사용권 부여</strong>, 36개월 완료 후 소유권 이전.</div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">기밀유지</div>
+      <div class="t-value">양사의 업무상 취득한 정보에 대해 <strong>상호 기밀유지 의무</strong> 적용. 제3자 제공 불가.</div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">해지 조건</div>
+      <div class="t-value">Option B 중도 해지 시 <strong>잔여 구독료의 30%</strong>를 위약금으로 정산. 기 납부 개발비는 반환하지 않음.</div>
+    </div>
+    <div class="terms-item">
+      <div class="t-label">인프라 환경</div>
+      <div class="t-value">클라우드 기반(AWS/Vercel) 웹 서비스. 앱 설치 없이 <strong>모바일 반응형 웹</strong>으로 운영.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <img src="../proposal/hamada-logo.png" alt="HAMADA LABS"><br>
+  &copy; 2026 HAMADA LABS. All rights reserved.
+</footer>
+
+</body>
+</html>

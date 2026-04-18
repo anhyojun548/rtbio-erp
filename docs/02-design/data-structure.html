@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RTBIO ERP — 데이터구조 정의서</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root { --primary:#1B3A5C; --accent:#00A8B5; --bg:#F5F7FA; --text:#222; --muted:#667; --border:#E2E8F0; --danger:#D32F2F; --success:#2E7D32; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  header { background:var(--primary); color:#fff; padding:24px 40px; }
+  header h1 { margin:0; font-size:22px; }
+  header .sub { font-size:13px; opacity:0.8; margin-top:4px; }
+  nav { background:#fff; border-bottom:1px solid var(--border); padding:12px 40px; display:flex; gap:16px; font-size:13px; position:sticky; top:0; z-index:10;}
+  nav a { color:var(--primary); text-decoration:none; padding:6px 10px; border-radius:4px; }
+  nav a:hover { background:var(--bg); }
+  nav a.active { background:var(--primary); color:#fff; }
+  main { max-width:1200px; margin:0 auto; padding:32px 40px 80px; }
+  h2 { color:var(--primary); margin-top:40px; padding-bottom:8px; border-bottom:2px solid var(--accent); }
+  h3 { color:var(--primary); font-size:16px; margin-top:28px; }
+  .diagram-box { background:#fff; border:1px solid var(--border); border-radius:8px; padding:24px; margin:16px 0; overflow:auto; }
+  .desc { background:#fff; border-left:4px solid var(--accent); padding:12px 16px; margin:12px 0; border-radius:4px; font-size:14px; }
+  .meta { background:#fff; padding:16px 20px; border-radius:8px; border:1px solid var(--border); font-size:13px; margin-bottom:24px; }
+  .meta dt { font-weight:700; color:var(--primary); display:inline-block; width:120px; }
+  .meta dd { display:inline; margin:0; }
+  .meta div { margin:4px 0; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; margin:12px 0; background:#fff; }
+  th, td { border:1px solid var(--border); padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--primary); color:#fff; }
+  td.pk { font-weight:700; color:var(--danger); }
+  td.fk { color:var(--accent); font-weight:600; }
+  td.snap { background:#FFF3E0; }
+  code { background:var(--bg); padding:2px 6px; border-radius:3px; font-size:12px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:700; background:var(--accent); color:#fff; }
+  .badge.pub { background:var(--primary); }
+  .badge.ten { background:#7C3AED; }
+  .rule { background:#FFF8E1; border-left:4px solid #F57C00; padding:10px 14px; margin:8px 0; border-radius:4px; font-size:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗃 RTBIO ERP — 데이터구조 정의서</h1>
+  <div class="sub">멀티테넌시 · 가격 스냅샷 · 이중 재고 관리 기반 스키마 설계</div>
+</header>
+
+<nav>
+  <a href="workflow-diagram.html">🔄 워크플로우</a>
+  <a href="sequence-diagram.html">📞 시퀀스</a>
+  <a href="data-structure.html" class="active">🗃 데이터구조</a>
+  <a href="api-integration.html">🔌 API / 외부연동</a>
+</nav>
+
+<main>
+
+<div class="meta">
+  <div><dt>문서</dt><dd>데이터구조 정의서 v1.0</dd></div>
+  <div><dt>작성일</dt><dd>2026-04-17</dd></div>
+  <div><dt>DB</dt><dd>PostgreSQL 16 + Prisma ORM</dd></div>
+  <div><dt>멀티테넌시</dt><dd>Schema per Tenant · public(공용) · tenant_{id}(격리)</dd></div>
+</div>
+
+<h2>1. 스키마 분리 개요</h2>
+<div class="desc">
+  <span class="badge pub">public</span> 공용 스키마 — 테넌트 메타, 사용자, 감사 로그<br>
+  <span class="badge ten">tenant_{id}</span> 테넌트별 격리 스키마 — 제품, 주문, 재고 등 비즈니스 데이터
+</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart LR
+  subgraph PUBLIC["public 스키마 (공용)"]
+    T[Tenant]
+    U[User]
+    AL[AuditLog]
+  end
+  subgraph T1["tenant_altibio (테넌트별 격리)"]
+    P[Product]
+    O[Order]
+    OI[OrderItem]
+    C[Client]
+    IV[Inventory]
+    IL[InventoryLog]
+    IA[InventoryAdjustment]
+    INV[Invoice]
+    TI[TaxInvoice]
+    PY[Payment]
+    R[Receivable]
+    CONF[Conference]
+    CV[ConferenceVisitor]
+  end
+  T --> U
+  U -.테넌트 컨텍스트.-> T1
+  C --> O
+  O --> OI
+  OI --> P
+  P --> IV
+  IV --> IL
+  IV --> IA
+  O --> INV
+  C --> TI
+  C --> PY
+  C --> R
+  CONF --> CV
+</pre>
+</div>
+
+<h2>2. public 스키마 (공용)</h2>
+
+<h3>2.1 Tenant</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK (cuid)</td><td>테넌트 식별자</td></tr>
+    <tr><td>slug</td><td>text</td><td>UNIQUE</td><td>서브도메인 (<code>altibio</code> → <code>altibio.rtbio-erp.com</code>)</td></tr>
+    <tr><td>name</td><td>text</td><td>NOT NULL</td><td>회사명 (알티바이오)</td></tr>
+    <tr><td>schemaName</td><td>text</td><td>UNIQUE</td><td>Postgres 스키마명 (<code>tenant_altibio</code>)</td></tr>
+    <tr><td>smtpFrom</td><td>text</td><td></td><td>이메일 발송자 (Daum 계정)</td></tr>
+    <tr><td>plan</td><td>text</td><td>default 'basic'</td><td>basic / pro / enterprise</td></tr>
+    <tr><td>status</td><td>text</td><td>default 'ACTIVE'</td><td>ACTIVE / SUSPENDED</td></tr>
+    <tr><td>createdAt</td><td>timestamptz</td><td>default now()</td><td>생성일</td></tr>
+  </tbody>
+</table>
+
+<h3>2.2 User</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td><td>사용자 ID</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td><td>소속 테넌트</td></tr>
+    <tr><td>email</td><td>text</td><td>UNIQUE(tenantId, email)</td><td>로그인 이메일</td></tr>
+    <tr><td>hashedPassword</td><td>text</td><td>NOT NULL</td><td>bcrypt</td></tr>
+    <tr><td>name</td><td>text</td><td></td><td>표시명</td></tr>
+    <tr><td>role</td><td>text</td><td>NOT NULL</td><td>EXEC / ADMIN / QC / CLIENT</td></tr>
+    <tr><td>salesStaffId</td><td>text</td><td>nullable</td><td>영업 담당자 id (CLIENT는 자신의 담당자 참조)</td></tr>
+    <tr><td>lastLoginAt</td><td>timestamptz</td><td>nullable</td><td>마지막 로그인</td></tr>
+    <tr><td>createdAt / updatedAt</td><td>timestamptz</td><td></td><td>감사 컬럼</td></tr>
+  </tbody>
+</table>
+
+<h3>2.3 AuditLog</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td>userId</td><td>text</td><td>수행자</td></tr>
+    <tr><td>action</td><td>text</td><td><code>ORDER_CREATE</code>, <code>INVENTORY_ADJUST</code>, <code>PAYMENT_REG</code> 등</td></tr>
+    <tr><td>entity</td><td>text</td><td>대상 테이블</td></tr>
+    <tr><td>entityId</td><td>text</td><td>대상 레코드 ID</td></tr>
+    <tr><td>before</td><td>jsonb</td><td>변경 전 스냅샷</td></tr>
+    <tr><td>after</td><td>jsonb</td><td>변경 후 스냅샷</td></tr>
+    <tr><td>ip / userAgent</td><td>text</td><td>클라이언트 메타</td></tr>
+    <tr><td>createdAt</td><td>timestamptz</td><td></td></tr>
+  </tbody>
+</table>
+
+<h2>3. tenant_{id} 스키마 (격리)</h2>
+
+<h3>3.1 Product</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK (예: P001)</td></tr>
+    <tr><td>name</td><td>text</td><td>리코트 상지 M</td></tr>
+    <tr><td>brand</td><td>text</td><td>리코탭플러스 / 리깁스 / 레오 / 리스프린트</td></tr>
+    <tr><td>category</td><td>text</td><td>knee / upper / lower / sprint</td></tr>
+    <tr><td>size</td><td>text</td><td>S / M / L / XL / Free</td></tr>
+    <tr><td>basePrice</td><td>int</td><td>기본 판매가 (원)</td></tr>
+    <tr><td>cost</td><td>int</td><td>매입원가</td></tr>
+    <tr><td>barcode</td><td>text</td><td>UNIQUE</td></tr>
+    <tr><td>status</td><td>text</td><td>ACTIVE / DISCONTINUED</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 Client (거래처)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td>name</td><td>text</td><td>거래처명</td></tr>
+    <tr><td>type</td><td>text</td><td>대리점 / 병원 / 기타</td></tr>
+    <tr><td>manager</td><td>text</td><td>담당자명</td></tr>
+    <tr><td>phone / email / address</td><td>text</td><td></td></tr>
+    <tr><td>paymentType</td><td>text</td><td>'계좌이체' | '당월말카드' | '사용량카드' | '3개월후결제'</td></tr>
+    <tr><td>closingPeriod</td><td>integer</td><td>마감일 (예: 25 → 매월 25일 마감)</td></tr>
+    <tr><td>discounts</td><td>jsonb</td><td><code>{knee:10, upper:10, lower:10, sprint:15}</code></td></tr>
+    <tr><td>fixedPrices</td><td>jsonb</td><td><code>{P001: 48000, ...}</code> — 품목별 고정가 (우선)</td></tr>
+    <tr><td>salesStaffId</td><td>text</td><td>담당 영업사원 FK</td></tr>
+    <tr><td>invoiceType</td><td>text</td><td>RTBIO / 거래처</td></tr>
+    <tr><td>loginId / loginPw</td><td>text</td><td>client-portal 로그인</td></tr>
+  </tbody>
+</table>
+
+<div class="rule">
+  💡 <b>가격 결정 우선순위</b>: <code>fixedPrices[productId]</code> &gt; <code>basePrice × (1 - discounts[category])</code> &gt; <code>basePrice</code>
+</div>
+
+<h3>3.3 Order / OrderItem</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>ORD-YYMMDD-NNN</td></tr>
+    <tr><td class="fk">clientId</td><td>text</td><td>FK → Client</td></tr>
+    <tr><td>date</td><td>date</td><td>발주일</td></tr>
+    <tr><td>status</td><td>text</td><td>접수 / 확정 / 출고중 / 완료 / 취소 / 반품</td></tr>
+    <tr><td>stage</td><td>text</td><td>waiting / barcode / setting / packing / invoice / done</td></tr>
+    <tr><td>deliveryMethod</td><td>varchar</td><td>'택배' | '방문수령' | '퀵' — 배송 방법</td></tr>
+    <tr><td>shippingClientName</td><td>varchar</td><td>수령자명</td></tr>
+    <tr><td>shippingAddress</td><td>text</td><td>배송지 주소</td></tr>
+    <tr><td>invoiceReady</td><td>bool</td><td>QC 출고완료 시 true</td></tr>
+    <tr><td>invoiceIssued</td><td>bool</td><td>경영지원 명세서 발행 시 true</td></tr>
+    <tr><td>doneAt</td><td>timestamptz</td><td>출고완료 시각</td></tr>
+    <tr><td>createdBy / updatedAt</td><td></td><td>감사 컬럼</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="3">OrderItem</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">orderId</td><td>text</td><td>FK → Order (ON DELETE CASCADE)</td></tr>
+    <tr><td class="fk">productId</td><td>text</td><td>FK → Product (ON DELETE RESTRICT)</td></tr>
+    <tr><td>size</td><td>text</td><td>주문 시점 사이즈</td></tr>
+    <tr><td>qty</td><td>int</td><td>수량</td></tr>
+    <tr><td class="snap">unitPrice</td><td>int</td><td>🔶 주문 시점 스냅샷 단가</td></tr>
+    <tr><td class="snap">basePriceAtOrder</td><td>int</td><td>🔶 주문 시점 basePrice</td></tr>
+    <tr><td class="snap">discountPct</td><td>decimal(5,2)</td><td>🔶 적용된 할인율 % (주문 시점 스냅샷)</td></tr>
+    <tr><td>discountType</td><td>varchar</td><td>'fixed' | 'category' | null — 가격 계산 우선순위 추적</td></tr>
+  </tbody>
+</table>
+
+<div class="rule">
+  💡 <b>주황색 스냅샷 컬럼</b>: 주문 확정 후 Product.basePrice가 바뀌어도 기존 OrderItem은 변하지 않는다 (규제/감사 대응).
+</div>
+
+<h3>3.4 Inventory (이중 관리)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">productId</td><td>text</td><td>FK → Product (UNIQUE)</td></tr>
+    <tr><td>physicalStock</td><td>int</td><td>🏭 창고 실제 수량</td></tr>
+    <tr><td>availableStock</td><td>int</td><td>🛒 판매 가능 수량 (예약분 제외)</td></tr>
+    <tr><td>safetyStock</td><td>int</td><td>안전재고 (임계치)</td></tr>
+    <tr><td>updatedAt</td><td>timestamptz</td><td></td></tr>
+  </tbody>
+</table>
+
+<div class="rule">
+  💡 주문 접수 → <code>availableStock -= qty</code> · 출고완료 → <code>physicalStock -= qty</code> · 반품 → 양쪽 모두 <code>+= qty</code>
+</div>
+
+<h3>3.5 InventoryLog / InventoryAdjustment</h3>
+<table>
+  <thead><tr><th colspan="3">InventoryLog (모든 변동 기록)</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">productId</td><td>text</td><td>FK</td></tr>
+    <tr><td>changeType</td><td>text</td><td>RESERVE / RELEASE / IN / OUT / ADJUST</td></tr>
+    <tr><td>deltaPhysical / deltaAvailable</td><td>int</td><td>변화량 (음수 허용)</td></tr>
+    <tr><td>reason</td><td>text</td><td>주문예약 / 출고 / 반품 / 파손 / 실사</td></tr>
+    <tr><td>refType / refId</td><td>text</td><td>Order/Adjustment 참조</td></tr>
+    <tr><td>createdBy / createdAt</td><td></td><td></td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="3">InventoryAdjustment (실사/반품/파손)</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">productId</td><td>text</td><td>FK</td></tr>
+    <tr><td>type</td><td>text</td><td>IN / OUT</td></tr>
+    <tr><td>qty</td><td>int</td><td>조정 수량</td></tr>
+    <tr><td>reason</td><td>text</td><td>반품 / 실사 / 파손 / 기타</td></tr>
+    <tr><td>note</td><td>text</td><td>상세 메모</td></tr>
+    <tr><td>refOrderId</td><td>text</td><td>반품 시 원본 주문 참조</td></tr>
+  </tbody>
+</table>
+
+<h3>3.6 Invoice (거래명세서) / TaxInvoice (세금계산서)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">orderId</td><td>text</td><td>FK → Order</td></tr>
+    <tr><td>issueDate</td><td>date</td><td></td></tr>
+    <tr><td>totalAmount</td><td>int</td><td>공급가액 합계</td></tr>
+    <tr><td>pdfUrl</td><td>text</td><td>Blob Storage URL</td></tr>
+    <tr><td>status</td><td>text</td><td>ISSUED / CANCELED</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="3">TaxInvoice</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td>approvalNumber</td><td>text</td><td>국세청 승인번호 (팝빌)</td></tr>
+    <tr><td class="fk">clientId</td><td>text</td><td>FK → Client</td></tr>
+    <tr><td>supplyAmount</td><td>int</td><td>공급가액</td></tr>
+    <tr><td>vatAmount</td><td>int</td><td>부가세 (supplyAmount × 0.1)</td></tr>
+    <tr><td>totalAmount</td><td>int</td><td>supply + vat</td></tr>
+    <tr><td>status</td><td>text</td><td>DRAFT / ISSUED / CANCELED / MODIFIED</td></tr>
+    <tr><td>ntsConfirmedAt</td><td>timestamptz</td><td>국세청 승인 시각</td></tr>
+  </tbody>
+</table>
+
+<h3>3.7 Payment / Receivable</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">clientId</td><td>text</td><td>FK</td></tr>
+    <tr><td>amount</td><td>int</td><td>입금액</td></tr>
+    <tr><td>expectedAmount</td><td>int</td><td>해당 월 예상 합계</td></tr>
+    <tr><td>paidAt</td><td>date</td><td>입금일</td></tr>
+    <tr><td>bank / payerName / memo</td><td>text</td><td></td></tr>
+    <tr><td>status</td><td>text</td><td>COMPLETE / PARTIAL / UNPAID</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="3">Receivable (거래처별 미수금 집계)</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">clientId</td><td>text</td><td>FK UNIQUE</td></tr>
+    <tr><td>amount</td><td>int</td><td>현재 미수금</td></tr>
+    <tr><td>overdueDays</td><td>int</td><td>연체 경과일</td></tr>
+    <tr><td>oldestUnpaidDate</td><td>date</td><td>최초 미입금일</td></tr>
+    <tr><td>agingBucket</td><td>text</td><td>0-30 / 31-60 / 61-90 / 90+</td></tr>
+  </tbody>
+</table>
+
+<h3>3.8 Conference / ConferenceVisitor (학회 방명록)</h3>
+<table>
+  <thead><tr><th colspan="3">Conference</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td>name / type / date</td><td>text/date</td><td></td></tr>
+    <tr><td>visitors / contacted / newClients</td><td>int</td><td>집계 캐시 (자동 갱신)</td></tr>
+    <tr><td>assignments</td><td>jsonb</td><td>담당자별 방문자 배분</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th colspan="3">ConferenceVisitor (개별 방명록)</th></tr><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">conferenceId</td><td>text</td><td>FK → Conference (CASCADE)</td></tr>
+    <tr><td>name / phone / org</td><td>text</td><td></td></tr>
+    <tr><td>assignedStaffId</td><td>text</td><td>배정 영업담당</td></tr>
+    <tr><td>status</td><td>text</td><td>미접촉 / 접촉완료 / 팔로우업 / 신규계약 / 거절</td></tr>
+    <tr><td>convertedClientId</td><td>text</td><td>신규 전환 시 Client.id</td></tr>
+    <tr><td>note</td><td>text</td><td></td></tr>
+  </tbody>
+</table>
+
+<h2>4. 영업/분석 보조 테이블</h2>
+
+<h3>4.1 usage_records (사용량 기록)</h3>
+<div class="desc">
+  exec-portal의 <b>사용량 입력(page-usage)</b> 기능에 대응 — 영업팀이 대리점별 월별 제품 사용량을 기록하는 테이블
+</div>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>bigint</td><td>PK (자동 증가)</td></tr>
+    <tr><td class="fk">tenantId</td><td>int</td><td>FK → Tenant</td></tr>
+    <tr><td class="fk">clientId</td><td>int</td><td>FK → Client (대리점)</td></tr>
+    <tr><td class="fk">staffId</td><td>int</td><td>FK → User (담당 영업사원)</td></tr>
+    <tr><td>recordDate</td><td>date</td><td>기록 년월 (예: 2026-04-01)</td></tr>
+    <tr><td class="fk">productId</td><td>int</td><td>FK → Product</td></tr>
+    <tr><td>usedQty</td><td>integer</td><td>사용량 (수량)</td></tr>
+    <tr><td>note</td><td>text</td><td>비고</td></tr>
+    <tr><td>createdAt / updatedAt</td><td>timestamptz</td><td>감사 컬럼</td></tr>
+    <tr><td>createdBy</td><td>text</td><td>감사 컬럼 — 작성자 User.id</td></tr>
+  </tbody>
+</table>
+
+<h2>5. 운영/시스템 보조 테이블</h2>
+
+<h3>5.1 suppliers (매입처 관리)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td>name</td><td>text</td><td>매입처명</td></tr>
+    <tr><td>bizNo</td><td>text</td><td>사업자등록번호</td></tr>
+    <tr><td>contactName</td><td>text</td><td>담당자명</td></tr>
+    <tr><td>contactPhone</td><td>text</td><td>담당자 연락처</td></tr>
+    <tr><td>email</td><td>text</td><td>이메일</td></tr>
+    <tr><td>address</td><td>text</td><td>주소</td></tr>
+    <tr><td>memo</td><td>text</td><td>비고</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 fiscal_periods (회계 기간)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td>year</td><td>integer</td><td>회계 연도</td></tr>
+    <tr><td>month</td><td>integer</td><td>회계 월 (1~12)</td></tr>
+    <tr><td>closedAt</td><td>timestamptz</td><td>마감 처리 일시 (NULL이면 미마감)</td></tr>
+    <tr><td>closedBy</td><td>text</td><td>마감 처리자 User.id</td></tr>
+  </tbody>
+</table>
+
+<h3>5.3 system_settings (시스템 설정)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td>key</td><td>text</td><td>설정 키 (예: <code>smtp_from</code>, <code>invoice_prefix</code>)</td></tr>
+    <tr><td>value</td><td>text</td><td>설정 값</td></tr>
+    <tr><td>updatedAt</td><td>timestamptz</td><td>최종 수정일시</td></tr>
+  </tbody>
+</table>
+
+<h3>5.4 notifications (알림)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td class="fk">userId</td><td>text</td><td>FK → User (수신자)</td></tr>
+    <tr><td>type</td><td>text</td><td>알림 유형 (예: ORDER_NEW, STOCK_LOW, PAYMENT_DUE)</td></tr>
+    <tr><td>title</td><td>text</td><td>알림 제목</td></tr>
+    <tr><td>body</td><td>text</td><td>알림 본문</td></tr>
+    <tr><td>readAt</td><td>timestamptz</td><td>읽은 일시 (NULL이면 미확인)</td></tr>
+    <tr><td>createdAt</td><td>timestamptz</td><td>생성일시</td></tr>
+  </tbody>
+</table>
+
+<h3>5.5 business_calendar (업무 달력)</h3>
+<table>
+  <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="pk">id</td><td>text</td><td>PK</td></tr>
+    <tr><td class="fk">tenantId</td><td>text</td><td>FK → Tenant</td></tr>
+    <tr><td>date</td><td>date</td><td>해당 날짜</td></tr>
+    <tr><td>type</td><td>text</td><td>'holiday' | 'custom' — 공휴일 또는 사용자 지정 휴무</td></tr>
+    <tr><td>note</td><td>text</td><td>비고 (예: 설날, 임시휴무)</td></tr>
+  </tbody>
+</table>
+
+<div class="rule">
+  💡 <b>공통 필드 (모든 테이블 권장)</b><br>
+  • <code>deleted_at TIMESTAMP NULL</code> — 소프트 삭제 지원 (NULL이면 활성 레코드)<br>
+  • <code>version INTEGER DEFAULT 0</code> — 낙관적 잠금(Optimistic Locking) 지원, 동시 수정 충돌 감지
+</div>
+
+<h2>6. 관계도 (ERD)</h2>
+<div class="diagram-box">
+<pre class="mermaid">
+erDiagram
+  TENANT ||--o{ USER : has
+  TENANT ||--o{ AUDITLOG : logs
+  CLIENT ||--o{ ORDER : places
+  ORDER ||--|{ ORDERITEM : contains
+  PRODUCT ||--o{ ORDERITEM : referenced
+  PRODUCT ||--|| INVENTORY : has
+  INVENTORY ||--o{ INVENTORYLOG : tracks
+  INVENTORY ||--o{ INVENTORYADJUSTMENT : adjusts
+  ORDER ||--o| INVOICE : issues
+  CLIENT ||--o{ TAXINVOICE : billed
+  CLIENT ||--o{ PAYMENT : pays
+  CLIENT ||--|| RECEIVABLE : owes
+  CONFERENCE ||--o{ CONFERENCEVISITOR : registers
+</pre>
+</div>
+
+<h2>7. 필수 규칙 (Invariants)</h2>
+<ul>
+  <li>모든 <code>tenant_{id}</code> 테이블은 미들웨어에서 강제된 테넌트 컨텍스트를 통해서만 접근한다.</li>
+  <li>주문 확정 이후 <code>OrderItem.unitPrice</code>는 변경 불가 (immutable).</li>
+  <li>재고 변동은 반드시 <code>InventoryLog</code> 행을 생성한 뒤 <code>Inventory</code>를 갱신한다 (트랜잭션 보장).</li>
+  <li>모든 DML은 <code>AuditLog</code>에 before/after JSON으로 기록한다.</li>
+  <li>CASCADE 정책은 Prisma 모델 주석에 명시 — Order 삭제 시 OrderItem CASCADE, Product 삭제 시 RESTRICT.</li>
+</ul>
+
+</main>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { fontFamily: 'Malgun Gothic' } });
+</script>
+
+</body>
+</html>

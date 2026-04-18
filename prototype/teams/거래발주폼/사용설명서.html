@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>알티바이오 ERP - 거래처 발주폼 사용설명서</title>
+<style>
+  :root { --primary:#1B3A5C; --accent:#00A8B5; --bg:#F5F7FA; --text:#222; --muted:#667; --border:#E2E8F0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .container { max-width:860px; margin:0 auto; padding:40px 32px 80px; }
+  header { background:var(--primary); color:#fff; padding:32px 40px; border-radius:12px; margin-bottom:32px; }
+  header h1 { margin:0 0 8px; font-size:24px; }
+  header .sub { font-size:14px; opacity:0.85; }
+  section { background:#fff; border:1px solid var(--border); border-radius:10px; padding:24px 28px; margin-bottom:20px; }
+  h2 { color:var(--primary); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid var(--accent); font-size:18px; }
+  h3 { color:var(--primary); font-size:15px; margin:20px 0 10px; }
+  ul, ol { padding-left:24px; margin:8px 0; }
+  li { margin:6px 0; font-size:14px; }
+  .highlight { background:#FFF8E1; border-left:4px solid #F6AD55; padding:14px 18px; border-radius:4px; margin:12px 0; font-size:14px; }
+  .run-box { background:#E6F7F8; border:1px dashed var(--accent); padding:16px 20px; border-radius:6px; font-size:14px; }
+  .run-box strong { color:var(--primary); }
+  .btn-open { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; padding:10px 22px; border-radius:6px; margin-top:10px; font-weight:600; font-size:14px; }
+  .btn-open:hover { background:#008591; }
+  .feedback { background:#FFF5F5; border-left:4px solid #F56565; padding:14px 18px; border-radius:4px; margin:12px 0; font-size:14px; }
+  .feedback strong { color:#C53030; }
+  .small { font-size:13px; color:var(--muted); }
+  code { background:#F1F5F9; padding:2px 6px; border-radius:3px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>📋 거래처 발주폼 프로토타입</h1>
+  <div class="sub">알티바이오 ERP 시스템 · 거래처 담당자용 사용설명서</div>
+</header>
+
+<section>
+  <h2>📢 이번 버전에서 달라진 점</h2>
+  <div class="highlight">
+    <strong>발주내역 조회 시 기간 필터가 추가되었습니다.</strong><br>
+    이번달 / 1개월 / 3개월 / 전체 / 직접설정(달력) 중에서 선택해서 원하는 기간의 발주 이력만 조회할 수 있습니다.
+  </div>
+</section>
+
+<section>
+  <h2>🔑 주요 기능</h2>
+
+  <h3>① 발주 신청</h3>
+  <ul>
+    <li>품목 선택 및 수량 입력</li>
+    <li>배송지 / 납기 요청일 지정</li>
+    <li>비고란 작성 가능</li>
+  </ul>
+
+  <h3>② 발주내역 조회</h3>
+  <ul>
+    <li>기간별 발주 이력 확인 (달력 기반 필터)</li>
+    <li>각 발주 건의 진행 상태 확인 (접수 / 준비중 / 출고완료)</li>
+  </ul>
+
+  <h3>③ 거래처 정보</h3>
+  <ul>
+    <li>담당자 연락처, 결제 조건 등 확인</li>
+  </ul>
+</section>
+
+<section>
+  <h2>▶️ 실행 방법</h2>
+  <div class="run-box">
+    <strong>같은 폴더 안의 <code>index.html</code> 파일을 더블클릭</strong>하시면 웹브라우저에서 바로 열립니다.<br>
+    별도 설치나 인터넷 연결 없이 동작합니다.
+    <br><br>
+    <a class="btn-open" href="index.html">👉 지금 바로 열기</a>
+  </div>
+</section>
+
+<section>
+  <h2>💬 확인 후 알려주세요</h2>
+  <div class="feedback">
+    실제 발주 업무 흐름과 비교하며 사용해보신 뒤, 아래 내용을 회신 부탁드립니다.
+  </div>
+  <ul>
+    <li>누락된 항목이나 꼭 필요한 기능</li>
+    <li>사용하기 불편한 UI 또는 동선</li>
+    <li>추가나 수정이 필요한 부분</li>
+    <li>실제 업무와 맞지 않는 부분</li>
+  </ul>
+  <p class="small">※ 편하신 시점에 의견 주시면 차기 버전에 반영하겠습니다.</p>
+</section>
+
+</div>
+</body>
+</html>

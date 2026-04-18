@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RTBIO ERP — 워크플로우 다이어그램</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root { --primary:#1B3A5C; --accent:#00A8B5; --bg:#F5F7FA; --text:#222; --muted:#667; --border:#E2E8F0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  header { background:var(--primary); color:#fff; padding:24px 40px; }
+  header h1 { margin:0; font-size:22px; }
+  header .sub { font-size:13px; opacity:0.8; margin-top:4px; }
+  nav { background:#fff; border-bottom:1px solid var(--border); padding:12px 40px; display:flex; gap:16px; font-size:13px; position:sticky; top:0; z-index:10;}
+  nav a { color:var(--primary); text-decoration:none; padding:6px 10px; border-radius:4px; }
+  nav a:hover { background:var(--bg); }
+  nav a.active { background:var(--primary); color:#fff; }
+  main { max-width:1100px; margin:0 auto; padding:32px 40px 80px; }
+  h2 { color:var(--primary); margin-top:40px; padding-bottom:8px; border-bottom:2px solid var(--accent); }
+  h3 { color:var(--primary); font-size:16px; margin-top:28px; }
+  .diagram-box { background:#fff; border:1px solid var(--border); border-radius:8px; padding:24px; margin:16px 0; overflow:auto; }
+  .desc { background:#fff; border-left:4px solid var(--accent); padding:12px 16px; margin:12px 0; border-radius:4px; font-size:14px; }
+  .meta { background:#fff; padding:16px 20px; border-radius:8px; border:1px solid var(--border); font-size:13px; margin-bottom:24px; }
+  .meta dt { font-weight:700; color:var(--primary); display:inline-block; width:120px; }
+  .meta dd { display:inline; margin:0; }
+  .meta div { margin:4px 0; }
+  .tag { display:inline-block; padding:2px 10px; background:var(--accent); color:#fff; border-radius:10px; font-size:11px; font-weight:700; margin-right:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0; background:#fff; }
+  th, td { border:1px solid var(--border); padding:8px 12px; text-align:left; }
+  th { background:var(--primary); color:#fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔄 RTBIO ERP — 워크플로우 다이어그램</h1>
+  <div class="sub">주문 → 출고 → 결제 → 정산 전체 업무 흐름</div>
+</header>
+
+<nav>
+  <a href="workflow-diagram.html" class="active">🔄 워크플로우</a>
+  <a href="sequence-diagram.html">📞 시퀀스</a>
+  <a href="data-structure.html">🗃 데이터구조</a>
+  <a href="api-integration.html">🔌 API / 외부연동</a>
+</nav>
+
+<main>
+
+<div class="meta">
+  <div><dt>문서</dt><dd>워크플로우 다이어그램 v1.0</dd></div>
+  <div><dt>작성일</dt><dd>2026-04-17</dd></div>
+  <div><dt>대상</dt><dd>알티바이오 4/21 데모 · Phase 1 착수 전 검토용</dd></div>
+  <div><dt>범위</dt><dd>경영지원 · 영업 · 품질관리 · 거래처 4개 포털의 핵심 워크플로우</dd></div>
+</div>
+
+<h2>1. 전체 프로세스 오버뷰</h2>
+<div class="desc">거래처 발주부터 입금·정산까지의 End-to-End 흐름입니다. 각 단계는 담당 포털에 책임이 할당됩니다.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart LR
+  A["🏥 거래처<br/>(client-portal)"] -->|1. 발주| B["📋 경영지원<br/>(admin-portal)<br/>발주 확정"]
+  B -->|2. 출고 지시| C["🏭 품질관리<br/>(qc-portal)<br/>칸반 진행"]
+  C -->|3. 출고 완료| D["📦 택배/배송"]
+  D -->|4. 수령| A
+  B -->|5. 세금계산서<br/>발행| E["📄 세금계산서<br/>국세청 연동"]
+  A -->|6. 입금| F["🏦 은행 수기 등록<br/>(admin-portal)"]
+  F -->|7. 정산| G["📊 대시보드<br/>(exec-portal)"]
+  C -->|재고 변동| H["📦 재고 DB<br/>physicalStock/<br/>availableStock"]
+
+  classDef portal fill:#1B3A5C,color:#fff,stroke:#1B3A5C;
+  classDef ext fill:#F57C00,color:#fff,stroke:#F57C00;
+  classDef data fill:#00A8B5,color:#fff,stroke:#00A8B5;
+  class A,B,C,G portal;
+  class D,E,F ext;
+  class H data;
+</pre>
+</div>
+
+<h2>2. 발주 → 출고 상세 (QC 칸반 6단계)</h2>
+<div class="desc">품질관리 포털의 칸반 보드가 물류 진행의 중심이 됩니다. 각 카드는 6단계 중 한 열에 위치합니다.</div>
+
+<h3>거래처 포털 발주 상세</h3>
+<div class="desc">client-portal에서 거래처가 직접 발주. 택배 마감시간(기본 15:30) 이전까지 수량 변경 가능. 실시간 availableStock 조회로 재고 부족 시 경고.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart TD
+  CP1["거래처 로그인<br/>(client-portal)"] --> CP2["제품 목록 조회<br/>(실시간 재고 표시)"]
+  CP2 --> CP3["품목/수량 선택"]
+  CP3 --> CP4{"availableStock<br/>충분?"}
+  CP4 -->|"부족"| CP3
+  CP4 -->|"충분"| CP5["발주 제출<br/>POST /api/orders"]
+  CP5 --> CP6["재고 예약<br/>availableStock -= qty"]
+  CP6 --> CP7["칸반 waiting 카드 생성"]
+  CP3 -.->|"택배 마감(15:30) 전<br/>수량 변경 가능"| CP3
+  CP5 --> CP8["거래처에<br/>발주 확인 이메일"]
+
+  classDef portal fill:#1B3A5C,color:#fff;
+  classDef action fill:#00A8B5,color:#fff;
+  classDef check fill:#F57C00,color:#fff;
+  class CP1 portal;
+  class CP5,CP6,CP7 action;
+  class CP4 check;
+</pre>
+</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart TD
+  O["📝 발주 접수<br/>(admin-portal)"] --> W1["⏳ 대기<br/>(waiting)"]
+  W1 --> W2["🏷️ 바코드 발급<br/>(barcode)"]
+  W2 --> W3["⚙️ 세팅<br/>(setting)"]
+  W3 --> W4["📦 포장<br/>(packing)"]
+  W4 --> W5["🧾 송장 부착<br/>(invoice)"]
+  W5 --> W6["✅ 출고완료<br/>(done)"]
+  W6 --> I["📄 거래명세서<br/>발급 (admin)"]
+  I --> DL["📁 PDF 다운로드<br/>(QC 카드 📄 버튼)"]
+
+  W6 --> ADJ["재고 차감<br/>physicalStock -= qty"]
+  O --> RES["재고 예약<br/>availableStock -= qty"]
+
+  classDef stage fill:#00A8B5,color:#fff,stroke:#00A8B5;
+  classDef action fill:#1B3A5C,color:#fff;
+  classDef stock fill:#F57C00,color:#fff;
+  class W1,W2,W3,W4,W5,W6 stage;
+  class O,I,DL action;
+  class ADJ,RES stock;
+</pre>
+</div>
+
+<h3>칸반 열 정의</h3>
+<table>
+  <thead><tr><th>단계</th><th>ID</th><th>책임</th><th>다음 단계 조건</th></tr></thead>
+  <tbody>
+    <tr><td>⏳ 대기</td><td>waiting</td><td>경영지원이 발주 확정 시 자동 생성</td><td>바코드 발급 시작</td></tr>
+    <tr><td>🏷 바코드 발급</td><td>barcode</td><td>QC 담당자</td><td>바코드 프린트 완료</td></tr>
+    <tr><td>⚙ 세팅</td><td>setting</td><td>QC 담당자</td><td>제품 조립/검수 완료</td></tr>
+    <tr><td>📦 포장</td><td>packing</td><td>QC 담당자</td><td>포장 완료</td></tr>
+    <tr><td>🧾 송장 부착</td><td>invoice</td><td>QC 담당자</td><td>송장 출력 + 부착</td></tr>
+    <tr><td>✅ 출고완료</td><td>done</td><td>QC 담당자</td><td>(최종 상태)</td></tr>
+  </tbody>
+</table>
+
+<h2>3. 결제/정산 흐름 (월 1~25일 발주 → 월말 입금)</h2>
+<div class="desc">대리점 정기 결제 규칙: 매월 1~25일 발주분은 월말 일괄 입금이 원칙. 일부입금/연체는 미수금으로 관리.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart LR
+  O1["1~25일 발주"] --> O2["월말 일괄 입금 대상"]
+  O2 --> B["🏦 은행 입금 수기 등록<br/>(admin-portal)"]
+  B --> CK{"입금액 확인"}
+  CK -->|"= 예상금액"| ST1["✅ 입금완료"]
+  CK -->|"< 예상금액"| ST2["⚠️ 일부입금<br/>차액 = 미수금"]
+  CK -->|"입금 없음"| ST3["🔴 미입금<br/>연체일 경과"]
+  ST2 --> AR["📊 미수금 관리<br/>(Aging 0/30/60/90+)"]
+  ST3 --> AR
+  AR --> N["📧 자동 리마인드<br/>(Nodemailer)"]
+
+  classDef ok fill:#2E7D32,color:#fff;
+  classDef warn fill:#F57C00,color:#fff;
+  classDef bad fill:#D32F2F,color:#fff;
+  class ST1 ok;
+  class ST2 warn;
+  class ST3,AR bad;
+</pre>
+</div>
+
+<h2>4. 반품 처리 (InventoryAdjustment 재사용)</h2>
+<div class="desc">별도 반품 테이블 없이 재고 조정 테이블에 <code>reason='반품'</code>으로 기록. 입·출고와 동일한 감사 추적.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart TD
+  R1["거래처 반품 요청"] --> R2["경영지원 반품 승인"]
+  R2 --> R3["InventoryAdjustment<br/>type='IN' reason='반품'"]
+  R3 --> R4["physicalStock += qty<br/>availableStock += qty"]
+  R4 --> R5["📊 매출 차감 반영<br/>(음수 거래명세서)"]
+  R5 --> R6["✅ 미수금 차감 or<br/>환불 처리"]
+</pre>
+</div>
+
+<h2>5. 포털별 워크플로우 요약</h2>
+<table>
+  <thead><tr><th>포털</th><th>사용자</th><th>핵심 워크플로우</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>👥 exec-portal</td><td>영업팀 / 경영진</td>
+      <td>대시보드 조회 → 담당자별 매출 분석 → 거래처 상세 관리 → <strong>사용량 입력</strong> → 학회 방명록 → 발주서/명세표 출력</td>
+    </tr>
+    <tr>
+      <td>🏢 admin-portal</td><td>경영지원</td>
+      <td>발주 접수 → 거래명세서 발행 → 세금계산서 발행 → 수금 관리 → 거래처원장/매입매출장</td>
+    </tr>
+    <tr>
+      <td>🏭 qc-portal</td><td>품질관리</td>
+      <td>칸반 보드 진행 → 재고 관리 → 샘플 출고 → 운영 설정(업무시간/마감)</td>
+    </tr>
+    <tr>
+      <td>🏥 client-portal</td><td>거래처</td>
+      <td>제품 조회 → 발주 → 주문 현황 → 명세서 다운로드 → 미수금 확인</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. 상태 머신 (주문)</h2>
+<div class="diagram-box">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> 접수
+  접수 --> 확정: 경영지원 승인
+  접수 --> 취소: 취소 요청
+  확정 --> 출고중: QC 바코드/포장 시작
+  출고중 --> 완료: 송장 등록
+  완료 --> [*]
+  완료 --> 반품: 반품 승인
+  반품 --> [*]
+</pre>
+</div>
+
+
+<h2>7. 영업팀 사용량 입력 플로우</h2>
+<div class="desc">거래처별 월간 제품 사용량을 영업담당자가 직접 입력. 이 데이터는 매출 분석/예측의 기초 자료가 됨.</div>
+
+<div class="diagram-box">
+<pre class="mermaid">
+flowchart TD
+  S1["영업팀 사용량 입력<br/>(exec-portal)"] --> S2["거래처 선택"]
+  S2 --> S3["품목/수량 행 입력<br/>(다중 품목)"]
+  S3 --> S4{"임시저장<br/>or 최종제출"}
+  S4 -->|임시저장| S3
+  S4 -->|최종제출| S5["UsageRecord 저장<br/>(DB)"]
+  S5 --> S6["담당자별 매출 분석<br/>데이터 반영"]
+  S5 --> S7["대시보드 위젯<br/>사용량 집계"]
+</pre>
+</div>
+
+</main>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { fontFamily: 'Malgun Gothic' } });
+</script>
+
+</body>
+</html>
