@@ -36,7 +36,15 @@ import {
 } from "@/lib/validators/order";
 import {
   orderSubmitSchema,
+  orderRejectSchema,
+  orderHoldSchema,
+  orderResumeSchema,
+  orderCancelSchema,
   type OrderSubmitInput,
+  type OrderRejectInput,
+  type OrderHoldInput,
+  type OrderResumeInput,
+  type OrderCancelInput,
 } from "@/lib/validators/order-transition";
 import { calculatePriceSnapshot } from "@/lib/pricing";
 import { ok, fail, zodFail, type ActionResult } from "@/lib/action-result";
@@ -678,6 +686,248 @@ export async function submitOrder(
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${result.id}`);
     return ok({ id: result.id, orderNumber: result.orderNumber });
+  } catch (err) {
+    if (err instanceof OrderError) return fail(err.message);
+    throw err;
+  }
+}
+
+// ─── 3D-2b-2: REJECT / HOLD / RESUME / CANCEL (재고 미영향) ─────
+
+/**
+ * 공통 전이 헬퍼 — 허용 상태에서만 업데이트 + 감사 로그.
+ * 재고를 건드리지 않는 전이에 한해 사용.
+ */
+async function applyStatusTransition(opts: {
+  id: string;
+  allowedFrom: OrderStatus[];
+  nextStatus: OrderStatus;
+  extraData?: Prisma.OrderUncheckedUpdateInput;
+  notFoundMessage?: string;
+  guardMessage: (cur: OrderStatus) => string;
+}): Promise<{
+  id: string;
+  orderNumber: string;
+  clientId: string;
+  prevStatus: OrderStatus;
+}> {
+  return prisma.$transaction(async (tx) => {
+    const cur = await tx.order.findUnique({
+      where: { id: opts.id },
+      select: { id: true, orderNumber: true, clientId: true, status: true },
+    });
+    if (!cur)
+      throw new OrderError(opts.notFoundMessage ?? "존재하지 않는 주문입니다.");
+    if (!opts.allowedFrom.includes(cur.status))
+      throw new OrderError(opts.guardMessage(cur.status));
+
+    await tx.order.update({
+      where: { id: opts.id },
+      data: { status: opts.nextStatus, ...(opts.extraData ?? {}) },
+    });
+
+    return {
+      id: cur.id,
+      orderNumber: cur.orderNumber,
+      clientId: cur.clientId,
+      prevStatus: cur.status,
+    };
+  });
+}
+
+/**
+ * REJECT (SUBMITTED / HOLD → REJECTED, terminal).
+ * 재고 영향 없음 (CONFIRM 전이므로 예약 재고 없음).
+ */
+export async function rejectOrder(
+  id: string,
+  input: OrderRejectInput,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const parsed = orderRejectSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const { reason } = parsed.data;
+
+  try {
+    const result = await applyStatusTransition({
+      id,
+      allowedFrom: ["SUBMITTED", "HOLD"],
+      nextStatus: "REJECTED",
+      extraData: {
+        rejectedAt: new Date(),
+        rejectedReason: reason,
+      },
+      guardMessage: (cur) =>
+        `SUBMITTED/HOLD 상태에서만 반려 가능합니다 (현재: ${cur}).`,
+    });
+
+    logAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: "ORDER_REJECT",
+      resource: `Order:${id}`,
+      metadata: {
+        orderNumber: result.orderNumber,
+        clientId: result.clientId,
+        prevStatus: result.prevStatus,
+        reason,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${id}`);
+    return ok({ id });
+  } catch (err) {
+    if (err instanceof OrderError) return fail(err.message);
+    throw err;
+  }
+}
+
+/**
+ * HOLD (SUBMITTED → HOLD).
+ * 재고 영향 없음. 이후 RESUME 으로 SUBMITTED 복귀 가능.
+ */
+export async function holdOrder(
+  id: string,
+  input: OrderHoldInput,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const parsed = orderHoldSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const { reason } = parsed.data;
+
+  try {
+    const result = await applyStatusTransition({
+      id,
+      allowedFrom: ["SUBMITTED"],
+      nextStatus: "HOLD",
+      extraData: {
+        heldAt: new Date(),
+        heldReason: reason,
+      },
+      guardMessage: (cur) =>
+        `SUBMITTED 상태에서만 보류 가능합니다 (현재: ${cur}).`,
+    });
+
+    logAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: "ORDER_HOLD",
+      resource: `Order:${id}`,
+      metadata: {
+        orderNumber: result.orderNumber,
+        clientId: result.clientId,
+        reason,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${id}`);
+    return ok({ id });
+  } catch (err) {
+    if (err instanceof OrderError) return fail(err.message);
+    throw err;
+  }
+}
+
+/**
+ * RESUME (HOLD → SUBMITTED).
+ * heldAt / heldReason 은 null 로 초기화 (감사 로그에는 남음).
+ */
+export async function resumeOrder(
+  id: string,
+  input: OrderResumeInput = {},
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const parsed = orderResumeSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const { note } = parsed.data;
+
+  try {
+    const result = await applyStatusTransition({
+      id,
+      allowedFrom: ["HOLD"],
+      nextStatus: "SUBMITTED",
+      extraData: {
+        heldAt: null,
+        heldReason: null,
+      },
+      guardMessage: (cur) =>
+        `HOLD 상태에서만 재개 가능합니다 (현재: ${cur}).`,
+    });
+
+    logAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: "ORDER_RESUME",
+      resource: `Order:${id}`,
+      metadata: {
+        orderNumber: result.orderNumber,
+        clientId: result.clientId,
+        note: note ?? null,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${id}`);
+    return ok({ id });
+  } catch (err) {
+    if (err instanceof OrderError) return fail(err.message);
+    throw err;
+  }
+}
+
+/**
+ * CANCEL (SUBMITTED / HOLD → CANCELLED, terminal).
+ * 3D-2b-2 에서는 재고 미영향 경로만 허용.
+ * 3D-2b-3 에서 CONFIRMED → CANCELLED (RELEASE) 분기 추가 예정.
+ */
+export async function cancelOrder(
+  id: string,
+  input: OrderCancelInput,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const parsed = orderCancelSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const { reason } = parsed.data;
+
+  try {
+    const result = await applyStatusTransition({
+      id,
+      allowedFrom: ["SUBMITTED", "HOLD"],
+      nextStatus: "CANCELLED",
+      extraData: {
+        // 취소 사유는 감사로그 + note 에 기록 (별도 컬럼 안 둠 — CANCELLED 는 빈도 낮음)
+        note: `[취소] ${reason}`,
+      },
+      guardMessage: (cur) => {
+        if (cur === "CONFIRMED")
+          return "CONFIRMED 주문은 3D-2b-3 이후 RELEASE 포함 취소가 제공됩니다.";
+        return `SUBMITTED/HOLD 상태에서만 취소 가능합니다 (현재: ${cur}).`;
+      },
+    });
+
+    logAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: "ORDER_CANCEL",
+      resource: `Order:${id}`,
+      metadata: {
+        orderNumber: result.orderNumber,
+        clientId: result.clientId,
+        prevStatus: result.prevStatus,
+        reason,
+        releasedStock: false,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${id}`);
+    return ok({ id });
   } catch (err) {
     if (err instanceof OrderError) return fail(err.message);
     throw err;

@@ -212,6 +212,33 @@
   ✓ 이미 SUBMITTED 인 주문은 재제출 거부
   ```
 
+### 2.8 Phase 3D-2b-2 완료 — REJECT/HOLD/RESUME/CANCEL (재고 미영향) (2026-04-19)
+
+3D-2b 2번째 조각. 재고를 건드리지 않는 전이 네 개를 한 번에 구현. CONFIRM(RESERVE) + CANCEL(RELEASE) 은 3D-2b-3 에서.
+
+- **스키마 확장**: `Order` 에 `rejectedAt/rejectedReason/heldAt/heldReason` 4개 컬럼 추가 (`20260419000000_order_transition_columns`). CANCELLED 사유는 빈도 낮아 별도 컬럼 대신 `note` 에 `[취소] 사유` 프리픽스로 기록.
+- **Zod** (`orderRejectSchema` / `orderHoldSchema` / `orderResumeSchema` / `orderCancelSchema`):
+  - REJECT/HOLD/CANCEL: 사유 필수 (`requiredReason` — trim 후 3~500자).
+  - RESUME: note 선택 (`optionalNote`).
+  - 16 케이스 테스트 추가 (누적 21 transition tests).
+- **서버 액션** (`applyStatusTransition` 공통 헬퍼):
+  - REJECT: SUBMITTED/HOLD → REJECTED (terminal). `rejectedAt = now(), rejectedReason = reason`.
+  - HOLD: SUBMITTED → HOLD. `heldAt = now(), heldReason = reason`.
+  - RESUME: HOLD → SUBMITTED. `heldAt/heldReason = null` (감사로그에는 남음).
+  - CANCEL: SUBMITTED/HOLD → CANCELLED. `note = "[취소] 사유"`. **CONFIRMED 에서 호출 시 3D-2b-3 안내 메시지로 차단**.
+  - 감사 로그 4종: `ORDER_REJECT` · `ORDER_HOLD` · `ORDER_RESUME` · `ORDER_CANCEL`.
+- **UI** (`StatusActions.tsx` 전면 개편):
+  - 현재 상태 기반으로 가능한 버튼만 노출 (DRAFT→제출 / SUBMITTED→보류·반려·취소 / HOLD→재개·반려·취소).
+  - 사유 필수 전이(REJECT/HOLD/CANCEL): 3줄 textarea 모달, 3자 미만은 클라이언트 가드 + 서버 가드 이중.
+  - 단순 확인(SUBMIT/RESUME): amber 확인 모달.
+  - 주문 상세 페이지 헤더 아래 REJECT/HOLD 사유 뱃지 (빨강/황색) — 상태 + 사유 + 일시 표시.
+- **E2E 스모크** (`scripts/smoke-order-transition.ts`):
+  - [A] DRAFT → SUBMIT → HOLD → RESUME → REJECT (모든 필드 셋업/초기화 검증)
+  - [B] DRAFT → SUBMIT → CANCEL (`note` 에 `[취소]` 프리픽스)
+  - [C] CANCELLED 에서 재-CANCEL → 가드 실패 확인
+  - [D] DRAFT 에서 바로 REJECT → 가드 실패 확인
+- **테스트**: 누적 136 pass (transition 21).
+
 ### 2.1 R01·R03 세부 — 복수 배송지 (2026-04-18 추가)
 
 하나의 거래처가 여러 창고/지점에 배송받을 수 있어야 함 (예: 대리점 본점 + 지방 지점 + 물류센터, 병원 본관 구매팀 + 수술동 긴급창고).

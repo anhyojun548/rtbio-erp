@@ -68,7 +68,7 @@ prototype/          초기 HTML 목업
 ```
 
 ## 현재 단계
-🟢 **Phase 3D-2b-1 (주문 SUBMIT 전환) 완료** (2026-04-18)
+🟢 **Phase 3D-2b-2 (주문 REJECT/HOLD/RESUME/CANCEL) 완료** (2026-04-19)
 - Phase 1 ✅ 스키마 · 마이그레이션 · 시드 완료 (복수 배송지 포함)
 - Phase 2 ✅ NextAuth + bcrypt + JWT · 포털별 RBAC 매트릭스 · AuditLog util
 - Phase 3A ✅ 거래처 CRUD + 복수 배송지 UI · 검증자 · 감사로그 연결 (서버 액션)
@@ -77,7 +77,8 @@ prototype/          초기 HTML 목업
 - Phase 3D-1 ✅ 카테고리 할인율(ClientDiscount) + 제품 고정가(ClientFixedPrice) 업서트/삭제 · 거래처 상세에 두 패널 · pricing.ts 우선순위 스모크 검증
 - Phase 3D-2a ✅ 주문 DRAFT CRUD + 라인 CRUD + 배송지 스냅샷 · pricing.ts 기반 라인별 단가 미리보기 · `/admin/orders` 목록·신규·상세 UI · 임시 orderNumber(`DRAFT-xxx`) · 25건 Vitest + smoke-order DB 파이프라인 검증
 - Phase 3D-2b-1 ✅ SUBMIT 전환 · 공식 orderNumber 채번(`ORD-YYYYMMDD-NNN`, Postgres advisory lock 기반) · 라인 가격 재스냅샷 · billingMonth 세팅(R12) · `StatusActions` UI · 5건 Vitest(누적 120) + smoke-order-submit 검증(seq 증가/재SUBMIT 가드)
-- Phase 3D-2b-2 ⏳ CONFIRM(RESERVE) · REJECT · HOLD/RESUME · CANCEL(RELEASE) — 다음 단계
+- Phase 3D-2b-2 ✅ REJECT · HOLD · RESUME · CANCEL(재고 미영향 경로) · `rejectedAt/Reason` · `heldAt/Reason` 컬럼 추가 · `applyStatusTransition` 헬퍼 · UI 사유 모달 + 상세 페이지 뱃지 · 16건 Vitest(누적 136) + smoke-order-transition 4 시나리오 통과
+- Phase 3D-2b-3 ⏳ CONFIRM(RESERVE — availableStock 차감) + CANCEL 확장(CONFIRMED → RELEASE) — 다음 단계
 - Phase 3D-2c ⏳ Shipment · 칸반 · SHIP 트랜잭션(physicalStock 차감) — 그 다음
 
 **프로토타입·과업내용서는 계약 기준 유지** (계약 체결됨, 실개발 진행).

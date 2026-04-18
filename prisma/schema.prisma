@@ -319,6 +319,12 @@ model Order {
   completedAt   DateTime?
   invoiceIssued Boolean     @default(false) // R07 연동
   note          String?
+
+  // 상태 전이 사유 (Phase 3D-2b-2 —  REJECT / HOLD 추적용)
+  rejectedAt     DateTime?
+  rejectedReason String? // REJECTED 시 사유 (3~500자)
+  heldAt         DateTime?
+  heldReason     String? // HOLD 시 사유 (3~500자, RESUME 시 null 로 복귀)
   // 월 1~25일 발주 → 월말 입금 규칙 (R12) 체크용
   billingMonth  String? // "2026-04" 형식
 

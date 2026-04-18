@@ -128,6 +128,32 @@ export default async function OrderDetailPage({
         </div>
       </header>
 
+      {/* REJECT / HOLD 사유 뱃지 */}
+      {order.status === "REJECTED" && order.rejectedReason && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-xs font-semibold text-red-800 mb-1">
+            반려 사유
+            {order.rejectedAt &&
+              ` · ${new Date(order.rejectedAt).toLocaleString("ko-KR")}`}
+          </p>
+          <p className="text-sm text-red-900 whitespace-pre-wrap">
+            {order.rejectedReason}
+          </p>
+        </div>
+      )}
+      {order.status === "HOLD" && order.heldReason && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-xs font-semibold text-amber-800 mb-1">
+            보류 사유
+            {order.heldAt &&
+              ` · ${new Date(order.heldAt).toLocaleString("ko-KR")}`}
+          </p>
+          <p className="text-sm text-amber-900 whitespace-pre-wrap">
+            {order.heldReason}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* 좌 — 거래처 / 요약 */}
         <section className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-5 space-y-3">
