@@ -40,12 +40,18 @@ import {
   orderHoldSchema,
   orderResumeSchema,
   orderCancelSchema,
+  orderConfirmSchema,
   type OrderSubmitInput,
   type OrderRejectInput,
   type OrderHoldInput,
   type OrderResumeInput,
   type OrderCancelInput,
+  type OrderConfirmInput,
 } from "@/lib/validators/order-transition";
+import {
+  InventoryError,
+  assertInvariant,
+} from "@/lib/inventory/invariant";
 import { calculatePriceSnapshot } from "@/lib/pricing";
 import { ok, fail, zodFail, type ActionResult } from "@/lib/action-result";
 
@@ -881,14 +887,15 @@ export async function resumeOrder(
 }
 
 /**
- * CANCEL (SUBMITTED / HOLD → CANCELLED, terminal).
- * 3D-2b-2 에서는 재고 미영향 경로만 허용.
- * 3D-2b-3 에서 CONFIRMED → CANCELLED (RELEASE) 분기 추가 예정.
+ * CANCEL (→ CANCELLED, terminal).
+ * - SUBMITTED / HOLD: 재고 영향 없음.
+ * - CONFIRMED: 각 라인별 availableStock += quantity (RELEASE) + InventoryLog 기록.
+ * - CANCELLED / REJECTED / COMPLETED / SHIPPING / DRAFT 는 취소 불가.
  */
 export async function cancelOrder(
   id: string,
   input: OrderCancelInput,
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; releasedStock: boolean }>> {
   const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   const parsed = orderCancelSchema.safeParse(input);
@@ -896,19 +903,100 @@ export async function cancelOrder(
   const { reason } = parsed.data;
 
   try {
-    const result = await applyStatusTransition({
-      id,
-      allowedFrom: ["SUBMITTED", "HOLD"],
-      nextStatus: "CANCELLED",
-      extraData: {
-        // 취소 사유는 감사로그 + note 에 기록 (별도 컬럼 안 둠 — CANCELLED 는 빈도 낮음)
-        note: `[취소] ${reason}`,
-      },
-      guardMessage: (cur) => {
-        if (cur === "CONFIRMED")
-          return "CONFIRMED 주문은 3D-2b-3 이후 RELEASE 포함 취소가 제공됩니다.";
-        return `SUBMITTED/HOLD 상태에서만 취소 가능합니다 (현재: ${cur}).`;
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const cur = await tx.order.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          orderNumber: true,
+          clientId: true,
+          status: true,
+          items: {
+            select: { id: true, productSizeId: true, quantity: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      if (!cur) throw new OrderError("존재하지 않는 주문입니다.");
+      if (!["SUBMITTED", "HOLD", "CONFIRMED"].includes(cur.status))
+        throw new OrderError(
+          `SUBMITTED/HOLD/CONFIRMED 상태에서만 취소 가능합니다 (현재: ${cur.status}).`,
+        );
+
+      // CONFIRMED 였다면 각 라인 재고 RELEASE
+      const releasedStock = cur.status === "CONFIRMED";
+      const releaseLogs: Array<{
+        productSizeId: string;
+        qty: number;
+        physicalAfter: number;
+        availableAfter: number;
+      }> = [];
+
+      if (releasedStock) {
+        for (const it of cur.items) {
+          await tx.$queryRaw<{ id: string }[]>`
+            SELECT id FROM "tenant_altibio"."ProductSize"
+            WHERE id = ${it.productSizeId}
+            FOR UPDATE
+          `;
+          const size = await tx.productSize.findUnique({
+            where: { id: it.productSizeId },
+            select: {
+              id: true,
+              physicalStock: true,
+              availableStock: true,
+            },
+          });
+          if (!size)
+            throw new OrderError(
+              `라인의 사이즈가 존재하지 않습니다 (라인 ${it.id}).`,
+            );
+
+          const nextAvailable = size.availableStock + it.quantity;
+          assertInvariant(size.physicalStock, nextAvailable);
+
+          await tx.productSize.update({
+            where: { id: size.id },
+            data: { availableStock: nextAvailable },
+          });
+
+          await tx.inventoryLog.create({
+            data: {
+              productSizeId: size.id,
+              type: "RELEASE",
+              qtyDelta: it.quantity,
+              physicalAfter: size.physicalStock,
+              availableAfter: nextAvailable,
+              relatedOrderId: id,
+              note: `CANCEL: ${reason}`,
+              createdBy: user.id,
+            },
+          });
+
+          releaseLogs.push({
+            productSizeId: size.id,
+            qty: it.quantity,
+            physicalAfter: size.physicalStock,
+            availableAfter: nextAvailable,
+          });
+        }
+      }
+
+      await tx.order.update({
+        where: { id },
+        data: {
+          status: "CANCELLED",
+          note: `[취소] ${reason}`,
+        },
+      });
+
+      return {
+        orderNumber: cur.orderNumber,
+        clientId: cur.clientId,
+        prevStatus: cur.status,
+        releasedStock,
+        releaseLogs,
+      };
     });
 
     logAudit({
@@ -921,15 +1009,168 @@ export async function cancelOrder(
         clientId: result.clientId,
         prevStatus: result.prevStatus,
         reason,
-        releasedStock: false,
+        releasedStock: result.releasedStock,
+        releaseLines: result.releaseLogs.length,
       },
     });
 
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${id}`);
+    if (result.releasedStock) {
+      revalidatePath("/admin/inventory");
+      revalidatePath("/admin/inventory/logs");
+    }
+    return ok({ id, releasedStock: result.releasedStock });
+  } catch (err) {
+    if (err instanceof OrderError) return fail(err.message);
+    if (err instanceof InventoryError) return fail(err.message);
+    throw err;
+  }
+}
+
+/**
+ * CONFIRM (SUBMITTED → CONFIRMED).
+ * - 각 라인별 availableStock -= quantity (RESERVE).
+ * - physicalStock 은 유지 (실제 출고는 Shipment SHIP 에서).
+ * - 재고 부족 시 전체 트랜잭션 롤백.
+ * - InventoryLog type=RESERVE 기록 (relatedOrderId 연결).
+ * - `confirmedAt = now()`.
+ */
+export async function confirmOrder(
+  id: string,
+  input: OrderConfirmInput = {},
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const parsed = orderConfirmSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const { note } = parsed.data;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const cur = await tx.order.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          orderNumber: true,
+          clientId: true,
+          status: true,
+          note: true,
+          client: { select: { active: true } },
+          items: {
+            select: { id: true, productSizeId: true, quantity: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      if (!cur) throw new OrderError("존재하지 않는 주문입니다.");
+      if (cur.status !== "SUBMITTED")
+        throw new OrderError(
+          `SUBMITTED 상태에서만 확정 가능합니다 (현재: ${cur.status}).`,
+        );
+      if (!cur.client.active)
+        throw new OrderError("비활성 거래처입니다. 확정할 수 없습니다.");
+      if (cur.items.length === 0)
+        throw new OrderError("라인이 없는 주문은 확정할 수 없습니다.");
+
+      // 각 라인 재고 RESERVE (availableStock 차감)
+      const reserveLogs: Array<{
+        productSizeId: string;
+        qty: number;
+        availableAfter: number;
+      }> = [];
+
+      for (const it of cur.items) {
+        await tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "tenant_altibio"."ProductSize"
+          WHERE id = ${it.productSizeId}
+          FOR UPDATE
+        `;
+        const size = await tx.productSize.findUnique({
+          where: { id: it.productSizeId },
+          select: {
+            id: true,
+            sizeCode: true,
+            physicalStock: true,
+            availableStock: true,
+            product: { select: { code: true, name: true } },
+          },
+        });
+        if (!size)
+          throw new OrderError(
+            `라인의 사이즈가 존재하지 않습니다 (라인 ${it.id}).`,
+          );
+        if (size.availableStock < it.quantity)
+          throw new OrderError(
+            `재고 부족: ${size.product.code} ${size.sizeCode} — 가용 ${size.availableStock}개 / 요청 ${it.quantity}개`,
+          );
+
+        const nextAvailable = size.availableStock - it.quantity;
+        assertInvariant(size.physicalStock, nextAvailable);
+
+        await tx.productSize.update({
+          where: { id: size.id },
+          data: { availableStock: nextAvailable },
+        });
+
+        await tx.inventoryLog.create({
+          data: {
+            productSizeId: size.id,
+            type: "RESERVE",
+            qtyDelta: -it.quantity,
+            physicalAfter: size.physicalStock,
+            availableAfter: nextAvailable,
+            relatedOrderId: id,
+            note: note ? `CONFIRM: ${note}` : "CONFIRM",
+            createdBy: user.id,
+          },
+        });
+
+        reserveLogs.push({
+          productSizeId: size.id,
+          qty: it.quantity,
+          availableAfter: nextAvailable,
+        });
+      }
+
+      await tx.order.update({
+        where: { id },
+        data: {
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+          note: note ?? cur.note,
+        },
+      });
+
+      return {
+        orderNumber: cur.orderNumber,
+        clientId: cur.clientId,
+        itemCount: cur.items.length,
+        reserveLogs,
+      };
+    });
+
+    logAudit({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: "ORDER_CONFIRM",
+      resource: `Order:${id}`,
+      metadata: {
+        orderNumber: result.orderNumber,
+        clientId: result.clientId,
+        itemCount: result.itemCount,
+        reserveLines: result.reserveLogs.length,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${id}`);
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin/inventory/logs");
     return ok({ id });
   } catch (err) {
     if (err instanceof OrderError) return fail(err.message);
+    if (err instanceof InventoryError) return fail(err.message);
     throw err;
   }
 }

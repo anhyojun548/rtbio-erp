@@ -8,6 +8,7 @@ import {
   orderHoldSchema,
   orderResumeSchema,
   orderCancelSchema,
+  orderConfirmSchema,
 } from "./order-transition";
 
 describe("orderSubmitSchema", () => {
@@ -120,5 +121,23 @@ describe("orderCancelSchema", () => {
 
   it("reason 3자 미만 거부", () => {
     expect(orderCancelSchema.safeParse({ reason: "ab" }).success).toBe(false);
+  });
+});
+
+describe("orderConfirmSchema", () => {
+  it("빈 객체 통과 (note 선택)", () => {
+    expect(orderConfirmSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("note 제공 시 보존", () => {
+    const res = orderConfirmSchema.safeParse({ note: "재고 확보 확인" });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.note).toBe("재고 확보 확인");
+  });
+
+  it("note 500자 초과 거부", () => {
+    expect(
+      orderConfirmSchema.safeParse({ note: "n".repeat(501) }).success,
+    ).toBe(false);
   });
 });

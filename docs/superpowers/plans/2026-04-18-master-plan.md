@@ -239,6 +239,35 @@
   - [D] DRAFT 에서 바로 REJECT → 가드 실패 확인
 - **테스트**: 누적 136 pass (transition 21).
 
+### 2.9 Phase 3D-2b-3 완료 — CONFIRM(RESERVE) + CANCEL CONFIRMED(RELEASE) (2026-04-19)
+
+주문 상태 머신을 재고와 연결한 첫 단계. `availableStock` 만 움직이고 `physicalStock` 은 실출고(Shipment) 때 차감.
+
+- **Zod** (`orderConfirmSchema`): `note` 선택. 3 케이스 테스트 추가 (transition 총 24 pass).
+- **서버 액션** — `confirmOrder(id, {note?})`:
+  - 가드: SUBMITTED · 활성 거래처 · 라인 ≥ 1.
+  - 각 라인:
+    - `SELECT ... FOR UPDATE` 로 ProductSize 행 잠금 (Phase 3C 패턴 재사용).
+    - `availableStock -= quantity`. 재고 부족 시 `"재고 부족: {code} {sizeCode} — 가용 N개 / 요청 M개"` 에러 → 전체 트랜잭션 롤백.
+    - `assertInvariant(physical, nextAvailable)` 로 불변식 재확인.
+    - `InventoryLog` type=RESERVE, qtyDelta=`-quantity`, `relatedOrderId=id`, note=`CONFIRM[: {note}]`.
+  - `Order.status=CONFIRMED, confirmedAt=now()`.
+  - 감사 로그 `ORDER_CONFIRM` (reserveLines 수 포함).
+- **서버 액션 확장** — `cancelOrder` 재작성:
+  - 기존 `applyStatusTransition` 헬퍼로는 재고 트랜잭션을 한 번에 못 다뤄서 `$transaction` 로 직접 재구성.
+  - SUBMITTED / HOLD → CANCELLED: 재고 영향 없음 (기존 경로 유지).
+  - **CONFIRMED → CANCELLED**: 각 라인 `availableStock += quantity` (RELEASE), `InventoryLog` type=RELEASE 기록. `releasedStock=true` 감사 로그.
+  - 응답에 `releasedStock: boolean` 포함 → UI 에서 분기 가능.
+- **UI** (`StatusActions.tsx`):
+  - CONFIRMED 상태에서 "취소" 버튼 활성화. 취소 모달 상단에 **"CONFIRMED 이므로 예약 재고가 RELEASE 됩니다"** 경고 배너.
+  - SUBMITTED 에서 "주문 확정 →" 버튼 (indigo). 확정 모달에 재고 부족 가능성 안내.
+- **E2E 스모크** (`scripts/smoke-order-confirm.ts`):
+  - [A] DRAFT(qty=3) → SUBMIT → CONFIRM: `availableStock` 3 차감, `physicalStock` 불변, `InventoryLog.RESERVE(qtyDelta=-3)` 기록.
+  - [B] CONFIRMED → CANCEL: `availableStock` 원복(+3), `InventoryLog.RELEASE(qtyDelta=+3)` 기록.
+  - [C] 2라인 주문 (line1 정상, line2 재고 0) → CONFIRM 실패 기대 + line1 재고 롤백 확인 (전체 `$transaction` 원자성).
+  - 결과: `avail 114→111→114`, 재고 부족 에러 `"가용 0 < 요청 1"`, 롤백 후 `avail 114 불변`.
+- **테스트**: 누적 139 pass.
+
 ### 2.1 R01·R03 세부 — 복수 배송지 (2026-04-18 추가)
 
 하나의 거래처가 여러 창고/지점에 배송받을 수 있어야 함 (예: 대리점 본점 + 지방 지점 + 물류센터, 병원 본관 구매팀 + 수술동 긴급창고).

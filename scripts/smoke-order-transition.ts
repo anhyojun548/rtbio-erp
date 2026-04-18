@@ -109,9 +109,7 @@ async function submitInline(orderId: string) {
 /** 상태 전이 헬퍼 — 허용 상태 체크 + 업데이트. */
 async function transition(
   orderId: string,
-  allowedFrom: ReadonlyArray<
-    "DRAFT" | "SUBMITTED" | "HOLD" | "CONFIRMED" | "REJECTED" | "CANCELLED"
-  >,
+  allowedFrom: ReadonlyArray<string>,
   nextStatus: "SUBMITTED" | "HOLD" | "REJECTED" | "CANCELLED",
   extra: Prisma.OrderUncheckedUpdateInput = {},
 ) {

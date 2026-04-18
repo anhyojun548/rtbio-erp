@@ -9,8 +9,8 @@
  *                         └──CANCEL──▶ CANCELLED (RELEASE reserved if was CONFIRMED)
  *
  * 3D-2b-1 ✅ SUBMIT
- * 3D-2b-2 (이번 커밋): REJECT · HOLD · RESUME · CANCEL(재고 미영향 경로만: SUBMITTED/HOLD 에서 취소)
- * 3D-2b-3 (다음): CONFIRM (RESERVE — availableStock 차감) + CANCEL 확장 (CONFIRMED → RELEASE)
+ * 3D-2b-2 ✅ REJECT · HOLD · RESUME · CANCEL (SUBMITTED/HOLD 만)
+ * 3D-2b-3 (이번 커밋): CONFIRM (RESERVE — availableStock 차감) + CANCEL 확장 (CONFIRMED → RELEASE)
  */
 import { z } from "zod";
 
@@ -71,11 +71,24 @@ export type OrderResumeInput = z.input<typeof orderResumeSchema>;
 
 /**
  * CANCEL (취소 — CANCELLED, terminal).
- * - 3D-2b-2: 재고 미영향 경로만 허용 → SUBMITTED · HOLD 에서 취소.
- * - 3D-2b-3: CONFIRMED 에서도 허용 (+ RELEASE availableStock).
- * - CANCELLED / REJECTED / COMPLETED 는 이미 종료라 취소 불가.
+ * - SUBMITTED / HOLD → CANCELLED (재고 미영향).
+ * - CONFIRMED → CANCELLED (+ RELEASE availableStock, InventoryLog RELEASE).
+ * - CANCELLED / REJECTED / COMPLETED / SHIPPING 은 취소 불가.
  */
 export const orderCancelSchema = z.object({
   reason: requiredReason,
 });
 export type OrderCancelInput = z.input<typeof orderCancelSchema>;
+
+/**
+ * CONFIRM (SUBMITTED → CONFIRMED).
+ * - 각 라인별 availableStock 차감 (RESERVE). physicalStock 은 유지.
+ * - 재고 부족 시 전체 트랜잭션 롤백.
+ * - InventoryLog type=RESERVE 기록 (라인 수만큼).
+ * - `confirmedAt = now()`.
+ * - note 선택.
+ */
+export const orderConfirmSchema = z.object({
+  note: optionalNote,
+});
+export type OrderConfirmInput = z.input<typeof orderConfirmSchema>;
