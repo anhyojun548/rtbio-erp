@@ -8,6 +8,7 @@ const MENU = [
   { href: "/admin/clients", label: "거래처 관리", icon: "🏢" },
   { href: "/admin/products", label: "제품 관리", icon: "📦" },
   { href: "/admin/inventory", label: "재고 관리", icon: "📋" },
+  { href: "/admin/alerts/stock", label: "재고 알럼", icon: "🚨" },
   { href: "/admin/expiry", label: "유통기한", icon: "⏰" },
   { href: "/admin/orders", label: "발주/출고", icon: "🚚" },
   { href: "/admin/shipments", label: "출고 칸반", icon: "🪧" },
