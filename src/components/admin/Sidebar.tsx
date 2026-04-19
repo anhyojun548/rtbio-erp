@@ -17,6 +17,7 @@ const MENU = [
   { href: "/admin/payments", label: "수금 관리", icon: "💰" },
   { href: "/admin/ledger", label: "거래처원장", icon: "📒" },
   { href: "/admin/reports/monthly", label: "월간 보고서", icon: "📈" },
+  { href: "/admin/reports/sales", label: "담당자별 매출", icon: "🧑‍💼" },
   { href: "/admin/settings", label: "테넌트 설정", icon: "⚙️" },
 ];
 
