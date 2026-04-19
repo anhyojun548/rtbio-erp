@@ -15,6 +15,7 @@ const MENU = [
   { href: "/admin/invoices", label: "거래명세서", icon: "🧾" },
   { href: "/admin/payments", label: "수금 관리", icon: "💰" },
   { href: "/admin/ledger", label: "거래처원장", icon: "📒" },
+  { href: "/admin/reports/monthly", label: "월간 보고서", icon: "📈" },
 ];
 
 export function AdminSidebar() {
