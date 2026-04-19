@@ -141,6 +141,22 @@ describe("adjustmentSchema", () => {
     expect(neg.success).toBe(true);
   });
 
+  it("샘플출고는 음수만 허용", () => {
+    const pos = adjustmentSchema.safeParse({
+      productSizeId: "size-1",
+      qty: 2,
+      reason: "샘플출고",
+    });
+    expect(pos.success).toBe(false);
+
+    const neg = adjustmentSchema.safeParse({
+      productSizeId: "size-1",
+      qty: -2,
+      reason: "샘플출고",
+    });
+    expect(neg.success).toBe(true);
+  });
+
   it("알 수 없는 reason 거부", () => {
     const res = adjustmentSchema.safeParse({
       productSizeId: "size-1",

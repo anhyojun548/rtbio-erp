@@ -27,7 +27,7 @@ type ListOpts = {
 };
 
 export async function listProducts(opts: ListOpts = {}) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   const where: Prisma.ProductWhereInput = {};
   if (opts.category && opts.category !== "ALL") where.category = opts.category;
@@ -55,7 +55,7 @@ export async function listProducts(opts: ListOpts = {}) {
 }
 
 export async function listProductCategories() {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
   const rows = await prisma.product.findMany({
     where: { category: { not: null } },
     distinct: ["category"],
@@ -66,7 +66,7 @@ export async function listProductCategories() {
 }
 
 export async function getProduct(id: string) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
   return prisma.product.findUnique({
     where: { id },
     include: {

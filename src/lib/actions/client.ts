@@ -32,7 +32,7 @@ type ListOpts = {
  * 검색어(q)는 code/name/representative/phone 에 대해 case-insensitive.
  */
 export async function listClients(opts: ListOpts = {}) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC", "EXEC");
 
   const where: Prisma.ClientWhereInput = {};
   if (opts.type && opts.type !== "ALL") where.type = opts.type;

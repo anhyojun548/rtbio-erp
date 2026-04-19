@@ -65,6 +65,7 @@ model User {
   name        String
   role        UserRole
   tenantId    String? // null = SUPER_ADMIN
+  clientId    String? // CLIENT 역할 유저가 어떤 거래처를 대변하는지 (앱-레벨 FK; 크로스스키마 제약 회피)
   phone       String?
   active      Boolean   @default(true)
   lastLoginAt DateTime?
@@ -79,6 +80,7 @@ model User {
 
   @@index([tenantId])
   @@index([email])
+  @@index([clientId])
   @@schema("public")
 }
 

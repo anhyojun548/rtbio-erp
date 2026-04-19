@@ -178,6 +178,28 @@ async function main() {
   }
   console.log(`✓ Clients: ${clientsData.length}곳`);
 
+  // ------ 4.5 CLIENT 역할 포털 유저 (거래처 대리점 로그인) ------
+  // 각 AGENCY 거래처에 대표 포털 계정 1개씩 만든다.
+  const agencyClients = await prisma.client.findMany({ where: { type: "AGENCY" } });
+  for (const ac of agencyClients) {
+    const email = `${ac.code.toLowerCase()}@client.local`;
+    await prisma.user.upsert({
+      where: { email },
+      update: { clientId: ac.id },
+      create: {
+        email,
+        password: defaultPw,
+        name: `${ac.name} 포털`,
+        role: "CLIENT",
+        tenantId: tenant.id,
+        clientId: ac.id,
+        phone: ac.phone ?? undefined,
+        createdBy: "seed",
+      },
+    });
+  }
+  console.log(`✓ CLIENT Users: ${agencyClients.length}개 대리점 포털 계정 (비번 rtbio1234!)`);
+
   // ------ 5. 거래처 할인율 (R02) ------
   // 대리점은 카테고리별 할인 10~20%, 병원은 할인 없거나 소폭
   const clients = await prisma.client.findMany();

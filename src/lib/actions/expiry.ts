@@ -45,7 +45,7 @@ export type ExpiryLotFilter = {
 };
 
 export async function listExpiryLots(filter: ExpiryLotFilter = {}) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   const where: Prisma.ExpiryLotWhereInput = {};
   if (filter.productSizeId) where.productSizeId = filter.productSizeId;
@@ -93,7 +93,7 @@ export async function listExpiryLots(filter: ExpiryLotFilter = {}) {
  * 대시보드 알림 용.
  */
 export async function listExpiringSoon(days: number = 90) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
   const threshold = new Date();
   threshold.setDate(threshold.getDate() + days);
 
@@ -118,7 +118,7 @@ export async function listExpiringSoon(days: number = 90) {
 }
 
 export async function getLotsForSize(productSizeId: string) {
-  await requireRole("TENANT_OWNER", "ADMIN");
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
   return prisma.expiryLot.findMany({
     where: { productSizeId },
     orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }],
@@ -130,7 +130,7 @@ export async function getLotsForSize(productSizeId: string) {
 export async function createExpiryLot(
   input: CreateExpiryLotInput,
 ): Promise<ActionResult<{ id: string; lotNumber: string }>> {
-  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   const parsed = createExpiryLotSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
@@ -212,7 +212,7 @@ export async function updateExpiryLot(
   id: string,
   input: UpdateExpiryLotInput,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   const parsed = updateExpiryLotSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
@@ -294,7 +294,7 @@ export async function updateExpiryLot(
 export async function deleteExpiryLot(
   id: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  const user = await requireRole("TENANT_OWNER", "ADMIN", "QC");
 
   try {
     const cur = await prisma.expiryLot.findUnique({

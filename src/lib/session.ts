@@ -23,6 +23,7 @@ export type SessionUser = {
   role: UserRole;
   tenantId: string | null;
   tenantCode: string | null;
+  clientId: string | null;
 };
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
@@ -35,6 +36,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     role: session.user.role,
     tenantId: session.user.tenantId,
     tenantCode: session.user.tenantCode,
+    clientId: session.user.clientId ?? null,
   };
 }
 
@@ -54,5 +56,18 @@ export async function requireTenant(): Promise<SessionUser & { tenantId: string 
   const user = await requireAuth();
   if (!user.tenantId) redirect("/403");
   return user as SessionUser & { tenantId: string };
+}
+
+/**
+ * CLIENT 포털 전용 — role=CLIENT 이고 clientId 가 세팅된 유저만 통과.
+ * TENANT_OWNER/ADMIN 이 CLIENT 포털을 직접 볼 필요는 현재 없으므로 엄격하게 막는다.
+ */
+export async function requireClient(): Promise<
+  SessionUser & { clientId: string }
+> {
+  const user = await requireAuth();
+  if (user.role !== "CLIENT") redirect("/403");
+  if (!user.clientId) redirect("/403");
+  return user as SessionUser & { clientId: string };
 }
 

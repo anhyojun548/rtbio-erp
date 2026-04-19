@@ -16,8 +16,14 @@ const optionalString = z
   .transform((v) => (v === "" ? undefined : v))
   .optional();
 
-// 조정 사유 — 화이트리스트. "반품" | "폐기" | "실사조정" | "입고보정" 만 허용.
-export const ADJUST_REASONS = ["반품", "폐기", "실사조정", "입고보정"] as const;
+// 조정 사유 — 화이트리스트.
+export const ADJUST_REASONS = [
+  "반품",
+  "폐기",
+  "실사조정",
+  "입고보정",
+  "샘플출고",
+] as const;
 export type AdjustReason = (typeof ADJUST_REASONS)[number];
 
 export const receiveSchema = z.object({
@@ -50,12 +56,12 @@ export const adjustmentSchema = z
         message: `${val.reason}은 양수만 허용됩니다.`,
       });
     }
-    // 폐기 는 -qty 여야 한다
-    if (val.reason === "폐기" && val.qty >= 0) {
+    // 폐기 / 샘플출고 는 -qty 여야 한다
+    if ((val.reason === "폐기" || val.reason === "샘플출고") && val.qty >= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["qty"],
-        message: "폐기는 음수 수량만 허용됩니다.",
+        message: `${val.reason}은 음수 수량만 허용됩니다.`,
       });
     }
     // 실사조정 은 +/- 모두 허용
