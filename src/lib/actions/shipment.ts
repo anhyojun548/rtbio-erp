@@ -97,6 +97,77 @@ export async function listShipmentsForBoard() {
   });
 }
 
+/**
+ * 완료된 출고 내역 — R17 전용 리스트. completedAt 기준 내림차순.
+ * 기간/거래처/주문번호 필터 지원. 라인 정보는 집계 요약만 포함 (성능).
+ */
+export type ShipmentHistoryFilter = {
+  clientId?: string;
+  from?: Date;
+  to?: Date;
+  q?: string; // 주문번호/거래처명 부분검색
+  limit?: number;
+};
+
+export async function listShipmentHistory(
+  filter: ShipmentHistoryFilter = {},
+) {
+  await requireRole("TENANT_OWNER", "ADMIN", "QC");
+
+  const where: Prisma.ShipmentWhereInput = {
+    completedAt: { not: null },
+  };
+  if (filter.from || filter.to) {
+    where.completedAt = { not: null };
+    if (filter.from) (where.completedAt as Prisma.DateTimeFilter).gte = filter.from;
+    if (filter.to) (where.completedAt as Prisma.DateTimeFilter).lte = filter.to;
+  }
+  if (filter.clientId) {
+    where.order = { clientId: filter.clientId };
+  }
+  if (filter.q && filter.q.trim()) {
+    const q = filter.q.trim();
+    where.order = {
+      ...(where.order as Prisma.OrderWhereInput | undefined),
+      OR: [
+        { orderNumber: { contains: q, mode: "insensitive" } },
+        { client: { name: { contains: q, mode: "insensitive" } } },
+        { client: { code: { contains: q, mode: "insensitive" } } },
+      ],
+    };
+  }
+
+  return prisma.shipment.findMany({
+    where,
+    orderBy: [{ completedAt: "desc" }],
+    take: filter.limit ?? 500,
+    include: {
+      currentStage: {
+        select: { id: true, key: true, label: true },
+      },
+      order: {
+        select: {
+          id: true,
+          orderNumber: true,
+          orderDate: true,
+          billingMonth: true,
+          shipToRecipient: true,
+          shipToAddress: true,
+          client: { select: { id: true, code: true, name: true } },
+          items: {
+            select: {
+              quantity: true,
+              lineTotal: true,
+              product: { select: { code: true, name: true } },
+              productSize: { select: { sizeCode: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 export async function getShipment(id: string) {
   await requireRole("TENANT_OWNER", "ADMIN", "QC");
   return prisma.shipment.findUnique({

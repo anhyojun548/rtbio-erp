@@ -6,7 +6,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/session";
 import { getProduct } from "@/lib/actions/product";
+import { listExpiryLots } from "@/lib/actions/expiry";
 import { SizesPanel } from "@/components/admin/products/SizesPanel";
+import { LotsPanel } from "@/components/admin/products/LotsPanel";
 
 export default async function ProductDetailPage({
   params,
@@ -17,12 +19,33 @@ export default async function ProductDetailPage({
   const product = await getProduct(params.id);
   if (!product) notFound();
 
+  const lots = await listExpiryLots({
+    productId: product.id,
+    includeEmpty: true,
+    limit: 500,
+  });
+
   const sizesPlain = product.sizes.map((s) => ({
     id: s.id,
     sizeCode: s.sizeCode,
     physicalStock: s.physicalStock,
     availableStock: s.availableStock,
     reorderPoint: s.reorderPoint,
+  }));
+
+  const sizesForLots = product.sizes.map((s) => ({
+    id: s.id,
+    sizeCode: s.sizeCode,
+  }));
+
+  const lotsPlain = lots.map((l) => ({
+    id: l.id,
+    productSizeId: l.productSizeId,
+    lotNumber: l.lotNumber,
+    expiryDate: l.expiryDate.toISOString(),
+    quantity: l.quantity,
+    remainingQty: l.remainingQty,
+    note: l.note,
   }));
 
   return (
@@ -81,6 +104,9 @@ export default async function ProductDetailPage({
           <SizesPanel productId={product.id} initialSizes={sizesPlain} />
         </section>
       </div>
+
+      {/* 유통기한 로트 (R19) */}
+      <LotsPanel sizes={sizesForLots} initialLots={lotsPlain} />
     </div>
   );
 }

@@ -8,8 +8,10 @@ const MENU = [
   { href: "/admin/clients", label: "거래처 관리", icon: "🏢" },
   { href: "/admin/products", label: "제품 관리", icon: "📦" },
   { href: "/admin/inventory", label: "재고 관리", icon: "📋" },
+  { href: "/admin/expiry", label: "유통기한", icon: "⏰" },
   { href: "/admin/orders", label: "발주/출고", icon: "🚚" },
   { href: "/admin/shipments", label: "출고 칸반", icon: "🪧" },
+  { href: "/admin/shipments/history", label: "출고내역", icon: "📜" },
   { href: "/admin/invoices", label: "거래명세서", icon: "🧾" },
   { href: "/admin/payments", label: "수금 관리", icon: "💰" },
   { href: "/admin/ledger", label: "거래처원장", icon: "📒" },
@@ -21,9 +23,19 @@ export function AdminSidebar() {
     <aside className="w-56 bg-white border-r border-slate-200 flex-shrink-0">
       <nav className="py-4 text-sm">
         {MENU.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/admin" && pathname.startsWith(item.href));
+          // 정확 일치 또는 해당 경로의 하위 세그먼트(슬래시 경계) 일 때만 활성
+          // "/admin/shipments" 와 "/admin/shipments/history" 양쪽이 동시에 활성되는
+          // 문제를 막기 위해, 같은 prefix 라도 더 긴 href 가 있으면 더 긴 것만 우선 적용.
+          const candidates = MENU.filter(
+            (m) =>
+              pathname === m.href ||
+              (m.href !== "/admin" && pathname.startsWith(m.href + "/")),
+          );
+          const longest = candidates.reduce(
+            (best, m) => (m.href.length > best.length ? m.href : best),
+            "",
+          );
+          const active = item.href === longest;
           return (
             <Link
               key={item.href}
