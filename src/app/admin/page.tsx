@@ -6,19 +6,28 @@ import {
   countStockAlerts,
 } from "@/lib/actions/stock-alert";
 import { STOCK_LEVEL_LABEL } from "@/lib/validators/stock-alert";
+import { listExpiringSoon } from "@/lib/actions/sales-contract";
+import { CONTRACT_STATUS_LABEL } from "@/lib/validators/sales-contract";
 
 export default async function AdminHome() {
   const user = await requireRole("TENANT_OWNER", "ADMIN");
 
   // 빠른 통계 — 아직 Phase 3 시작이므로 몇 가지만
-  const [clientCount, addressCount, productCount, alertCounts, topAlerts] =
-    await Promise.all([
-      prisma.client.count({ where: { active: true } }),
-      prisma.clientAddress.count({ where: { active: true } }),
-      prisma.product.count({ where: { active: true } }),
-      countStockAlerts(),
-      listLowStockAlerts({ limit: 5 }),
-    ]);
+  const [
+    clientCount,
+    addressCount,
+    productCount,
+    alertCounts,
+    topAlerts,
+    expiringContracts,
+  ] = await Promise.all([
+    prisma.client.count({ where: { active: true } }),
+    prisma.clientAddress.count({ where: { active: true } }),
+    prisma.product.count({ where: { active: true } }),
+    countStockAlerts(),
+    listLowStockAlerts({ limit: 5 }),
+    listExpiringSoon(30),
+  ]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
@@ -123,6 +132,68 @@ export default async function AdminHome() {
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums font-semibold text-slate-800">
                     {r.deficit > 0 ? r.deficit : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+            📝 판매 계약서 만료 임박 (30일 이내)
+            {expiringContracts.length > 0 && (
+              <span className="text-xs font-normal text-amber-700">
+                ({expiringContracts.length}건)
+              </span>
+            )}
+          </h2>
+          <Link
+            href="/admin/contracts?status=ENDING_SOON"
+            className="text-xs text-sky-700 hover:underline"
+          >
+            전체 보기 →
+          </Link>
+        </div>
+        {expiringContracts.length === 0 ? (
+          <div className="p-6 text-center text-sm text-emerald-700 bg-emerald-50/50">
+            ✨ 30일 이내 만료 예정인 계약이 없습니다.
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wide">
+              <tr>
+                <th className="px-3 py-2 text-left">상태</th>
+                <th className="px-3 py-2 text-left">제목</th>
+                <th className="px-3 py-2 text-left">거래처</th>
+                <th className="px-3 py-2 text-right">종료일</th>
+                <th className="px-3 py-2 text-right">남은 일수</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {expiringContracts.slice(0, 5).map((c) => (
+                <tr key={c.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-2">
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">
+                      {CONTRACT_STATUS_LABEL[c.status]}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <Link
+                      href={`/admin/contracts/${c.id}`}
+                      className="text-slate-900 hover:underline"
+                    >
+                      {c.title}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2 text-sky-700">{c.client.name}</td>
+                  <td className="px-3 py-2 text-right font-mono text-xs text-slate-600">
+                    {c.endDate?.toISOString().slice(0, 10) ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums font-semibold text-amber-700">
+                    {c.daysLeft !== null ? `${c.daysLeft}일` : "—"}
                   </td>
                 </tr>
               ))}

@@ -7,6 +7,8 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/session";
 import { getClient } from "@/lib/actions/client";
 import { listProductCategoriesForDiscount } from "@/lib/actions/client-pricing";
+import { listContracts } from "@/lib/actions/sales-contract";
+import { CONTRACT_STATUS_LABEL } from "@/lib/validators/sales-contract";
 import { AddressPanel } from "@/components/admin/clients/AddressPanel";
 import { DiscountPanel } from "@/components/admin/clients/DiscountPanel";
 import { FixedPricePanel } from "@/components/admin/clients/FixedPricePanel";
@@ -21,9 +23,10 @@ const TYPE_LABEL: Record<ClientType, string> = {
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
   await requireRole("TENANT_OWNER", "ADMIN");
-  const [client, categories] = await Promise.all([
+  const [client, categories, contracts] = await Promise.all([
     getClient(params.id),
     listProductCategoriesForDiscount(),
+    listContracts({ clientId: params.id, limit: 50 }),
   ]);
   if (!client) notFound();
 
@@ -106,6 +109,76 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
           initialFixedPrices={fixedPrices}
         />
       </div>
+
+      {/* 판매 계약서 (R20) */}
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-slate-900">판매 계약서</h2>
+          <Link
+            href={`/admin/contracts/new?clientId=${client.id}`}
+            className="text-xs rounded-md bg-sky-600 px-3 py-1.5 text-white hover:bg-sky-700"
+          >
+            + 신규 계약
+          </Link>
+        </div>
+        {contracts.length === 0 ? (
+          <p className="text-sm text-slate-500 py-6 text-center">
+            등록된 계약서가 없습니다.
+          </p>
+        ) : (
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">제목</th>
+                <th className="px-3 py-2 text-left font-medium">시작일</th>
+                <th className="px-3 py-2 text-left font-medium">종료일</th>
+                <th className="px-3 py-2 text-left font-medium">상태</th>
+                <th className="px-3 py-2 text-left font-medium">서명</th>
+                <th className="px-3 py-2 text-right font-medium">액션</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {contracts.map((c) => (
+                <tr key={c.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-2">
+                    <Link
+                      href={`/admin/contracts/${c.id}`}
+                      className="text-slate-900 hover:underline font-medium"
+                    >
+                      {c.title}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2 text-xs font-mono text-slate-600">
+                    {c.startDate.toISOString().slice(0, 10)}
+                  </td>
+                  <td className="px-3 py-2 text-xs font-mono text-slate-600">
+                    {c.endDate ? c.endDate.toISOString().slice(0, 10) : "—"}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="text-xs text-slate-700">
+                      {CONTRACT_STATUS_LABEL[c.status]}
+                      {c.status === "ENDING_SOON" && c.daysLeft !== null
+                        ? ` (${c.daysLeft}일)`
+                        : ""}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {c.signed ? "✓" : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Link
+                      href={`/admin/contracts/${c.id}`}
+                      className="text-xs text-sky-700 hover:underline"
+                    >
+                      상세
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
 }

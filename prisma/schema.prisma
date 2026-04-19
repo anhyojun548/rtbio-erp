@@ -222,6 +222,7 @@ model Client {
   ledgers     ClosingLedger[]
   payments    Payment[]
   assignments SalesAssignment[]
+  contracts   SalesContract[]
 
   @@index([type])
   @@index([salesRepId])
@@ -717,7 +718,11 @@ model SalesContract {
   updatedAt DateTime  @updatedAt
   createdBy String?
 
+  // 거래처 삭제 시 계약도 함께 제거 (감사 이력은 AuditLog 로 이미 누적됨)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
   @@index([clientId])
+  @@index([endDate])
   @@schema("tenant_altibio")
 }
 
