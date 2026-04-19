@@ -174,6 +174,13 @@ export async function createInvoiceFromOrder(
   if (!parsed.success) return zodFail(parsed.error);
   const data = parsed.data;
 
+  // TenantSetting.vat_rate 로 VAT율 override — 없으면 기본 0.10.
+  const vatRateSetting = await prisma.tenantSetting.findUnique({
+    where: { key: "vat_rate" },
+    select: { value: true },
+  });
+  const vatRate = vatRateSetting?.value ? Number(vatRateSetting.value) : 0.1;
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
@@ -212,7 +219,7 @@ export async function createInvoiceFromOrder(
         (s, it) => s + Number(it.lineTotal),
         0,
       );
-      const { vat, total } = calcVatTotal(supplyNumber);
+      const { vat, total } = calcVatTotal(supplyNumber, vatRate);
       const supply = new Prisma.Decimal(supplyNumber.toFixed(2));
       const vatDecimal = new Prisma.Decimal(vat.toFixed(2));
       const totalDecimal = new Prisma.Decimal(total.toFixed(2));

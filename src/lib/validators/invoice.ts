@@ -91,18 +91,22 @@ export type CancelInvoiceInput = z.input<typeof cancelInvoiceSchema>;
 // ─── 금액 계산 유틸 ─────────────────────────────────────────
 
 /**
- * VAT 10% 반올림 (R18).
+ * VAT 반올림 (R18).
  *   supply: 공급가액 (Decimal 호환 숫자 문자열 또는 number)
- *   returns: { vat, total } — 모두 소수점 둘째 자리 반올림된 수치 문자열.
+ *   rate:   부가세율 (기본값 0.10 = 10%). TenantSetting.vat_rate 로 덮어쓸 수 있음.
+ *   returns: { vat, total } — 모두 소수점 둘째 자리 반올림.
  *
  * 규칙:
- *   - VAT = round(supply × 0.1, 2) — 금융 반올림 (half away from zero).
+ *   - VAT = round(supply × rate, 2) — 금융 반올림 (half away from zero).
  *   - total = supply + vat.
  *
  * 계산을 순수 함수로 뽑은 이유: 단위 테스트에서 스키마/DB 없이 검증하기 위함.
  */
-export function calcVatTotal(supply: number): { vat: number; total: number } {
-  const vatRaw = supply * 0.1;
+export function calcVatTotal(
+  supply: number,
+  rate = 0.1,
+): { vat: number; total: number } {
+  const vatRaw = supply * rate;
   // toFixed 는 half-away-from-zero 가 아닌 banker's rounding 이슈 회피 위해 Math.round 사용
   const vat = Math.round(vatRaw * 100) / 100;
   const total = Math.round((supply + vat) * 100) / 100;
