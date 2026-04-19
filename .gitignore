@@ -57,3 +57,9 @@ docs/node_modules/
 # Python 임시 스크립트
 make_detailed_docx.py
 verify_detailed.py
+
+# 프레젠테이션/데모 리소스 (비디오·로고 등 — Git LFS 또는 별도 스토리지)
+meeting/
+mockup/
+proposal/
+콘텐츠/
