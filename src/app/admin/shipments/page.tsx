@@ -39,7 +39,7 @@ export default async function ShipmentBoardPage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-4">
-      <header className="flex items-end justify-between">
+      <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">출고 칸반</h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -47,9 +47,17 @@ export default async function ShipmentBoardPage() {
             terminal 단계(마지막 열) 도달 시 실재고가 차감됩니다.
           </p>
         </div>
-        <div className="text-xs text-slate-500">
-          진행중 {shipments.filter((s) => !s.completedAt).length}건 · 완료{" "}
-          {shipments.filter((s) => s.completedAt).length}건
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-slate-500">
+            진행중 {shipments.filter((s) => !s.completedAt).length}건 · 완료{" "}
+            {shipments.filter((s) => s.completedAt).length}건
+          </div>
+          <Link
+            href="/admin/shipments/columns"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+          >
+            ⚙ 단계 관리
+          </Link>
         </div>
       </header>
 
