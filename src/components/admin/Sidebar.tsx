@@ -18,6 +18,7 @@ const MENU = [
   { href: "/admin/ledger", label: "거래처원장", icon: "📒" },
   { href: "/admin/reports/monthly", label: "월간 보고서", icon: "📈" },
   { href: "/admin/reports/sales", label: "담당자별 매출", icon: "🧑‍💼" },
+  { href: "/admin/reports/sales-history", label: "영업 이력서", icon: "🗓️" },
   { href: "/admin/contracts", label: "판매 계약서", icon: "📝" },
   { href: "/admin/data-usage", label: "데이터 사용량", icon: "📡" },
   { href: "/admin/settings", label: "테넌트 설정", icon: "⚙️" },
