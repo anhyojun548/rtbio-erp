@@ -7,6 +7,7 @@ const MENU = [
   { href: "/exec", label: "내 대시보드", icon: "📊" },
   { href: "/exec/clients", label: "내 거래처", icon: "🏢" },
   { href: "/exec/orders", label: "내 주문", icon: "📦" },
+  { href: "/exec/conferences", label: "학회 방명록", icon: "🎓" },
 ];
 
 export function ExecSidebar() {
