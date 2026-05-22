@@ -1,6 +1,8 @@
 /**
  * 영업팀 공지사항 — Phase 5
  */
+export const dynamic = "force-dynamic";
+
 import { requireRole } from "@/lib/session";
 import { listNotices } from "@/lib/actions/notice";
 import { listClients } from "@/lib/actions/client";
@@ -9,15 +11,22 @@ import { NoticeBoard } from "@/components/shared/notice/NoticeBoard";
 
 export default async function ExecNoticesPage() {
   await requireRole("TENANT_OWNER", "ADMIN", "EXEC");
-  const [notices, clients, totalsRaw] = await Promise.all([
-    listNotices({ limit: 100 }),
-    listClients({ active: "ACTIVE" }),
-    prisma.client.groupBy({
-      by: ["type"],
-      where: { active: true },
-      _count: { _all: true },
-    }),
-  ]);
+  let notices: Awaited<ReturnType<typeof listNotices>> = [];
+  let clients: Awaited<ReturnType<typeof listClients>> = [];
+  let totalsRaw: { type: string; _count: { _all: number } }[] = [];
+  try {
+    [notices, clients, totalsRaw] = await Promise.all([
+      listNotices({ limit: 100 }),
+      listClients({ active: "ACTIVE" }),
+      prisma.client.groupBy({
+        by: ["type"],
+        where: { active: true },
+        _count: { _all: true },
+      }),
+    ]);
+  } catch (e) {
+    console.warn("[NoticesPage] DB 접근 실패 — 마이그레이션 필요:", (e as Error).message);
+  }
 
   const totals = totalsRaw.reduce(
     (acc, r) => {

@@ -26,8 +26,10 @@
     "next": "14.2.18",
     "next-auth": "^4.24.10",
     "nodemailer": "^6.9.16",
+    "papaparse": "^5.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },
@@ -35,6 +37,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.17.9",
     "@types/nodemailer": "^6.4.17",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",

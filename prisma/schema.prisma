@@ -1072,3 +1072,52 @@ model QualityDocument {
   @@index([category])
   @@schema("tenant_altibio")
 }
+
+// ----------------------------------------------------------------------------
+// 매입매출 거래원장 (데이터 탐색기 — 엑셀/CSV 업로드 데이터 저장소)
+//   - 2023.01 ~ 2026.05 알티바이오 거래 데이터 41,537 행 시드
+//   - 영업/경영지원/품질 포털 모두 조회·다운로드 가능
+//   - 필터: 날짜/거래처/품목/구분(매출/매입)
+// ----------------------------------------------------------------------------
+
+enum TxnKind {
+  SALE // 매출
+  PURCHASE // 매입
+
+  @@schema("tenant_altibio")
+}
+
+model TransactionLedger {
+  id           String   @id @default(cuid())
+  txnDate      DateTime // 거래일자
+  kind         TxnKind // 매출/매입
+  taxType      String? // 과세/면세/영세
+  clientCode   String? // 거래처 코드 (엑셀 D열)
+  clientName   String? // 거래처명 (엑셀 E열)
+  productCode  String? // 품목코드
+  productName  String // 품목명
+  spec         String? // 규격 (S/M/L/XL)
+  unit         String? // 단위 (EA(편측))
+  qty          Decimal  @db.Decimal(14, 4) // 수량
+  unitPrice    Decimal  @db.Decimal(14, 2) // 단가
+  supplyAmount Decimal  @db.Decimal(15, 2) // 공급가
+  vat          Decimal  @db.Decimal(15, 2) // 부가세
+  totalAmount  Decimal  @db.Decimal(15, 2) // 합계금액
+  itemMemo     String? // 품목비고
+  voucherNo    String? // 전표번호 (예: S2600426)
+  hasInvoice   Boolean  @default(false) // 거래명세표 발급 여부 (O/X)
+  evidence     String? // 증빙
+  category     String? // 거래범주 (예: "병원(박진우 과장님)")
+  memo         String? // 비고 (예: "*직납")
+  importSource String? // 'excel:filename' / 'csv:filename' / 'manual'
+  importedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  createdBy    String?
+
+  @@index([txnDate])
+  @@index([clientCode])
+  @@index([productCode])
+  @@index([kind, txnDate])
+  @@index([voucherNo])
+  @@schema("tenant_altibio")
+}

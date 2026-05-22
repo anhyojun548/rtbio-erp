@@ -7,6 +7,10 @@ node_modules/
 # prototype → React 이식 완료 후 삭제 예정
 src.bak/
 
+# 2026-05-22: 매입매출 시드 데이터 (19MB) — git 추적 제외, 별도 배포
+prisma/seed-transactions.json
+"경영지원팀 추가자료/"
+
 # Build
 .next/
 out/
