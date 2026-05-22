@@ -226,6 +226,11 @@ model Client {
   assignments SalesAssignment[]
   contracts   SalesContract[]
 
+  // Phase 5 신규 모듈 (2026-05-22)
+  noticeRecipients NoticeRecipient[]
+  noticeReadLogs   NoticeReadLog[]
+  udiReportItems   UdiReportItem[]
+
   @@index([type])
   @@index([salesRepId])
   @@schema("tenant_altibio")
@@ -329,7 +334,7 @@ model Order {
   heldAt         DateTime?
   heldReason     String? // HOLD 시 사유 (3~500자, RESUME 시 null 로 복귀)
   // 월 1~25일 발주 → 월말 입금 규칙 (R12) 체크용
-  billingMonth  String? // "2026-04" 형식
+  billingMonth   String? // "2026-04" 형식
 
   // ── 배송지 (선택된 ClientAddress 의 스냅샷 — 가격 스냅샷과 동일 철학)
   // 발주 제출 시 ClientAddress 내용을 고정 기록. 이후 배송지가 수정/삭제돼도 주문은 영향 없음.
@@ -830,5 +835,240 @@ model TenantSetting {
   updatedAt   DateTime @updatedAt
   updatedBy   String?
 
+  @@schema("tenant_altibio")
+}
+
+// ============================================================================
+// ▼ Phase 5 신규 모듈 (2026-05-22)
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 공지사항 (4팀 → 거래처 발송)
+//   - createdByTeam: '경영지원팀' | '영업팀' | '품질관리팀' | '임원진'
+//   - target: ALL / DEALER / HOSPITAL / SPECIFIC
+//   - targetClients[]: SPECIFIC 일 때 대상 거래처 목록 (M:N via NoticeRecipient)
+//   - readBy[]: 거래처별 읽음 상태 (NoticeReadLog)
+// ----------------------------------------------------------------------------
+
+enum NoticeTarget {
+  ALL // 전체 거래처
+  DEALER // 대리점만
+  HOSPITAL // 병원만
+  SPECIFIC // 특정 거래처
+
+  @@schema("tenant_altibio")
+}
+
+enum NoticePriority {
+  NORMAL
+  HIGH
+
+  @@schema("tenant_altibio")
+}
+
+model Notice {
+  id            String         @id @default(cuid())
+  title         String
+  body          String         @db.Text
+  target        NoticeTarget
+  priority      NoticePriority @default(NORMAL)
+  pinned        Boolean        @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdBy     String // User.id
+  createdByTeam String // '경영지원팀' / '영업팀' / '품질관리팀' / '임원진'
+
+  // SPECIFIC 발송 대상 거래처 (M:N)
+  recipients NoticeRecipient[]
+  // 읽음 로그
+  readLogs   NoticeReadLog[]
+
+  @@index([createdAt])
+  @@index([priority, pinned])
+  @@schema("tenant_altibio")
+}
+
+model NoticeRecipient {
+  id       String @id @default(cuid())
+  noticeId String
+  clientId String
+
+  notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, clientId])
+  @@index([clientId])
+  @@schema("tenant_altibio")
+}
+
+model NoticeReadLog {
+  id            String   @id @default(cuid())
+  noticeId      String
+  clientId      String
+  readAt        DateTime @default(now())
+  // "다시 보지 않기" 체크 — 거래처 포털 팝업 안 뜸
+  dontShowAgain Boolean  @default(false)
+
+  notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, clientId])
+  @@index([clientId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// 베트남 발주 트래킹 (생산 발주 → 항공/선박 분할 입고)
+// ----------------------------------------------------------------------------
+
+enum ProcurementCategory {
+  FABRIC // 원단
+  MATERIAL // 부자재
+  PRODUCT // 제품
+
+  @@schema("tenant_altibio")
+}
+
+enum ProcurementStatus {
+  PENDING // 대기
+  IN_PRODUCTION // 생산중
+  SHIPPING // 출고중
+  PARTIAL // 부분입고
+  COMPLETED // 입고완료
+
+  @@schema("tenant_altibio")
+}
+
+enum ShipmentTransport {
+  AIR // 항공 ✈️
+  SEA // 선박 🚢
+
+  @@schema("tenant_altibio")
+}
+
+model ProcurementProject {
+  id             String              @id @default(cuid())
+  code           String              @unique // PRJ-YYMMNN
+  title          String
+  category       ProcurementCategory
+  status         ProcurementStatus   @default(PENDING)
+  orderDate      DateTime
+  plannedArrival DateTime?
+  totalQty       Int                 @default(0)
+  receivedQty    Int                 @default(0)
+  note           String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  createdBy      String
+
+  shipments ProcurementShipment[]
+
+  @@index([category, status])
+  @@index([orderDate])
+  @@schema("tenant_altibio")
+}
+
+model ProcurementShipment {
+  id             String            @id @default(cuid())
+  projectId      String
+  transport      ShipmentTransport
+  qty            Int
+  departureDate  DateTime?
+  arrivalDate    DateTime? // 입고일
+  expectedDate   DateTime? // 예상 입항일
+  trackingNumber String?
+  note           String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  project ProcurementProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// UDI 공급내역 보고 (월별 병원 납품 자동 집계)
+// ----------------------------------------------------------------------------
+
+enum UdiReportStatus {
+  DRAFT // 작성중
+  SUBMITTED // 식약처 전송완료
+  ACCEPTED // 접수번호 발급
+
+  @@schema("tenant_altibio")
+}
+
+model UdiReport {
+  id          String          @id @default(cuid())
+  reportMonth String // YYYY-MM
+  status      UdiReportStatus @default(DRAFT)
+  receiptNo   String? // 식약처 접수번호 (ACCEPTED 시 발급)
+  submittedAt DateTime?
+  totalItems  Int             @default(0)
+  totalAmount Decimal         @default(0) @db.Decimal(15, 2)
+  note        String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdBy   String
+
+  items UdiReportItem[]
+
+  @@unique([reportMonth])
+  @@schema("tenant_altibio")
+}
+
+model UdiReportItem {
+  id          String   @id @default(cuid())
+  reportId    String
+  clientId    String // 거래처(병원)
+  bizNumber   String // 사업자등록번호
+  productId   String?
+  udiCode     String // UDI-DI 14자리
+  productName String
+  spec        String?
+  qty         Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  totalAmount Decimal  @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+
+  report UdiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  client Client    @relation(fields: [clientId], references: [id])
+
+  @@index([reportId])
+  @@index([clientId])
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// 매뉴얼·절차서·양식 카탈로그 (ISO 13485)
+// ----------------------------------------------------------------------------
+
+enum QualityDocKind {
+  MANUAL // 매뉴얼 (M)
+  PROCEDURE // 절차서 (P)
+  FORM // 양식 (F)
+
+  @@schema("tenant_altibio")
+}
+
+model QualityDocument {
+  id          String         @id @default(cuid())
+  code        String         @unique // 예: "F401", "P101", "M001"
+  title       String
+  kind        QualityDocKind
+  category    String? // "교육훈련" / "공정관리" / "고객불만" 등
+  revision    String?
+  effectiveAt DateTime?
+  filePath    String? // Blob Storage 경로
+  description String?        @db.Text
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  createdBy   String
+
+  @@index([kind, active])
+  @@index([category])
   @@schema("tenant_altibio")
 }
