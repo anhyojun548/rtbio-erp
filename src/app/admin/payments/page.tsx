@@ -58,15 +58,12 @@ export default async function PaymentsPage({
   }));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">수금 관리</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">💰 수금 관리</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           거래처별 입금을 기록하고 은행 거래내역과 매칭합니다. 월 마감은{" "}
-          <a
-            href="/admin/ledger"
-            className="text-sky-700 hover:underline"
-          >
+          <a href="/admin/ledger" className="text-primary hover:underline">
             거래처원장
           </a>
           에서 재계산합니다.

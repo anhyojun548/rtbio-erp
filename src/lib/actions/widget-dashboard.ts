@@ -600,6 +600,6 @@ export async function getMyDashboard() {
   return { widgets, values };
 }
 
-export function getAllPresets() {
+export async function getAllPresets() {
   return DASHBOARD_WIDGET_PRESETS;
 }

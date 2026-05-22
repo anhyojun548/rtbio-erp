@@ -20,7 +20,7 @@ export default async function NewContractPage({
   }));
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <header>
         <Link
           href="/admin/contracts"
@@ -28,7 +28,7 @@ export default async function NewContractPage({
         >
           ← 계약서 목록
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900 mt-1">
+        <h1 className="text-display m-0 mt-1">
           신규 판매 계약서
         </h1>
       </header>

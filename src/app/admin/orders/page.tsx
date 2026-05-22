@@ -1,5 +1,5 @@
 /**
- * 발주/출고 목록 (Phase 3D-2a — DRAFT 단계).
+ * 발주/출고 목록 (Phase 3D-2a → 2026-05-22 UI 재작성)
  * ?q=ORD&status=DRAFT&from=2026-04-01&to=2026-04-30
  */
 import Link from "next/link";
@@ -7,28 +7,10 @@ import { requireRole } from "@/lib/session";
 import { listOrders } from "@/lib/actions/order";
 import type { OrderStatus } from "@prisma/client";
 import { OrderListFilter } from "@/components/admin/orders/ListFilter";
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  DRAFT: "DRAFT",
-  SUBMITTED: "제출",
-  CONFIRMED: "확정",
-  HOLD: "보류",
-  REJECTED: "반려",
-  SHIPPING: "출고중",
-  COMPLETED: "완료",
-  CANCELLED: "취소",
-};
-
-const STATUS_COLOR: Record<OrderStatus, string> = {
-  DRAFT: "bg-slate-100 text-slate-600",
-  SUBMITTED: "bg-sky-50 text-sky-700",
-  CONFIRMED: "bg-indigo-50 text-indigo-700",
-  HOLD: "bg-amber-50 text-amber-700",
-  REJECTED: "bg-red-50 text-red-700",
-  SHIPPING: "bg-blue-50 text-blue-700",
-  COMPLETED: "bg-emerald-50 text-emerald-700",
-  CANCELLED: "bg-slate-100 text-slate-500 line-through",
-};
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/shared/Button";
+import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 type SearchParams = {
   q?: string;
@@ -38,15 +20,11 @@ type SearchParams = {
 };
 
 const ALL_STATUSES: OrderStatus[] = [
-  "DRAFT",
-  "SUBMITTED",
-  "CONFIRMED",
-  "HOLD",
-  "REJECTED",
-  "SHIPPING",
-  "COMPLETED",
-  "CANCELLED",
+  "DRAFT", "SUBMITTED", "CONFIRMED", "HOLD", "REJECTED",
+  "SHIPPING", "COMPLETED", "CANCELLED",
 ];
+
+type OrderRow = Awaited<ReturnType<typeof listOrders>>[number];
 
 export default async function OrderListPage({
   searchParams,
@@ -70,22 +48,88 @@ export default async function OrderListPage({
     to: to && !Number.isNaN(to.getTime()) ? to : undefined,
   });
 
-  return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">발주/출고</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            주문서를 작성·관리합니다. DRAFT 상태에서만 자유 편집 가능.
-          </p>
-        </div>
-        <Link
-          href="/admin/orders/new"
-          className="rounded-md bg-sky-600 text-white px-4 py-2 text-sm font-medium hover:bg-sky-700 transition"
-        >
-          + 신규 주문
+  // 우리 StatusBadge 가 인식하는 키로 매핑 (HOLD → HELD)
+  const mapStatusForBadge = (s: OrderStatus): string =>
+    s === "HOLD" ? "HELD" : s;
+
+  const columns: ColumnDef<OrderRow>[] = [
+    {
+      key: "orderNumber",
+      label: "주문번호",
+      width: "180px",
+      render: (o) => (
+        <Link href={`/admin/orders/${o.id}`} className="font-mono text-tiny text-primary hover:underline font-semibold">
+          {o.orderNumber}
         </Link>
-      </header>
+      ),
+    },
+    {
+      key: "orderDate",
+      label: "주문일",
+      width: "110px",
+      cellClassName: "tabular-nums text-ink-secondary",
+      render: (o) => new Date(o.orderDate).toLocaleDateString("ko-KR"),
+    },
+    {
+      key: "client",
+      label: "거래처",
+      render: (o) => (
+        <>
+          <div className="font-semibold text-ink">{o.client.name}</div>
+          <div className="font-mono text-tiny text-ink-muted">{o.client.code}</div>
+        </>
+      ),
+    },
+    {
+      key: "shipTo",
+      label: "배송지",
+      hideOnMobile: true,
+      render: (o) => (
+        <div className="text-tiny text-ink-secondary">
+          {o.shipToLabel ?? "—"}
+          {o.shipToRecipient ? <span className="text-ink-muted"> / {o.shipToRecipient}</span> : null}
+        </div>
+      ),
+    },
+    {
+      key: "items",
+      label: "라인",
+      align: "right",
+      width: "60px",
+      cellClassName: "tabular-nums",
+      render: (o) => o._count.items,
+    },
+    {
+      key: "status",
+      label: "상태",
+      align: "center",
+      width: "90px",
+      render: (o) => <StatusBadge status={mapStatusForBadge(o.status)} variant="order" small />,
+    },
+    {
+      key: "actions",
+      label: "액션",
+      align: "right",
+      width: "70px",
+      render: (o) => (
+        <Link href={`/admin/orders/${o.id}`} className="text-tiny text-primary hover:underline">
+          상세
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="📋 발주 / 출고"
+        subtitle="주문서를 작성·관리합니다. DRAFT 상태에서만 자유 편집 가능."
+        actions={
+          <Button href="/admin/orders/new" variant="primary">
+            + 신규 주문
+          </Button>
+        }
+      />
 
       <OrderListFilter
         defaultValues={{
@@ -96,79 +140,14 @@ export default async function OrderListPage({
         }}
       />
 
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">주문번호</th>
-              <th className="px-4 py-3 text-left font-medium">주문일</th>
-              <th className="px-4 py-3 text-left font-medium">거래처</th>
-              <th className="px-4 py-3 text-left font-medium">배송지</th>
-              <th className="px-4 py-3 text-right font-medium">라인</th>
-              <th className="px-4 py-3 text-center font-medium">상태</th>
-              <th className="px-4 py-3 text-right font-medium">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-400">
-                  조건에 맞는 주문이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              orders.map((o) => (
-                <tr
-                  key={o.id}
-                  className="border-t border-slate-100 hover:bg-slate-50/60"
-                >
-                  <td className="px-4 py-3 font-mono text-xs text-slate-700">
-                    <Link
-                      href={`/admin/orders/${o.id}`}
-                      className="hover:text-sky-700 hover:underline"
-                    >
-                      {o.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700 tabular-nums">
-                    {new Date(o.orderDate).toLocaleDateString("ko-KR")}
-                  </td>
-                  <td className="px-4 py-3 text-slate-800">
-                    <div className="font-medium">{o.client.name}</div>
-                    <div className="font-mono text-xs text-slate-500">
-                      {o.client.code}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600 text-xs">
-                    {o.shipToLabel ?? "-"}
-                    {o.shipToRecipient ? ` / ${o.shipToRecipient}` : ""}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                    {o._count.items}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[o.status]}`}
-                    >
-                      {STATUS_LABEL[o.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/orders/${o.id}`}
-                      className="text-xs text-slate-600 hover:text-sky-700"
-                    >
-                      상세
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={orders}
+        keyField="id"
+        emptyMessage="조건에 맞는 주문이 없습니다."
+      />
 
-      <p className="text-xs text-slate-400">총 {orders.length}건</p>
+      <p className="text-tiny text-ink-muted">총 {orders.length}건</p>
     </div>
   );
 }

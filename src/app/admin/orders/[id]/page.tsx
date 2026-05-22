@@ -99,11 +99,11 @@ export default async function OrderDetailPage({
     order.status === "COMPLETED" ? await getInvoiceByOrderId(order.id) : null;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 font-mono">
+            <h1 className="text-display m-0 font-mono">
               {order.orderNumber}
             </h1>
             <span
@@ -112,7 +112,7 @@ export default async function OrderDetailPage({
               {STATUS_LABEL[order.status]}
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-caption text-ink-secondary mt-1">
             주문일 {new Date(order.orderDate).toLocaleDateString("ko-KR")}
             {order.requestedDate &&
               ` · 희망배송일 ${new Date(order.requestedDate).toLocaleDateString("ko-KR")}`}

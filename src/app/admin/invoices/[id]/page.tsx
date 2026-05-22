@@ -46,11 +46,11 @@ export default async function InvoiceDetailPage({
   const displayNumber = isDraft ? "(DRAFT)" : inv.invoiceNumber;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 font-mono">
+            <h1 className="text-display m-0 font-mono">
               {displayNumber}
             </h1>
             <span
@@ -59,7 +59,7 @@ export default async function InvoiceDetailPage({
               {STATUS_LABEL[inv.status]}
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-caption text-ink-secondary mt-1">
             발행일 {new Date(inv.issueDate).toLocaleDateString("ko-KR")}
             {inv.dueDate &&
               ` · 지급기한 ${new Date(inv.dueDate).toLocaleDateString("ko-KR")}`}

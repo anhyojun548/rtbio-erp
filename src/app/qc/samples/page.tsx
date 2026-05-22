@@ -60,13 +60,13 @@ export default async function QcSamplesPage() {
   }));
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">샘플 출고</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">🎁 샘플 출고</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           거래처 대상 샘플 제공 기록을 남깁니다. 기록 시{" "}
-          <code className="text-xs bg-slate-100 px-1 rounded">
-            InventoryAdjustment.reason = "샘플출고"
+          <code className="text-tiny font-mono bg-canvas px-1.5 py-0.5 rounded-xs">
+            InventoryAdjustment.reason = &quot;샘플출고&quot;
           </code>{" "}
           로 재고가 차감됩니다.
         </p>

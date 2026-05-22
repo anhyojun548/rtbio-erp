@@ -21,14 +21,14 @@ export default async function TenantSettingsPage() {
   }));
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">테넌트 설정</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">⚙️ 테넌트 설정</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           업무시간 · 택배 마감시간 · 재고 알람 배수 · 부가세율을 관리합니다 (R13).
           <br />
-          <strong>부가세율</strong>은 거래명세서 발행 계산에,{" "}
-          <strong>재고 알람 배수</strong>는 품목별 재주문 기준에 사용됩니다.
+          <strong className="text-primary">부가세율</strong>은 거래명세서 발행 계산에,{" "}
+          <strong className="text-primary">재고 알람 배수</strong>는 품목별 재주문 기준에 사용됩니다.
         </p>
       </header>
 

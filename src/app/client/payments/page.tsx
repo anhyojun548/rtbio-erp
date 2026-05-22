@@ -20,9 +20,9 @@ export default async function ClientPaymentsPage() {
   const lastMonthSales = ledgers[0] ? Number(ledgers[0].monthlySales) : 0;
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">수금·미수금</h1>
+        <h1 className="text-display m-0">💰 수금·미수금</h1>
         <p className="text-sm text-slate-500 mt-1">
           월별 원장과 최근 수금 내역을 확인합니다. 미수금 관련 문의는 경영지원팀에 연락해주세요.
         </p>

@@ -74,9 +74,9 @@ export default async function ClientOrdersPage({
   const totalAmount = rows.reduce((s, r) => s + r.totalAmount, 0);
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">발주 현황</h1>
+        <h1 className="text-display m-0">📦 발주 현황</h1>
         <p className="text-sm text-slate-500 mt-1">
           우리 거래처 이름으로 등록된 모든 발주를 조회합니다.
         </p>

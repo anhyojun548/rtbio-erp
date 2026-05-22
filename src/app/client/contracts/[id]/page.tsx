@@ -21,17 +21,14 @@ export default async function ClientContractDetailPage({
   );
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
-      <Link
-        href="/client/contracts"
-        className="text-sm text-sky-700 hover:underline"
-      >
+    <div className="space-y-6 max-w-3xl">
+      <Link href="/client/contracts" className="text-caption text-primary hover:underline">
         ← 계약서 목록
       </Link>
 
       <header>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">{c.title}</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-display m-0">📝 {c.title}</h1>
           <StageBadge stage={stage} daysLeft={daysLeft} />
         </div>
       </header>

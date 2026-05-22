@@ -94,16 +94,13 @@ export default async function ExpiryPage({
     });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">유통기한 관리</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">⏰ 유통기한 관리</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             로트별 유통기한·잔여수량을 추적합니다. 새 로트는{" "}
-            <Link
-              href="/admin/products"
-              className="text-sky-700 hover:underline"
-            >
+            <Link href="/admin/products" className="text-primary hover:underline">
               제품 상세
             </Link>
             에서 등록하세요.

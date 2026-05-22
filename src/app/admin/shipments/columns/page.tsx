@@ -25,11 +25,11 @@ export default async function KanbanColumnsAdminPage() {
   }));
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-4xl">
       <header className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">칸반 단계 관리</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">칸반 단계 관리</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             출고 칸반에 표시되는 단계(열)를 관리합니다 (R05).
             <br />
             terminal 단계 진입 시 <strong>physicalStock 이 차감</strong>되고 자동 완료됩니다.

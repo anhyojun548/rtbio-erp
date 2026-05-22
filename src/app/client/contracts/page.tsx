@@ -17,9 +17,9 @@ export default async function ClientContractsPage({
   const now = new Date();
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">판매 계약서</h1>
+        <h1 className="text-display m-0">📝 판매 계약서</h1>
         <p className="text-sm text-slate-500 mt-1">
           체결된 판매 계약서 목록입니다. 계약 문의는 담당 영업사원에게 연락해주세요.
         </p>

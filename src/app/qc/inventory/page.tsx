@@ -13,11 +13,11 @@ export default async function QcInventoryPage() {
   const lowCount = rows.filter((r) => r.low).length;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-center justify-between">
+    <div className="space-y-6">
+      <header className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">재고 관리</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">📊 재고 관리</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             활성 제품의 사이즈별 재고를 조회하고, 입고·조정을 기록합니다.
           </p>
         </div>

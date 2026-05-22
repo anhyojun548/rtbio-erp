@@ -24,13 +24,13 @@ export default async function MyClientsPage() {
   const monthLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">내 거래처</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">🏢 내 거래처</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             {user.name}님에게 배정된{" "}
-            <strong className="text-slate-800">{clients.length}개</strong>{" "}
+            <strong className="text-primary">{clients.length}개</strong>{" "}
             거래처입니다. 이번 달({monthLabel}) 매출 기준 정렬/검색이 가능합니다.
           </p>
         </div>

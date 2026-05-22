@@ -49,11 +49,11 @@ export default async function ProductDetailPage({
   }));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
+            <h1 className="text-display m-0">{product.name}</h1>
             {!product.active && (
               <span className="rounded-full bg-slate-200 text-slate-600 px-2 py-0.5 text-xs">
                 비활성

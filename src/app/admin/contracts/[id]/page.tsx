@@ -44,7 +44,7 @@ export default async function ContractDetailPage({
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <header className="flex items-start justify-between">
         <div>
           <Link
@@ -53,13 +53,13 @@ export default async function ContractDetailPage({
           >
             ← 계약서 목록
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">
+          <h1 className="text-display m-0 mt-1">
             {contract.title}
           </h1>
           <div className="flex items-center gap-2 mt-2">
             <Link
               href={`/admin/clients/${contract.client.id}`}
-              className="text-sm text-sky-700 hover:underline"
+              className="text-caption text-primary hover:underline"
             >
               {contract.client.name}
             </Link>

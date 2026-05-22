@@ -1,8 +1,10 @@
 /**
- * 거래처 관리 목록 (Phase 3A).
+ * 거래처 관리 목록 (Phase 3A → 2026-05-22 UI 재작성)
  *
- * 검색/필터는 URL 쿼리 파라미터로 동작 — 새로고침 후에도 상태 유지.
- *   ?q=알티&type=대리점&active=ACTIVE
+ * 검색/필터는 URL 쿼리로 동작 — 새로고침 후에도 상태 유지.
+ *   ?q=알티&type=AGENCY&active=ACTIVE
+ *
+ * 2026-05-22: prototype 디자인 적용 (PageHeader + FilterBar + DataTable + StatusBadge).
  */
 import Link from "next/link";
 import { requireRole } from "@/lib/session";
@@ -10,12 +12,22 @@ import { listClients } from "@/lib/actions/client";
 import { ClientType } from "@prisma/client";
 import { ClientListFilter } from "@/components/admin/clients/ListFilter";
 import { ToggleActiveButton } from "@/components/admin/clients/ToggleActiveButton";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/shared/Button";
+import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 
 const TYPE_LABEL: Record<ClientType, string> = {
-  AGENCY: "대리점",
+  AGENCY:   "대리점",
   HOSPITAL: "병원",
   PHARMACY: "약국",
-  OTHER: "기타",
+  OTHER:    "기타",
+};
+
+const TYPE_COLOR: Record<ClientType, string> = {
+  AGENCY:   "bg-purple-light  text-purple",
+  HOSPITAL: "bg-accent-light  text-accent-dark",
+  PHARMACY: "bg-warning-light text-warning",
+  OTHER:    "bg-canvas        text-ink-secondary",
 };
 
 type SearchParams = {
@@ -23,6 +35,8 @@ type SearchParams = {
   type?: string;
   active?: string;
 };
+
+type ClientRow = Awaited<ReturnType<typeof listClients>>[number];
 
 export default async function ClientListPage({
   searchParams,
@@ -46,109 +60,117 @@ export default async function ClientListPage({
     active,
   });
 
-  return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">거래처 관리</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            병원·약국·대리점 등 거래처 정보와 복수 배송지를 관리합니다.
-          </p>
-        </div>
-        <Link
-          href="/admin/clients/new"
-          className="rounded-md bg-sky-600 text-white px-4 py-2 text-sm font-medium hover:bg-sky-700 transition"
-        >
-          + 신규 거래처
+  // 컬럼 정의
+  const columns: ColumnDef<ClientRow>[] = [
+    {
+      key: "code",
+      label: "코드",
+      width: "100px",
+      cellClassName: "font-mono text-tiny text-ink-secondary",
+    },
+    {
+      key: "name",
+      label: "업체명",
+      render: (c) => (
+        <Link href={`/admin/clients/${c.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+          {c.name}
         </Link>
-      </header>
+      ),
+    },
+    {
+      key: "type",
+      label: "유형",
+      width: "90px",
+      render: (c) => (
+        <span className={`inline-block px-2 py-0.5 rounded-full text-tiny font-semibold ${TYPE_COLOR[c.type]}`}>
+          {TYPE_LABEL[c.type]}
+        </span>
+      ),
+    },
+    {
+      key: "representative",
+      label: "대표자",
+      hideOnMobile: true,
+      render: (c) => c.representative ?? "—",
+    },
+    {
+      key: "phone",
+      label: "연락처",
+      hideOnMobile: true,
+      render: (c) => c.phone ?? "—",
+    },
+    {
+      key: "addresses",
+      label: "배송지",
+      align: "right",
+      width: "70px",
+      cellClassName: "tabular-nums",
+      render: (c) => c._count.addresses,
+    },
+    {
+      key: "orders",
+      label: "주문",
+      align: "right",
+      width: "70px",
+      cellClassName: "tabular-nums",
+      render: (c) => c._count.orders,
+    },
+    {
+      key: "active",
+      label: "상태",
+      align: "center",
+      width: "80px",
+      render: (c) =>
+        c.active ? (
+          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold">
+            활성
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold">
+            비활성
+          </span>
+        ),
+    },
+    {
+      key: "actions",
+      label: "액션",
+      align: "right",
+      width: "120px",
+      render: (c) => (
+        <div className="inline-flex gap-2 items-center">
+          <Link href={`/admin/clients/${c.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline">
+            편집
+          </Link>
+          <ToggleActiveButton id={c.id} active={c.active} />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="🏢 거래처 관리"
+        subtitle="병원·약국·대리점 등 거래처 정보와 복수 배송지를 관리합니다."
+        actions={
+          <Button href="/admin/clients/new" variant="primary">
+            + 신규 거래처
+          </Button>
+        }
+      />
 
       <ClientListFilter
         defaultValues={{ q: searchParams.q ?? "", type, active }}
       />
 
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">코드</th>
-              <th className="px-4 py-3 text-left font-medium">업체명</th>
-              <th className="px-4 py-3 text-left font-medium">유형</th>
-              <th className="px-4 py-3 text-left font-medium">대표자</th>
-              <th className="px-4 py-3 text-left font-medium">연락처</th>
-              <th className="px-4 py-3 text-right font-medium">배송지</th>
-              <th className="px-4 py-3 text-right font-medium">주문</th>
-              <th className="px-4 py-3 text-center font-medium">상태</th>
-              <th className="px-4 py-3 text-right font-medium">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12 text-slate-400">
-                  조건에 맞는 거래처가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              clients.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-t border-slate-100 hover:bg-slate-50/60"
-                >
-                  <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                    {c.code}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    <Link
-                      href={`/admin/clients/${c.id}`}
-                      className="hover:text-sky-700 hover:underline"
-                    >
-                      {c.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {TYPE_LABEL[c.type]}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {c.representative ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{c.phone ?? "-"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                    {c._count.addresses}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                    {c._count.orders}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {c.active ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs font-medium">
-                        활성
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-medium">
-                        비활성
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex gap-2">
-                      <Link
-                        href={`/admin/clients/${c.id}/edit`}
-                        className="text-xs text-slate-600 hover:text-sky-700"
-                      >
-                        편집
-                      </Link>
-                      <ToggleActiveButton id={c.id} active={c.active} />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={clients}
+        keyField="id"
+        emptyMessage="조건에 맞는 거래처가 없습니다."
+      />
 
-      <p className="text-xs text-slate-400">총 {clients.length}건</p>
+      <p className="text-tiny text-ink-muted">총 {clients.length}건</p>
     </div>
   );
 }

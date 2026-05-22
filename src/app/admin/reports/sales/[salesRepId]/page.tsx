@@ -63,18 +63,18 @@ export default async function SalesRepDetailPage({
   const totalProductAmount = products.reduce((s, p) => s + p.amount, 0);
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Link
               href={`/admin/reports/sales?month=${month}`}
-              className="hover:text-sky-700 hover:underline"
+              className="text-primary hover:underline"
             >
               ← 담당자 목록
             </Link>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">
+          <h1 className="text-display m-0 mt-1">
             {rep.name}
             {!rep.active && (
               <span className="ml-2 text-xs font-normal text-rose-600">
@@ -82,7 +82,7 @@ export default async function SalesRepDetailPage({
               </span>
             )}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-caption text-ink-secondary mt-1">
             {rep.email} · {rep.role} · {month}
           </p>
         </div>

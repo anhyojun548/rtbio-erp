@@ -23,12 +23,12 @@ export default async function QcStockAlertsPage() {
   }));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">재고 임계치 알럼</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            실재고 <code>physicalStock ≤ reorderPoint</code> 조건 사이즈 목록 (R14).
+          <h1 className="text-display m-0">🚨 재고 임계치 알럼</h1>
+          <p className="text-caption text-ink-secondary mt-1">
+            실재고 <code className="font-mono text-tiny bg-canvas px-1 rounded">physicalStock ≤ reorderPoint</code> 조건 사이즈 목록 (R14).
           </p>
         </div>
         <Link

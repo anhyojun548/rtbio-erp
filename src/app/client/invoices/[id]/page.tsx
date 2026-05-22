@@ -14,26 +14,23 @@ export default async function ClientInvoiceDetailPage({
   if (!inv) notFound();
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/client/invoices"
-          className="text-sm text-sky-700 hover:underline"
-        >
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Link href="/client/invoices" className="text-caption text-primary hover:underline">
           ← 거래명세서 목록
         </Link>
         <Link
           href={`/client/invoices/${inv.id}/pdf`}
           target="_blank"
-          className="rounded-md bg-emerald-600 text-white text-sm px-4 py-2 hover:bg-emerald-700"
+          className="h-9 px-4 inline-flex items-center bg-success text-white text-caption font-semibold rounded-xs hover:bg-success/90 transition"
         >
           📄 PDF 다운로드
         </Link>
       </div>
 
       <header>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900 font-mono">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-display m-0 font-mono">
             {inv.invoiceNumber}
           </h1>
           <InvoiceStatusBadge status={inv.status} />

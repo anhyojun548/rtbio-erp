@@ -35,10 +35,10 @@ export default async function MonthlyReportPage({
   const { current, previous } = await getMonthlyReportWithPrev(month);
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">월간 보고서</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">📈 월간 보고서</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           매출·수금·출고·원장 요약 (R16). 전월 대비 증감 포함.
         </p>
       </header>

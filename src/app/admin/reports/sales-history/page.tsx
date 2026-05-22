@@ -62,12 +62,10 @@ export default async function SalesHistoryPage({
   const selectedRep = reps.find((r) => r.id === repId);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">
-          기간별 영업 이력서
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">🗓️ 기간별 영업 이력서</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           담당자 × 기간 별 활동 요약입니다 (R21). 주문 접수·명세서 발행·수금 확인·학회
           방문자 4종 이벤트를 시간순으로 정리합니다.
         </p>

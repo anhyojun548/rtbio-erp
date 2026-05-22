@@ -41,11 +41,11 @@ export default async function QcSettingsPage() {
   const isAdmin = user.role === "ADMIN" || user.role === "TENANT_OWNER";
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
-      <header className="flex items-start justify-between">
+    <div className="space-y-6 max-w-3xl">
+      <header className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">업무 설정</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">⚙️ 업무 설정</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             업무시간과 택배 마감시간을 확인합니다.{" "}
             {isAdmin ? (
               <span>

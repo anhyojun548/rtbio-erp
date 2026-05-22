@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SessionProvider } from "@/components/SessionProvider";
+import { SharedUIProviders } from "@/components/shared/SharedUIProviders";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,11 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased">
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <SessionProvider session={session}>
+          {children}
+          {/* 2026-05-22: 글로벌 UI (Toast / Dialog / FloatingPopup) */}
+          <SharedUIProviders />
+        </SessionProvider>
       </body>
     </html>
   );

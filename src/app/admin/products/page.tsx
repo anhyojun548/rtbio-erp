@@ -1,5 +1,5 @@
 /**
- * 제품 관리 목록 (Phase 3B).
+ * 제품 관리 목록 (Phase 3B → 2026-05-22 UI 재작성)
  * ?q=SF&category=관절&active=ACTIVE
  */
 import Link from "next/link";
@@ -7,12 +7,17 @@ import { requireRole } from "@/lib/session";
 import { listProducts, listProductCategories } from "@/lib/actions/product";
 import { ProductListFilter } from "@/components/admin/products/ListFilter";
 import { ToggleActiveButton } from "@/components/admin/products/ToggleActiveButton";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/shared/Button";
+import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 
 type SearchParams = {
   q?: string;
   category?: string;
   active?: string;
 };
+
+type ProductRow = Awaited<ReturnType<typeof listProducts>>[number];
 
 export default async function ProductListPage({
   searchParams,
@@ -32,116 +37,117 @@ export default async function ProductListPage({
     listProductCategories(),
   ]);
 
-  return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">제품 관리</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            제품 정보, 사이즈별 재고, 유통기한을 관리합니다.
-          </p>
-        </div>
-        <Link
-          href="/admin/products/new"
-          className="rounded-md bg-sky-600 text-white px-4 py-2 text-sm font-medium hover:bg-sky-700 transition"
-        >
-          + 신규 제품
+  const columns: ColumnDef<ProductRow>[] = [
+    {
+      key: "code",
+      label: "코드",
+      width: "110px",
+      cellClassName: "font-mono text-tiny text-ink-secondary",
+    },
+    {
+      key: "name",
+      label: "제품명",
+      render: (p) => (
+        <Link href={`/admin/products/${p.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
+          {p.name}
         </Link>
-      </header>
+      ),
+    },
+    {
+      key: "brand",
+      label: "브랜드",
+      hideOnMobile: true,
+      render: (p) => p.brand ?? "—",
+    },
+    {
+      key: "category",
+      label: "카테고리",
+      width: "100px",
+      render: (p) => p.category ?? "—",
+    },
+    {
+      key: "basePrice",
+      label: "기준단가",
+      align: "right",
+      cellClassName: "tabular-nums font-semibold",
+      render: (p) => `${Number(p.basePrice).toLocaleString()}원`,
+    },
+    {
+      key: "sizes",
+      label: "사이즈",
+      align: "right",
+      width: "70px",
+      cellClassName: "tabular-nums",
+      render: (p) => p._count.sizes,
+    },
+    {
+      key: "physical",
+      label: "실재고",
+      align: "right",
+      width: "90px",
+      cellClassName: "tabular-nums",
+      render: (p) => {
+        const total = p.sizes.reduce((s, x) => s + x.physicalStock, 0);
+        return total.toLocaleString();
+      },
+    },
+    {
+      key: "active",
+      label: "상태",
+      align: "center",
+      width: "80px",
+      render: (p) =>
+        p.active ? (
+          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold">
+            활성
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold">
+            비활성
+          </span>
+        ),
+    },
+    {
+      key: "actions",
+      label: "액션",
+      align: "right",
+      width: "120px",
+      render: (p) => (
+        <div className="inline-flex gap-2 items-center">
+          <Link href={`/admin/products/${p.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline">
+            편집
+          </Link>
+          <ToggleActiveButton id={p.id} active={p.active} />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="📦 제품 관리"
+        subtitle="제품 정보, 사이즈별 재고, 유통기한을 관리합니다."
+        actions={
+          <Button href="/admin/products/new" variant="primary">
+            + 신규 제품
+          </Button>
+        }
+      />
 
       <ProductListFilter
         defaultValues={{ q: searchParams.q ?? "", category, active }}
         categories={categories}
       />
 
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">코드</th>
-              <th className="px-4 py-3 text-left font-medium">제품명</th>
-              <th className="px-4 py-3 text-left font-medium">브랜드</th>
-              <th className="px-4 py-3 text-left font-medium">카테고리</th>
-              <th className="px-4 py-3 text-right font-medium">기준단가</th>
-              <th className="px-4 py-3 text-right font-medium">사이즈</th>
-              <th className="px-4 py-3 text-right font-medium">실재고</th>
-              <th className="px-4 py-3 text-center font-medium">상태</th>
-              <th className="px-4 py-3 text-right font-medium">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12 text-slate-400">
-                  조건에 맞는 제품이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              products.map((p) => {
-                const totalPhysical = p.sizes.reduce(
-                  (sum, s) => sum + s.physicalStock,
-                  0,
-                );
-                return (
-                  <tr
-                    key={p.id}
-                    className="border-t border-slate-100 hover:bg-slate-50/60"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                      {p.code}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      <Link
-                        href={`/admin/products/${p.id}`}
-                        className="hover:text-sky-700 hover:underline"
-                      >
-                        {p.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{p.brand ?? "-"}</td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {p.category ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-800">
-                      {Number(p.basePrice).toLocaleString()}원
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                      {p._count.sizes}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                      {totalPhysical.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {p.active ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs font-medium">
-                          활성
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-medium">
-                          비활성
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex gap-2">
-                        <Link
-                          href={`/admin/products/${p.id}/edit`}
-                          className="text-xs text-slate-600 hover:text-sky-700"
-                        >
-                          편집
-                        </Link>
-                        <ToggleActiveButton id={p.id} active={p.active} />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={products}
+        keyField="id"
+        emptyMessage="조건에 맞는 제품이 없습니다."
+      />
 
-      <p className="text-xs text-slate-400">총 {products.length}건</p>
+      <p className="text-tiny text-ink-muted">총 {products.length}건</p>
     </div>
   );
 }

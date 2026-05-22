@@ -1,7 +1,7 @@
 import { requireClient } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { TopBar } from "@/components/TopBar";
-import { ClientSidebar } from "@/components/client/Sidebar";
+import { PortalShell } from "@/components/shared/PortalShell";
+import { CLIENT_MENU } from "@/components/shared/portalMenus";
 
 /**
  * 거래처 포털 공통 레이아웃 — role=CLIENT 이고 User.clientId 세팅된 유저만 진입.
@@ -13,7 +13,9 @@ import { ClientSidebar } from "@/components/client/Sidebar";
  *   - 판매 계약서
  *   - 내 거래처 프로필
  *
- * CLIENT 는 쓰기 권한 없음. 주문 생성은 내부 영업팀이 대신 등록.
+ * CLIENT 는 쓰기 권한 거의 없음 (발주는 가능, 나머지는 조회).
+ *
+ * 2026-05-22: prototype 디자인 그대로 이식. 사이드바에 거래처명 표시.
  */
 export default async function ClientLayout({
   children,
@@ -22,20 +24,22 @@ export default async function ClientLayout({
 }) {
   const user = await requireClient();
 
-  // 거래처 이름을 TopBar 포털명에 함께 표기
+  // 거래처 이름을 사이드바 브랜드에 함께 표기
   const client = await prisma.client.findUnique({
     where: { id: user.clientId },
     select: { name: true, code: true },
   });
-  const portalLabel = client ? `거래처 · ${client.name}` : "거래처";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <TopBar portal={portalLabel} userName={user.name} role={user.role} />
-      <div className="flex flex-1 min-h-0">
-        <ClientSidebar />
-        <main className="flex-1 min-w-0 overflow-auto">{children}</main>
-      </div>
-    </div>
+    <PortalShell
+      menu={CLIENT_MENU}
+      userName={user.name}
+      userRole="거래처"
+      userAvatar={user.name?.[0] ?? "C"}
+      brandText={client?.name ?? "거래처 포털"}
+      brandSubText={client?.code ?? "RTBIO ERP"}
+    >
+      {children}
+    </PortalShell>
   );
 }

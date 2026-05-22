@@ -56,18 +56,18 @@ export default async function ContractsPage({
     status === "ALL" ? rows : rows.filter((r) => r.status === status);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">판매 계약서</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">📝 판매 계약서</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             거래처별 계약 시작/종료일·서명 여부·PDF 를 관리합니다 (R20). 만료 30일
             이내 계약은 자동으로 "만료임박" 상태가 됩니다.
           </p>
         </div>
         <Link
           href="/admin/contracts/new"
-          className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+          className="h-9 px-4 inline-flex items-center bg-primary text-white text-caption font-semibold rounded-xs hover:bg-primary-light transition"
         >
           + 신규 계약
         </Link>

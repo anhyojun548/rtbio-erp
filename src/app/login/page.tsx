@@ -35,11 +35,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-canvas p-4">
+      <div className="w-full max-w-sm bg-surface rounded shadow-md p-8 space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-slate-900">RTBIO ERP</h1>
-          <p className="text-sm text-slate-500">알티바이오 업무시스템 로그인</p>
+          <h1 className="text-h1 text-primary m-0">🔵 RTBIO ERP</h1>
+          <p className="text-caption text-ink-secondary">알티바이오 업무시스템 로그인</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">

@@ -57,13 +57,13 @@ export default async function MyOrdersPage({
   }));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">내 주문</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">📦 내 주문</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             {user.name}님에게 배정된 거래처의 주문{" "}
-            <strong className="text-slate-800">{rows.length}건</strong>입니다.
+            <strong className="text-primary">{rows.length}건</strong>입니다.
           </p>
         </div>
         <Link

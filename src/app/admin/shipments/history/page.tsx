@@ -94,11 +94,11 @@ export default async function ShipmentHistoryPage({
   const csvHref = `/admin/shipments/history/csv${csvQs.toString() ? `?${csvQs.toString()}` : ""}`;
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">출고내역</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">출고내역</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             완료된 출고(실재고 차감 이후) 목록입니다 (R17).
           </p>
         </div>

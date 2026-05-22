@@ -69,12 +69,12 @@ export default async function LedgerPage({
   });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">거래처 원장 (월 마감)</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">📒 거래처 원장 (월 마감)</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           월별 거래처 원장을 재계산 · 마감합니다. 집계는{" "}
-          <span className="font-medium">carryOver + monthlySales - received</span>{" "}
+          <span className="font-semibold text-primary">carryOver + monthlySales − received</span>{" "}
           = balance.
         </p>
       </header>

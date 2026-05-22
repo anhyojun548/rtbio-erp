@@ -60,9 +60,9 @@ export default async function ClientInvoicesPage({
   const totalAll = rows.reduce((s, r) => s + Number(r.totalAmount), 0);
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">거래명세서</h1>
+        <h1 className="text-display m-0">📄 거래명세서</h1>
         <p className="text-sm text-slate-500 mt-1">
           우리 거래처 이름으로 발행된 거래명세서 목록입니다.
         </p>

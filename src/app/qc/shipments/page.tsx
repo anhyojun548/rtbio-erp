@@ -30,12 +30,12 @@ export default async function QcShipmentBoardPage() {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-4">
-      <header className="flex items-end justify-between gap-4">
+    <div className="space-y-4">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">출고 칸반</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            CONFIRMED 주문에서 <strong>출고 시작</strong> 하면 이 보드에 진입합니다.
+          <h1 className="text-display m-0">📦 출고 칸반</h1>
+          <p className="text-caption text-ink-secondary mt-1">
+            CONFIRMED 주문에서 <strong className="text-primary">출고 시작</strong> 하면 이 보드에 진입합니다.
             terminal 단계(마지막 열) 도달 시 실재고가 차감됩니다.
           </p>
         </div>

@@ -41,10 +41,10 @@ export default async function DataUsagePage({
   ]);
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">데이터 사용량</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-display m-0">📊 데이터 사용량</h1>
+        <p className="text-caption text-ink-secondary mt-1">
           월별·카테고리별 사용량을 수기로 입력·관리합니다 (R22). 서버·스토리지·이메일 등
           외부 자원 사용량을 누적 기록해 운영비 집계에 활용합니다.
         </p>

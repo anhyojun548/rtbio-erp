@@ -79,11 +79,11 @@ export default async function InventoryLogsPage({
     : rows;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">재고 변동 이력</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-display m-0">재고 변동 이력</h1>
+          <p className="text-caption text-ink-secondary mt-1">
             입고 · 출고 · 반품 · 조정의 모든 변동이 기록됩니다. (최대 500건)
           </p>
         </div>

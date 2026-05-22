@@ -11,9 +11,9 @@ export default async function ClientProfilePage() {
   if (!client) notFound();
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-4xl">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">내 거래처 정보</h1>
+        <h1 className="text-display m-0">👤 내 거래처 정보</h1>
         <p className="text-sm text-slate-500 mt-1">
           정보 수정은 담당 영업사원에게 요청해주세요.
         </p>

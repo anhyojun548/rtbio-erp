@@ -20,20 +20,17 @@ export default async function ClientOrderDetailPage({
   );
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <div>
-        <Link
-          href="/client/orders"
-          className="text-sm text-sky-700 hover:underline"
-        >
+        <Link href="/client/orders" className="text-caption text-primary hover:underline">
           ← 발주 목록
         </Link>
       </div>
 
-      <header className="flex items-start justify-between">
+      <header className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-display m-0 font-mono">
               {order.orderNumber}
             </h1>
             <StatusBadge status={order.status} />
