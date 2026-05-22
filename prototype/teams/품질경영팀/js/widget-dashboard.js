@@ -27,21 +27,38 @@ const WIDGET_TYPES = [
 ];
 
 // ── Preset Widgets (pre-configured) ──
+// 2026-05-22: roles 필드 추가 — exec/ceo/admin/qc 별 노출 제어. 없으면 모두 노출 (하위 호환).
 const PRESETS = [
-  { name: '이번 달 매출', type: 'kpi', preset: 'monthly_sales', desc: '당월 누적 매출액', w: 3, h: 2 },
-  { name: '오늘 발주', type: 'kpi', preset: 'today_orders', desc: '금일 접수된 발주 건수', w: 3, h: 2 },
-  { name: '총 미수금', type: 'kpi', preset: 'total_ar', desc: '미수금 합계 + 연체 건수', w: 3, h: 2 },
-  { name: '활성 거래처', type: 'kpi', preset: 'active_clients', desc: '현재 거래 중인 거래처 수', w: 3, h: 2 },
-  { name: '최근 7일 매출 추이', type: 'vbar', preset: 'weekly_sales', desc: '일별 매출 막대 그래프', w: 6, h: 4 },
-  { name: '거래처별 매출 비중', type: 'hbar', preset: 'client_share', desc: '거래처별 매출 비율', w: 6, h: 4 },
-  { name: '오늘 발주 현황', type: 'table', preset: 'today_order_list', desc: '금일 발주 목록 (상태 포함)', w: 6, h: 5 },
-  { name: '품목별 매출 구성', type: 'donut', preset: 'product_mix', desc: '제품 카테고리별 매출 비율', w: 4, h: 4 },
-  { name: '월별 매출 추이', type: 'line', preset: 'monthly_trend', desc: '최근 6개월 매출 트렌드', w: 6, h: 4 },
-  { name: '월 매출 목표 달성률', type: 'gauge', preset: 'sales_target', desc: '목표 대비 현재 달성 퍼센트', w: 3, h: 3 },
-  { name: '재고 부족 품목', type: 'table', preset: 'low_stock', desc: '안전재고 미달 품목 목록', w: 6, h: 4 },
-  { name: '미수금 거래처', type: 'table', preset: 'ar_clients', desc: '미수금 보유 거래처 + 연체일', w: 6, h: 4 },
-  { name: '거래처별 담당자 목록', type: 'table', preset: 'client_reps', desc: '거래처 / 담당자 / 연락처 / 최근거래일', w: 6, h: 5 },
+  { name: '이번 달 매출', type: 'kpi', preset: 'monthly_sales', desc: '당월 누적 매출액', w: 3, h: 2, roles: ['exec','ceo','admin'] },
+  { name: '오늘 발주', type: 'kpi', preset: 'today_orders', desc: '금일 접수된 발주 건수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
+  { name: '총 미수금', type: 'kpi', preset: 'total_ar', desc: '미수금 합계 + 연체 건수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
+  { name: '활성 거래처', type: 'kpi', preset: 'active_clients', desc: '현재 거래 중인 거래처 수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
+  { name: '최근 7일 매출 추이', type: 'vbar', preset: 'weekly_sales', desc: '일별 매출 막대 그래프', w: 6, h: 4, roles: ['exec','ceo'] },
+  { name: '거래처별 매출 비중', type: 'hbar', preset: 'client_share', desc: '거래처별 매출 비율', w: 6, h: 4, roles: ['exec','ceo'] },
+  { name: '오늘 발주 현황', type: 'table', preset: 'today_order_list', desc: '금일 발주 목록 (상태 포함)', w: 6, h: 5, roles: ['exec','admin'] },
+  { name: '품목별 매출 구성', type: 'donut', preset: 'product_mix', desc: '제품 카테고리별 매출 비율', w: 4, h: 4, roles: ['exec','ceo'] },
+  { name: '월별 매출 추이', type: 'line', preset: 'monthly_trend', desc: '최근 6개월 매출 트렌드', w: 6, h: 4, roles: ['exec','ceo'] },
+  { name: '월 매출 목표 달성률', type: 'gauge', preset: 'sales_target', desc: '목표 대비 현재 달성 퍼센트', w: 3, h: 3, roles: ['exec','ceo'] },
+  { name: '재고 부족 품목', type: 'table', preset: 'low_stock', desc: '안전재고 미달 품목 목록', w: 6, h: 4, roles: ['admin','qc','ceo'] },
+  { name: '미수금 거래처', type: 'table', preset: 'ar_clients', desc: '미수금 보유 거래처 + 연체일', w: 6, h: 4, roles: ['exec','admin','ceo'] },
+  { name: '거래처별 담당자 목록', type: 'table', preset: 'client_reps', desc: '거래처 / 담당자 / 연락처 / 최근거래일', w: 6, h: 5, roles: ['exec'] },
+  // 2026-05-12 미팅 신규 위젯 — 베트남 발주는 임원/관리 위주
+  { name: '베트남 발주 입고 현황', type: 'table', preset: 'procurement_status', desc: '월별 발주 → 항공/선박 입고 트래킹 (대표님 핵심 요청)', w: 8, h: 5, roles: ['ceo','admin'] },
+  { name: '생산발주 진행률', type: 'gauge', preset: 'production_progress', desc: '이번달 베트남 발주 입고율', w: 3, h: 3, roles: ['ceo','admin'] },
+  { name: '운송중 선적 알림', type: 'table', preset: 'in_transit_shipments', desc: '항공/선박 운송중 + 예상 입항일', w: 6, h: 4, roles: ['ceo','admin'] },
+  { name: '원부자재 발주 비율', type: 'donut', preset: 'material_split', desc: '원단/부자재/제품 발주 비율 (대표님 요청)', w: 4, h: 4, roles: ['ceo','admin'] },
+  { name: 'UDI 보고 현황', type: 'kpi', preset: 'udi_status', desc: '월별 UDI 공급내역 보고 현황', w: 3, h: 2, roles: ['ceo','admin'] },
+  { name: '미확인 알림', type: 'kpi', preset: 'unread_notifications', desc: '미확인 알림 개수', w: 3, h: 2, roles: ['exec','ceo','admin','qc'] },
 ];
+
+// 2026-05-22: 현재 대시보드 role (init 시점에 설정) — 'exec' / 'ceo' / 'admin' / 'qc' / null=전체
+let _currentDashboardRole = null;
+function getVisiblePresets() {
+  if (!_currentDashboardRole) return PRESETS;
+  return PRESETS.filter(function (p) {
+    return !p.roles || p.roles.indexOf(_currentDashboardRole) !== -1;
+  });
+}
 
 // ── Mock Data for Presets ──
 const MOCK = {
@@ -105,7 +122,69 @@ const MOCK = {
       ['세종재활의학과','병원','박영업','010-7777-8888','2026-04-09'],
       ['미래의료기','대리점','신영업','010-9999-0000','2026-04-11'],
     ]
-  }
+  },
+  // 2026-05-12 미팅: 대표님 핵심 요청 — 베트남 발주 입고 트래킹
+  procurement_status: (function () {
+    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
+    return {
+      headers: ['발주월','카테고리','발주량','입고량','진행률','선적'],
+      rows: projects.slice(0, 7).map(p => {
+        const pct = p.totalQty > 0 ? Math.round(p.receivedQty / p.totalQty * 100) : 0;
+        const shipIcons = (p.shipments||[]).map(s => s.shipmentType === 'AIR' ? '✈️' : '🚢').join(' ');
+        const catLabel = { FABRIC:'원단', MATERIAL:'부자재', PRODUCT:'제품' }[p.category] || p.category;
+        return [
+          p.orderDate.slice(0,7),
+          catLabel,
+          p.totalQty.toLocaleString(),
+          p.receivedQty.toLocaleString(),
+          pct + '%',
+          shipIcons,
+        ];
+      })
+    };
+  })(),
+  production_progress: (function () {
+    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
+    const active = projects.filter(p => p.status !== 'COMPLETED');
+    const total = active.reduce((s,p) => s + p.totalQty, 0);
+    const received = active.reduce((s,p) => s + p.receivedQty, 0);
+    const pct = total > 0 ? Math.round(received / total * 100) : 100;
+    return { value: pct, label: pct + '%', target: '입고완료' };
+  })(),
+  in_transit_shipments: (function () {
+    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
+    const transit = [];
+    projects.forEach(p => {
+      (p.shipments||[]).filter(s => s.status === 'IN_TRANSIT').forEach(s => {
+        transit.push([
+          s.shipmentType === 'AIR' ? '✈️ 항공' : '🚢 선박',
+          p.code,
+          s.shipDate,
+          s.arrivalDate,
+          s.qty.toLocaleString() + '개',
+        ]);
+      });
+    });
+    return {
+      headers: ['수단','프로젝트','출항일','입항예정','수량'],
+      rows: transit.length > 0 ? transit : [['-','입항 대기 없음','-','-','-']],
+    };
+  })(),
+  material_split: (function () {
+    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
+    const totals = { 원단:0, 부자재:0, 제품:0 };
+    projects.forEach(p => {
+      const k = { FABRIC:'원단', MATERIAL:'부자재', PRODUCT:'제품' }[p.category];
+      if (k) totals[k] += p.totalQty;
+    });
+    return { labels: Object.keys(totals), data: Object.values(totals) };
+  })(),
+  udi_status: { value: '1건', desc: '4월 보고 대기', change: '3월 보고완료', changeDir: '' },
+  unread_notifications: (function () {
+    const notifs = (typeof window !== 'undefined' ? window.NOTIFICATIONS : null) || [];
+    const unread = notifs.filter(n => !n.readAt).length;
+    return { value: unread + '건', desc: '미확인 알림', change: '', changeDir: unread > 0 ? 'up' : '' };
+  })()
 };
 
 // ── Table column definitions (mock schema) ──
@@ -583,9 +662,9 @@ function closePicker() {
 }
 
 function renderPicker() {
-  // Presets
+  // Presets — 2026-05-22: role 필터링 적용
   var presetList = document.getElementById('presetList');
-  presetList.innerHTML = PRESETS.map(function (p) {
+  presetList.innerHTML = getVisiblePresets().map(function (p) {
     var typeDef = WIDGET_TYPES.find(function (t) { return t.id === p.type; });
     return '' +
       '<div class="preset-item" onclick="addPresetWidget(\'' + p.type + '\',\'' + p.name + '\',\'' + p.preset + '\',' + p.w + ',' + p.h + ')">' +
@@ -640,8 +719,20 @@ window.addPresetWidget = addPresetWidget;
 window.addEmptyWidget = addEmptyWidget;
 window.showToast = showToast;
 
+// 2026-05-22: 외부에서 role 지정 가능 (포털 init 시 호출)
+window.setDashboardRole = function (role) {
+  _currentDashboardRole = role || null;
+  // 이미 picker 가 렌더링됐다면 다시 그려서 필터 적용
+  if (document.getElementById('presetList')) renderPicker();
+};
+
 // ── Init ──
 document.addEventListener('DOMContentLoaded', function () {
+  // 2026-05-22: body[data-dashboard-role] 또는 window._dashboardRole 로 role 주입
+  var roleAttr = document.body && document.body.getAttribute('data-dashboard-role');
+  if (roleAttr) _currentDashboardRole = roleAttr;
+  else if (window._dashboardRole) _currentDashboardRole = window._dashboardRole;
+
   initGrid();
   renderPicker();
 
@@ -820,7 +911,8 @@ document.addEventListener('DOMContentLoaded', function () {
     opt.textContent = t.icon + ' ' + t.name;
     editType.appendChild(opt);
   });
-  PRESETS.forEach(function (p) {
+  // 2026-05-22: edit-modal 의 데이터 소스 선택도 role 필터링
+  getVisiblePresets().forEach(function (p) {
     var opt = document.createElement('option');
     opt.value = p.preset;
     opt.textContent = '📌 ' + p.name;

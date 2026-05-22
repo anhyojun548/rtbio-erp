@@ -71,6 +71,26 @@
   flex: 1;
   padding: 12px 0;
   overflow-y: auto;
+  /* 스크롤바 — 사이드바 navy 배경에 어울리는 다크 테마 */
+  scrollbar-width: thin;                                       /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;      /* thumb / track */
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;                                      /* 트랙 투명 — 사이드바 색 그대로 */
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  transition: background 0.15s ease;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+.sidebar-nav::-webkit-scrollbar-corner {
+  background: transparent;
 }
 .nav-section {
   padding: 8px 20px 4px;

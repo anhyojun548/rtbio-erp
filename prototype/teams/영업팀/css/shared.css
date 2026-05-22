@@ -36,6 +36,36 @@
 
 /* ── Reset ── */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+/* ── 전역 스크롤바 (모든 영역 통일) ──────────────────────────
+ * 트랙 투명 → 부모 배경 그대로 보임
+ * thumb: 텍스트 색 18% 반투명 → 흰 배경에서는 회색, 어두운 배경에서는 흰색-가깝게
+ *   사이드바(.sidebar-nav) 는 별도 사이드바.css 에서 흰색 thumb 로 override
+ * Webkit + Firefox 모두 지원
+ * ────────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 3px;
+  transition: background 0.15s ease;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.4);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 body {
   font-family: -apple-system, 'Malgun Gothic', 'Segoe UI', sans-serif;
   background: var(--bg);
@@ -277,7 +307,17 @@ img { max-width: 100%; display: block; }
   background: var(--accent-light);
 }
 .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
-.stat-value { font-size: 26px; font-weight: 700; color: var(--text); }
+/* 경영지원팀 #1 (2026-04-21): 매출/발주 숫자 깨짐 방지
+   - white-space: nowrap → 한 줄에 유지
+   - font-variant-numeric: tabular-nums → 숫자 폭 균등 → 정렬 깔끔
+   - min-width 확보로 좁은 그리드에서도 줄바꿈 방지 */
+.stat-value {
+  font-size: 26px; font-weight: 700; color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.stat-card { min-width: 180px; }
 .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
 /* ── Tables ── */
@@ -324,25 +364,50 @@ img { max-width: 100%; display: block; }
 .toast-error { background: var(--danger); color: #fff; }
 .toast-info { background: var(--primary); color: #fff; }
 
-/* ── Modal ── */
+/* ── Modal (2026-05-21 수정: 데스크탑 뷰에서 본문이 길어도 뷰포트 안에 머물도록) ── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000;
-  display: flex; align-items: center; justify-content: center; padding: 20px;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
   opacity: 0; transition: opacity 0.2s;
+  overflow: hidden; /* overlay 자체는 스크롤 금지 — 본문(.modal-body)이 스크롤 */
 }
 .modal-overlay.show { opacity: 1; }
 .modal-card {
   background: var(--surface); border-radius: var(--radius);
-  width: 100%; max-width: 440px; box-shadow: var(--shadow-lg);
+  width: 100%;
+  /* 본문 폭: 컨텐츠 종류에 따라 720px 까지 (매트릭스/표 대응), 화면이 좁으면 92vw */
+  max-width: min(720px, 92vw);
+  max-height: calc(100vh - 48px); /* overlay padding 24px*2 만큼 빼서 화면 안에 항상 들어옴 */
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column; /* 헤더/본문/푸터 stack — 본문만 스크롤 */
+  overflow: hidden;
 }
 .modal-header {
   padding: 20px 24px; font-size: 18px; font-weight: 700;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
-.modal-body { padding: 24px; font-size: 15px; line-height: 1.7; }
+.modal-body {
+  padding: 24px; font-size: 15px; line-height: 1.7;
+  flex: 1 1 auto;
+  overflow-y: auto; /* 본문이 길면 여기만 스크롤 */
+  min-height: 0;   /* flex 자식 overflow 가 동작하도록 */
+}
 .modal-footer {
   padding: 16px 24px; border-top: 1px solid var(--border);
   display: flex; gap: 8px; justify-content: flex-end;
+  flex-shrink: 0;
+}
+/* 좁은 모달이 필요할 때 (확인/경고용) — 캐스케이딩 가능: <div class="modal-card modal-narrow"> */
+.modal-card.modal-narrow { max-width: 440px; }
+/* 모바일 */
+@media (max-width: 640px) {
+  .modal-overlay { padding: 12px; }
+  .modal-card { max-height: calc(100vh - 24px); max-width: 100%; }
+  .modal-header { padding: 14px 16px; font-size: 16px; }
+  .modal-body { padding: 16px; font-size: 14px; }
+  .modal-footer { padding: 12px 16px; }
 }
 
 /* ── Time Indicator ── */

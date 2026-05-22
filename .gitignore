@@ -3,6 +3,10 @@ node_modules/
 .pnp/
 .pnp.js
 
+# 2026-05-22: UI 재작성 작업 중 원본 코드 참조용 백업
+# prototype → React 이식 완료 후 삭제 예정
+src.bak/
+
 # Build
 .next/
 out/

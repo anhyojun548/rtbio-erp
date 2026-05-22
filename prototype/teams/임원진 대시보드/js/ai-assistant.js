@@ -297,6 +297,44 @@
     if (el) el.remove();
   }
 
+  // 2026-05-22: 매뉴얼/절차서/양식 자연어 검색 통합
+  // window.QUALITY_DOCS 카탈로그를 활용해 검색하고 결과 카드를 반환
+  const MANUAL_KEYWORDS = [
+    '매뉴얼', '절차', '절차서', '양식', '서식', '문서', '규정', '지침',
+    '교육훈련', '고객불만', '공정관리', '발주서', '계획표', '관리표',
+    'ISO', 'iso', '품질경영',
+  ];
+  function isManualQuery(q) {
+    const lower = q.toLowerCase();
+    return MANUAL_KEYWORDS.some(k => lower.includes(k.toLowerCase()));
+  }
+  function searchManuals(query) {
+    const docs = window.QUALITY_DOCS || [];
+    if (!docs.length) return null;
+    const q = query.toLowerCase();
+    return docs.filter(d =>
+      (d.title || '').toLowerCase().includes(q) ||
+      (d.code  || '').toLowerCase().includes(q) ||
+      // 키워드 부분 매칭
+      MANUAL_KEYWORDS.some(k =>
+        q.includes(k.toLowerCase()) && (d.title || '').toLowerCase().includes(k.toLowerCase())
+      )
+    ).slice(0, 8);
+  }
+  function buildManualResponseHTML(query, matched) {
+    if (!matched || matched.length === 0) {
+      return `질문: "<b>${query}</b>"<br><br>📚 관련 문서를 찾지 못했습니다. 다른 키워드를 시도해보세요 (예: "교육훈련", "고객불만", "발주서", "공정관리", "양식").`;
+    }
+    const list = matched.map(d =>
+      `<li style="margin:4px 0;">📄 <b>${d.code || d.title}</b> ${d.title}` +
+      (typeof showManualDetail === 'function'
+        ? ` <a href="#" onclick="event.preventDefault();showManualDetail('${d.id}')" style="color:var(--primary);text-decoration:underline;">자세히</a>`
+        : '') +
+      `</li>`
+    ).join('');
+    return `질문: "<b>${query}</b>"<br><br>📚 관련 문서 <b>${matched.length}건</b>:<ul style="padding-left:18px;margin:6px 0;">${list}</ul>`;
+  }
+
   // ── Process user input ──
   function processInput(query, messagesEl) {
     const trimmed = query.trim();
@@ -313,6 +351,13 @@
     setTimeout(() => {
       hideTyping();
 
+      // 2026-05-22: 매뉴얼 의도 감지 우선 — MOCK_RESPONSES 보다 먼저
+      if (isManualQuery(trimmed) && window.QUALITY_DOCS) {
+        const matched = searchManuals(trimmed);
+        addMessage(messagesEl, 'assistant', buildManualResponseHTML(trimmed, matched));
+        return;
+      }
+
       // Find matching response
       const matchKey = Object.keys(MOCK_RESPONSES).find(k =>
         trimmed.includes(k) || k.includes(trimmed)
@@ -328,6 +373,9 @@
       }
     }, delay);
   }
+
+  // 2026-05-22: 외부에서 호출 가능한 매뉴얼 검색 API
+  window.AiAssistantSearchManuals = searchManuals;
 
   // ── Auto-resize textarea ──
   function autoResize(textarea) {

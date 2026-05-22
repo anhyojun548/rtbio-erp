@@ -1,0 +1,278 @@
+/**
+ * ReportBuilder — 보고서 작성기 스타일
+ *
+ * 좌: 양식 미리보기 (인쇄와 동일 레이아웃)
+ * 우: AI 어시스턴트 챗 패널
+ * 하단: 액션 (임시저장 / PDF 출력 / 양식대로 인쇄)
+ */
+
+.rb-shell {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  height: calc(100vh - 100px);
+  min-height: 600px;
+}
+@media (max-width: 1100px) { .rb-shell { grid-template-columns: 1fr; height: auto; } }
+
+/* ── 좌측 양식 영역 ── */
+.rb-form-area {
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.rb-form-toolbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rb-form-toolbar select {
+  min-width: 280px;
+}
+.rb-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rb-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #f5f5f5;  /* 인쇄 미리보기 분위기 */
+}
+
+/* ── 양식 본체 (인쇄와 동일 레이아웃) ── */
+.rb-doc {
+  background: #fff;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 48px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  font-family: 'Malgun Gothic','맑은 고딕', sans-serif;
+  font-size: 13px;
+  color: #222;
+}
+.rb-doc-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  border-bottom: 3px double #222;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+}
+.rb-doc-code {
+  text-align: right;
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+.rb-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 16px 0 8px;
+  padding-left: 8px;
+  border-left: 3px solid var(--primary);
+}
+
+.rb-doc-table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 12px; }
+.rb-doc-table th, .rb-doc-table td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
+.rb-doc-table th {
+  background: #f0f0f0; font-weight: 600;
+  text-align: left; width: 110px; white-space: nowrap;
+}
+.rb-doc-table td { background: #fff; }
+.rb-doc-table .rb-cell-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  background: transparent;
+  padding: 0;
+}
+.rb-doc-table .rb-cell-input:focus { background: #fff8c4; }
+.rb-doc-table textarea.rb-cell-input { min-height: 48px; resize: vertical; }
+.rb-doc-table select.rb-cell-input { background: #fff; }
+.rb-cell-filled { background: #fff8c4 !important; }  /* AI 가 채운 필드 강조 */
+.rb-cell-required-empty { background: #fee2e2 !important; }  /* 필수 미입력 */
+
+.rb-doc-grid-table {
+  width: 100%; border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: 11px;
+}
+.rb-doc-grid-table th, .rb-doc-grid-table td {
+  border: 1px solid #333;
+  padding: 4px 6px;
+  text-align: left;
+}
+.rb-doc-grid-table th { background: #f0f0f0; font-weight: 600; text-align: center; }
+.rb-doc-grid-table tbody td { background: #fff; }
+.rb-doc-grid-table input, .rb-doc-grid-table select, .rb-doc-grid-table textarea {
+  width: 100%; border: 0; outline: 0;
+  font: inherit; background: transparent;
+  padding: 0;
+}
+.rb-doc-grid-table input:focus, .rb-doc-grid-table select:focus, .rb-doc-grid-table textarea:focus {
+  background: #fff8c4;
+}
+.rb-doc-grid-table .add-row-btn {
+  width: 100%; padding: 6px;
+  background: var(--bg); border: 1px dashed var(--border);
+  cursor: pointer; font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.rb-doc-footer {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 2px double #333;
+  text-align: center;
+  font-size: 11px;
+  color: #555;
+}
+
+/* ── 우측 AI 챗 패널 ── */
+.rb-ai-area {
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.rb-ai-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #1B3A5C 0%, #2563eb 100%);
+  color: #fff;
+}
+.rb-ai-header-title {
+  font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.rb-ai-header-sub {
+  font-size: 11px; opacity: 0.85; margin-top: 4px;
+}
+
+.rb-ai-messages {
+  flex: 1; overflow-y: auto;
+  padding: 16px; background: #f8fafc;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.rb-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: keep-all;
+  white-space: pre-wrap;
+}
+.rb-msg-user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.rb-msg-ai {
+  align-self: flex-start;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.rb-msg-system {
+  align-self: center;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.rb-msg-thinking::after {
+  content: '...';
+  animation: rb-dots 1.4s infinite;
+}
+@keyframes rb-dots { 0%,20%{content:'·';} 40%{content:'··';} 60%,100%{content:'···';} }
+
+.rb-msg-fields {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.rb-msg-fields b { color: var(--success); }
+
+.rb-ai-input-area {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+.rb-ai-input-row {
+  display: flex; gap: 6px;
+}
+.rb-ai-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  font-family: inherit;
+}
+.rb-ai-input:focus { border-color: var(--primary); }
+.rb-ai-send {
+  background: var(--primary); color: #fff;
+  border: 0; border-radius: 50%;
+  width: 36px; height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.rb-ai-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.rb-ai-suggestions {
+  margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;
+}
+.rb-ai-suggestion {
+  background: var(--bg); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 4px 10px; font-size: 11px;
+  cursor: pointer;
+}
+.rb-ai-suggestion:hover { background: var(--primary-lighter); color: var(--primary); }
+
+/* ── 하단 액션 바 ── */
+.rb-action-bar {
+  display: flex; gap: 8px; padding: 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  position: sticky; bottom: 0;
+}
+.rb-action-spacer { flex: 1; }
+
+/* ── 인쇄용 ── */
+@media print {
+  body * { visibility: hidden; }
+  .rb-print-target, .rb-print-target * { visibility: visible; }
+  .rb-print-target {
+    position: absolute; left: 0; top: 0; width: 100%;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  .rb-cell-input { background: transparent !important; }
+  .rb-cell-input:focus { background: transparent !important; }
+  .rb-cell-filled { background: transparent !important; }
+}

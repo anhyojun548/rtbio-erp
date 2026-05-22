@@ -357,6 +357,83 @@
 .grid-stack-item-content:hover {
   box-shadow: var(--shadow-md);
 }
+
+/* ════════════════════════════════════════════════════════════
+ * 4-모서리 화살표 리사이즈 핸들 (단순/직관)
+ * ────────────────────────────────────────────────────────────
+ * 평소 안 보임 → 위젯 호버 시 4 모서리에 작은 화살표 원형 등장
+ *   nw: ↖   ne: ↗   sw: ↙   se: ↘
+ * 흰 배경 + 그림자 → 위젯 위에 자연스럽게 떠 있는 인디케이터
+ * ════════════════════════════════════════════════════════════ */
+
+/* jQuery UI 기본 스타일 reset + autohide 무시 */
+.grid-stack-item .ui-resizable-handle {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  width: 28px !important;
+  height: 28px !important;
+  z-index: 5;
+  display: block !important;     /* ui-resizable-autohide 무시 */
+}
+
+/* 글래스모피즘 동그라미 핸들 — 평소 숨김, 위젯 호버 시 표시
+ * 반투명 흰색 + backdrop-blur + 사선 그라디언트로 광택(glare) 효과 */
+.grid-stack-item .ui-resizable-handle::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 20px;
+  height: 20px;
+  /* 글래스 광택 — 사선 그라디언트로 광택 표현 (backdrop-filter 미사용 — 성능) */
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(248, 250, 252, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),     /* 상단 광택 */
+    inset 0 -1px 0.5px rgba(15, 23, 42, 0.08);       /* 하단 음영 */
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  pointer-events: none;
+}
+
+/* 위젯 호버 시 — 4 모서리 동그라미 등장 */
+.grid-stack-item:hover .ui-resizable-handle::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 핸들 직접 호버 — 살짝 키움 + brand 빛 */
+.grid-stack-item .ui-resizable-handle:hover::after {
+  transform: scale(1.18);
+  border-color: rgba(27, 58, 92, 0.55);
+  box-shadow:
+    0 4px 14px rgba(27, 58, 92, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 1),
+    inset 0 -1px 0.5px rgba(15, 23, 42, 0.08);
+}
+
+/* 드래그 중 — accent (cyan) 광 */
+.grid-stack-item.ui-resizable-resizing .ui-resizable-handle::after {
+  opacity: 1;
+  transform: scale(1.18);
+  border-color: rgba(0, 168, 181, 0.6);
+  box-shadow:
+    0 4px 16px rgba(0, 168, 181, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+}
+
+/* 커서 — 코너별 양방향 화살표 (브라우저 시스템 커서) */
+.grid-stack-item .ui-resizable-nw,
+.grid-stack-item .ui-resizable-se { cursor: nwse-resize; }
+.grid-stack-item .ui-resizable-ne,
+.grid-stack-item .ui-resizable-sw { cursor: nesw-resize; }
+
 .gs-item-placeholder > .placeholder-content {
   background: var(--accent-light) !important;
   border: 2px dashed var(--accent) !important;
@@ -370,11 +447,20 @@
   justify-content: space-between;
   padding: 14px 16px 8px;
   flex-shrink: 0;
+  /* 좁은 컬럼에서도 wrap 되지 않게 — autoFit 측정 안정화 */
+  min-height: 32px;
+  max-height: 32px;
 }
 .widget-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
+  /* 위젯 제목은 한 줄로만 — 좁아지면 ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 .widget-menu-btn {
   width: 28px;
@@ -394,11 +480,16 @@
 .widget-body {
   flex: 1;
   padding: 0 16px 14px;
-  overflow: hidden;
+  /* 컨텐츠가 위젯보다 크면 자동 스크롤 — autoFit 부족 시 fallback */
+  overflow: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-height: 0;
 }
+/* KPI/표는 위에서부터, chart 는 가운데 정렬 */
+.grid-stack-item[data-widget-type="kpi"] .widget-body { justify-content: flex-start; }
+.grid-stack-item[data-widget-type="table"] .widget-body { justify-content: flex-start; padding-bottom: 8px; }
 
 /* ── KPI Widget ── */
 .kpi-value {

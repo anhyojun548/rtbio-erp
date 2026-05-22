@@ -1,0 +1,350 @@
+/**
+ * RTBIO Prototype — 공통 UI 스타일
+ * 2026-05-12 미팅 반영: 빠른 월 선택, 알림 종, 플로팅 팝업
+ */
+
+/* ── 빠른 월 선택 pill 버튼 ───────────────────────────── */
+.btn-month-pill {
+  background: #fff;
+  border: 1px solid var(--border, #e0e0e0);
+  color: var(--text-secondary, #666);
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.btn-month-pill:hover {
+  background: var(--primary-lighter, #e8f0f7);
+  border-color: var(--primary, #1B3A5C);
+  color: var(--primary, #1B3A5C);
+}
+.btn-month-pill.btn-month-this {
+  background: var(--primary, #1B3A5C);
+  color: #fff;
+  border-color: var(--primary, #1B3A5C);
+}
+.btn-month-pill.btn-month-this:hover {
+  background: var(--primary-dark, #133047);
+}
+
+/* ── 알림 종 (Notification Bell) ─────────────────────── */
+.notify-bell-wrap { position: relative; display: inline-block; }
+.notify-bell-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  position: relative;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.notify-bell-btn:hover {
+  background: var(--bg-soft, #f5f7fa);
+}
+.notify-badge {
+  position: absolute;
+  top: 2px; right: 2px;
+  background: #D32F2F;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.3;
+  border: 1.5px solid #fff;
+}
+
+.notify-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  background: #fff;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  z-index: 9999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.notify-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #e0e0e0);
+  background: var(--bg-soft, #f5f7fa);
+}
+.notify-header strong { font-size: 14px; color: var(--text); }
+.notify-list {
+  overflow-y: auto;
+  flex: 1;
+}
+.notify-item {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.notify-item:hover { background: var(--bg-soft, #fafbfc); }
+.notify-item.unread { background: var(--primary-lighter, #f0f7ff); }
+.notify-item.unread:hover { background: #e0eef9; }
+.notify-item.urgent { border-left: 3px solid #D32F2F; }
+.notify-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.notify-item-msg {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.notify-item-meta {
+  font-size: 11px;
+  color: var(--text-muted, #999);
+}
+.notify-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted, #999);
+  font-size: 13px;
+}
+
+/* ── 플로팅 팝업 (드래그 가능) ───────────────────────── */
+#floating-popup-layer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5000;
+}
+.floating-popup {
+  position: absolute;
+  background: #fff;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  resize: both;
+  overflow: hidden;
+  min-width: 360px;
+  min-height: 240px;
+  /* 2026-05-21: 뷰포트 안에 들어오도록 max 제약 + 본문은 .floating-popup-body 가 스크롤 */
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+}
+.floating-popup-header {
+  background: var(--primary, #1B3A5C);
+  color: #fff;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  flex-shrink: 0;
+}
+.floating-popup-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.floating-popup-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.floating-popup-close:hover {
+  background: rgba(255,255,255,0.2);
+}
+.floating-popup-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-size: 13px;
+}
+
+/* ── 공지사항 팝업 (큰 모달) ─────────────────────────── */
+.notice-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.notice-popup {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 560px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+}
+.notice-popup-header {
+  background: linear-gradient(135deg, var(--primary, #1B3A5C), var(--accent, #00A8B5));
+  color: #fff;
+  padding: 20px 24px;
+  position: relative;
+}
+.notice-popup-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.notice-popup-meta { font-size: 12px; opacity: 0.9; }
+.notice-popup-body {
+  padding: 20px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-y: auto;
+  flex: 1;
+}
+.notice-popup-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border, #e0e0e0);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-soft, #f5f7fa);
+}
+
+/* ── 발주 프로젝트 카드 ──────────────────────────────── */
+.proj-card {
+  background: #fff;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: all 0.15s;
+}
+.proj-card:hover {
+  border-color: var(--primary, #1B3A5C);
+  box-shadow: 0 4px 12px rgba(27,58,92,0.08);
+}
+.proj-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.proj-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.proj-card-meta {
+  font-size: 12px;
+  color: var(--text-muted, #999);
+  margin-top: 2px;
+}
+.proj-card-progress {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 10px 0 6px;
+}
+.proj-card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary, #1B3A5C), var(--accent, #00A8B5));
+  transition: width 0.3s;
+}
+.proj-card-shipments {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.proj-shipment-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.proj-shipment-pill.air {
+  background: #e3f2fd; color: #1976D2; border: 1px solid #90caf9;
+}
+.proj-shipment-pill.sea {
+  background: #e0f2f1; color: #00796B; border: 1px solid #80cbc4;
+}
+.proj-shipment-pill.in_transit {
+  background: #fff3e0; color: #F57C00; border: 1px solid #ffcc80;
+}
+.proj-shipment-pill.arrived {
+  background: #e8f5e9; color: #2E7D32; border: 1px solid #a5d6a7;
+}
+
+.proj-cat-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.proj-cat-FABRIC   { background: #fce4ec; color: #C2185B; }
+.proj-cat-MATERIAL { background: #fff8e1; color: #F57F17; }
+.proj-cat-PRODUCT  { background: #e8f0f7; color: #1B3A5C; }
+
+.proj-status-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.proj-status-PENDING        { background: #f5f5f5; color: #757575; }
+.proj-status-IN_PRODUCTION  { background: #fff3e0; color: #E65100; }
+.proj-status-SHIPPING       { background: #e3f2fd; color: #1565C0; }
+.proj-status-PARTIAL        { background: #fff8e1; color: #F57F17; }
+.proj-status-COMPLETED      { background: #e8f5e9; color: #2E7D32; }
+
+/* ── 매뉴얼/절차서/양식 카탈로그 ─────────────────────── */
+.doc-cat-MANUAL    { background: #ffecb3; color: #E65100; }
+.doc-cat-PROCEDURE { background: #e1f5fe; color: #0277BD; }
+.doc-cat-FORM      { background: #f3e5f5; color: #7B1FA2; }
+.doc-cat-EXAMPLE   { background: #e8f5e9; color: #2E7D32; }
+.doc-cat-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* ── 발주 수정 이력 ──────────────────────────────────── */
+.edit-history-row {
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent, #00A8B5);
+  background: var(--bg-soft, #fafbfc);
+  margin-bottom: 6px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+}
+.edit-history-action {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+.edit-history-action.QTY_UPDATE   { background: #fff3e0; color: #E65100; }
+.edit-history-action.ITEM_REMOVE  { background: #ffebee; color: #C62828; }
+.edit-history-action.ITEM_ADD     { background: #e8f5e9; color: #2E7D32; }
+.edit-history-action.PRICE_UPDATE { background: #e3f2fd; color: #1565C0; }

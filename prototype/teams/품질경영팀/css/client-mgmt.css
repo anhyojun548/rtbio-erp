@@ -1,0 +1,169 @@
+/**
+ * RTBIO Prototype — 거래처 관리 (3개 포털 공통 CSS)
+ * admin-portal / exec-portal / qc-portal 모두 같은 폼 사용
+ *
+ * 주의: 다른 포털의 inline 스타일과 충돌 방지를 위해
+ *       HTML 문서에서 마지막에 로드되도록 link 순서 조정 필요.
+ */
+
+/* ── Client Cards Grid ─────────────────────────────────────────── */
+.client-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1200px) {
+  .client-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Client Card ──────────────────────────────────────────────── */
+.client-card {
+  background: var(--surface, #fff);
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--border, #e0e0e0);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
+  padding: 20px;
+  transition: box-shadow 0.15s;
+  /* exec-portal 의 .client-card-body / .client-metrics 잔여 스타일 영향 방지 */
+}
+.client-card:hover {
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+}
+
+.client-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 0 !important; /* exec-portal 의 padding:14px 16px override */
+  background: transparent !important;
+  border-bottom: none !important;
+}
+.client-card-header .name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #222);
+}
+
+.client-card-row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.client-card-row .label {
+  font-weight: 600;
+  color: var(--text, #222);
+  min-width: 72px;
+  flex-shrink: 0;
+}
+.client-card-row.mt-8 { margin-top: 8px; }
+
+.discount-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.discount-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--primary-lighter, #e8f0f7);
+  color: var(--primary, #1B3A5C);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.client-card-footer {
+  margin-top: 12px;
+  padding: 12px 0 0 0 !important; /* exec-portal override */
+  border-top: 1px solid var(--border, #e0e0e0);
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.client-card-footer .btn { flex-shrink: 0; }
+
+/* ── 거래처 유형 배지 (badge-type-dealer / badge-type-hospital) ── */
+.badge-type-dealer {
+  background: #e0f2fe;
+  color: #0277BD;
+  font-weight: 600;
+}
+.badge-type-hospital {
+  background: #e8f5e9;
+  color: #2E7D32;
+  font-weight: 600;
+}
+
+/* ── 품목별 할인 모달 그리드 ──────────────────────────────────── */
+.product-discount-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.product-discount-grid .pd-label {
+  font-size: 13px;
+  color: var(--text, #222);
+}
+.product-discount-grid input[type="number"] {
+  width: 64px;
+  padding: 4px 6px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 4px;
+  text-align: right;
+  font-size: 13px;
+}
+
+/* ── 모달 폼 영역 (신규/수정 거래처) ───────────────────────────── */
+.modal-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.modal-form .form-row .form-group:only-child {
+  grid-column: 1 / -1;
+}
+.modal-form .form-group {
+  margin-bottom: 0;
+}
+.modal-form .form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  margin-bottom: 4px;
+}
+.modal-form .form-group input,
+.modal-form .form-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fff;
+}
+.modal-form .form-note {
+  font-size: 11px;
+  color: var(--text-muted, #999);
+  margin-top: 4px;
+  display: block;
+}
+.modal-form .form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e0e0e0);
+}
+@media (max-width: 640px) {
+  .modal-form .form-row { grid-template-columns: 1fr; }
+}

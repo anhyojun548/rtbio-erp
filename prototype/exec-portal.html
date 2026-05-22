@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="css/sidebar.css">
 <link rel="stylesheet" href="css/ai-assistant.css">
 <link rel="stylesheet" href="css/widget-dashboard.css">
+<link rel="stylesheet" href="css/report-builder.css">
+<link rel="stylesheet" href="css/data-explorer.css">
+<link rel="stylesheet" href="css/shared-ui.css">
 <link href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
@@ -19,155 +22,155 @@
 
 /* ── Welcome Banner ── */
 .welcome-banner {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent-dark) 100%);
-  border-radius: var(--radius);
-  padding: 28px 32px;
-  color: #fff;
-  margin-bottom: 24px;
-  position: relative;
-  overflow: hidden;
+ background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent-dark) 100%);
+ border-radius: var(--radius);
+ padding: 28px 32px;
+ color: #fff;
+ margin-bottom: 24px;
+ position: relative;
+ overflow: hidden;
 }
 .welcome-banner::after {
-  content: '';
-  position: absolute;
-  top: -30%;
-  right: -5%;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
+ content: '';
+ position: absolute;
+ top: -30%;
+ right: -5%;
+ width: 200px;
+ height: 200px;
+ border-radius: 50%;
+ background: rgba(255,255,255,0.06);
 }
 .welcome-greeting {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 4px;
+ font-size: 24px;
+ font-weight: 700;
+ margin-bottom: 4px;
 }
 .welcome-date {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 8px;
+ font-size: 14px;
+ opacity: 0.8;
+ margin-bottom: 8px;
 }
 .welcome-summary {
-  font-size: 14px;
-  opacity: 0.9;
-  background: rgba(255,255,255,0.12);
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-weight: 600;
+ font-size: 14px;
+ opacity: 0.9;
+ background: rgba(255,255,255,0.12);
+ display: inline-block;
+ padding: 6px 14px;
+ border-radius: 20px;
+ font-weight: 600;
 }
 
 /* ── Section Header ── */
 .section-header {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 24px 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+ font-size: 16px;
+ font-weight: 700;
+ color: var(--text);
+ margin: 24px 0 12px;
+ display: flex;
+ align-items: center;
+ gap: 8px;
 }
 
 /* ── Bar Chart (CSS Only) ── */
 .bar-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  height: 180px;
-  padding: 16px 0 0;
+ display: flex;
+ align-items: flex-end;
+ gap: 12px;
+ height: 180px;
+ padding: 16px 0 0;
 }
 .bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  position: relative;
+ flex: 1;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-end;
+ height: 100%;
+ position: relative;
 }
 .bar-value {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  white-space: nowrap;
+ font-size: 11px;
+ font-weight: 600;
+ color: var(--text-secondary);
+ margin-bottom: 4px;
+ white-space: nowrap;
 }
 .bar-fill {
-  width: 100%;
-  max-width: 48px;
-  border-radius: 6px 6px 0 0;
-  background: var(--primary-lighter);
-  transition: height 0.4s ease;
-  min-height: 4px;
+ width: 100%;
+ max-width: 48px;
+ border-radius: 6px 6px 0 0;
+ background: var(--primary-lighter);
+ transition: height 0.4s ease;
+ min-height: 4px;
 }
 .bar-fill.today {
-  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+ background: linear-gradient(180deg, var(--accent), var(--accent-dark));
 }
 .bar-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 6px;
-  font-weight: 600;
+ font-size: 11px;
+ color: var(--text-muted);
+ margin-top: 6px;
+ font-weight: 600;
 }
 
 /* ── Horizontal Bar Chart ── */
 .h-bar-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+ display: flex;
+ flex-direction: column;
+ gap: 12px;
 }
 .h-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+ display: flex;
+ align-items: center;
+ gap: 12px;
 }
 .h-bar-label {
-  width: 100px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  text-align: right;
-  flex-shrink: 0;
+ width: 100px;
+ font-size: 13px;
+ font-weight: 600;
+ color: var(--text);
+ text-align: right;
+ flex-shrink: 0;
 }
 .h-bar-track {
-  flex: 1;
-  height: 24px;
-  background: var(--bg);
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
+ flex: 1;
+ height: 24px;
+ background: var(--bg);
+ border-radius: 6px;
+ overflow: hidden;
+ position: relative;
 }
 .h-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.5s ease;
-  display: flex;
-  align-items: center;
-  padding-left: 8px;
+ height: 100%;
+ border-radius: 6px;
+ transition: width 0.5s ease;
+ display: flex;
+ align-items: center;
+ padding-left: 8px;
 }
 .h-bar-fill span {
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
+ font-size: 11px;
+ font-weight: 700;
+ color: #fff;
+ white-space: nowrap;
 }
 .h-bar-amount {
-  width: 100px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: right;
-  flex-shrink: 0;
+ width: 100px;
+ font-size: 12px;
+ font-weight: 600;
+ color: var(--text-secondary);
+ text-align: right;
+ flex-shrink: 0;
 }
 
 /* ── Risk Badge ── */
 .risk-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+ display: inline-flex;
+ align-items: center;
+ padding: 3px 10px;
+ border-radius: 20px;
+ font-size: 12px;
+ font-weight: 600;
 }
 .risk-normal { background: var(--success-light); color: var(--success); }
 .risk-warning { background: var(--warning-light); color: var(--warning); }
@@ -175,193 +178,193 @@
 
 /* ── Usage Input Form ── */
 .usage-table-wrap {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  overflow-x: auto;
+ background: var(--surface);
+ border-radius: var(--radius);
+ border: 1px solid var(--border);
+ overflow-x: auto;
 }
 .usage-table {
-  width: 100%;
-  border-collapse: collapse;
+ width: 100%;
+ border-collapse: collapse;
 }
 .usage-table th {
-  text-align: left;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg);
-  border-bottom: 2px solid var(--border);
-  white-space: nowrap;
+ text-align: left;
+ padding: 10px 14px;
+ font-size: 12px;
+ font-weight: 600;
+ color: var(--text-secondary);
+ background: var(--bg);
+ border-bottom: 2px solid var(--border);
+ white-space: nowrap;
 }
 .usage-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  vertical-align: middle;
+ padding: 10px 14px;
+ border-bottom: 1px solid var(--border);
+ font-size: 14px;
+ vertical-align: middle;
 }
 .usage-table tr:hover td {
-  background: #F8FAFC;
+ background: #F8FAFC;
 }
 .usage-table .qty-input {
-  width: 72px;
-  padding: 7px 10px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-xs);
-  font-size: 14px;
-  font-family: inherit;
-  text-align: center;
-  background: var(--surface);
-  transition: border-color 0.2s, box-shadow 0.2s;
+ width: 72px;
+ padding: 7px 10px;
+ border: 1.5px solid var(--border);
+ border-radius: var(--radius-xs);
+ font-size: 14px;
+ font-family: inherit;
+ text-align: center;
+ background: var(--surface);
+ transition: border-color 0.2s, box-shadow 0.2s;
 }
 .usage-table .qty-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0,168,181,0.12);
+ outline: none;
+ border-color: var(--accent);
+ box-shadow: 0 0 0 3px rgba(0,168,181,0.12);
 }
 .usage-table .total-row td {
-  font-weight: 700;
-  background: var(--bg);
-  border-bottom: none;
+ font-weight: 700;
+ background: var(--bg);
+ border-bottom: none;
 }
 .form-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: flex-end;
+ display: flex;
+ gap: 8px;
+ margin-top: 16px;
+ justify-content: flex-end;
 }
 
 /* ── Past Submissions ── */
 .submissions-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+ width: 100%;
+ border-collapse: collapse;
+ font-size: 14px;
 }
 .submissions-table th {
-  text-align: left;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg);
-  border-bottom: 2px solid var(--border);
+ text-align: left;
+ padding: 10px 14px;
+ font-size: 12px;
+ font-weight: 600;
+ color: var(--text-secondary);
+ background: var(--bg);
+ border-bottom: 2px solid var(--border);
 }
 .submissions-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+ padding: 10px 14px;
+ border-bottom: 1px solid var(--border);
 }
 
 /* ── Client Status Cards ── */
 .client-cards {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+ display: grid;
+ gap: 16px;
+ grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
 }
 .client-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+ background: var(--surface);
+ border-radius: var(--radius);
+ border: 1px solid var(--border);
+ box-shadow: var(--shadow-sm);
+ overflow: hidden;
 }
 .client-card-header {
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
+ padding: 16px 20px;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ border-bottom: 1px solid var(--border);
 }
 .client-card-header .name {
-  font-size: 16px;
-  font-weight: 700;
+ font-size: 16px;
+ font-weight: 700;
 }
 .client-card-body {
-  padding: 16px 20px;
+ padding: 16px 20px;
 }
 .client-info-row {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+ display: flex;
+ gap: 16px;
+ font-size: 13px;
+ color: var(--text-secondary);
+ margin-bottom: 12px;
+ flex-wrap: wrap;
 }
 .client-info-row span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+ display: flex;
+ align-items: center;
+ gap: 4px;
 }
 .client-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 8px;
+ margin-bottom: 12px;
 }
 .client-metric {
-  background: var(--bg);
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
+ background: var(--bg);
+ padding: 10px 12px;
+ border-radius: var(--radius-sm);
 }
 .client-metric-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 2px;
+ font-size: 11px;
+ color: var(--text-muted);
+ margin-bottom: 2px;
 }
 .client-metric-value {
-  font-size: 15px;
-  font-weight: 700;
+ font-size: 15px;
+ font-weight: 700;
 }
 .discount-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+ display: flex;
+ gap: 6px;
+ flex-wrap: wrap;
+ margin-bottom: 12px;
 }
 .discount-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
-  background: var(--purple-light);
-  color: var(--purple);
+ font-size: 11px;
+ font-weight: 600;
+ padding: 3px 8px;
+ border-radius: 12px;
+ background: var(--purple-light);
+ color: var(--purple);
 }
 .client-card-footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  gap: 8px;
+ padding: 12px 20px;
+ border-top: 1px solid var(--border);
+ background: var(--bg);
+ display: flex;
+ gap: 8px;
 }
 .client-card-footer .btn {
-  font-size: 13px;
-  padding: 7px 14px;
+ font-size: 13px;
+ padding: 7px 14px;
 }
 
 /* ── Filter Bar ── */
 .filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ margin-bottom: 16px;
+ flex-wrap: wrap;
 }
 .filter-bar label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+ font-size: 13px;
+ font-weight: 600;
+ color: var(--text-secondary);
 }
 .filter-bar select {
-  padding: 7px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-xs);
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--surface);
-  cursor: pointer;
+ padding: 7px 12px;
+ border: 1.5px solid var(--border);
+ border-radius: var(--radius-xs);
+ font-size: 13px;
+ font-family: inherit;
+ background: var(--surface);
+ cursor: pointer;
 }
 .filter-bar select:focus {
-  border-color: var(--accent);
-  outline: none;
+ border-color: var(--accent);
+ outline: none;
 }
 
 /* ── Overdue Days Color ── */
@@ -371,523 +374,668 @@
 
 /* ── Mini Table Card ── */
 .mini-table-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+ background: var(--surface);
+ border-radius: var(--radius);
+ border: 1px solid var(--border);
+ box-shadow: var(--shadow-sm);
+ overflow: hidden;
 }
 .mini-table-card .card-header {
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 700;
-  border-bottom: 1px solid var(--border);
+ padding: 14px 20px;
+ font-size: 15px;
+ font-weight: 700;
+ border-bottom: 1px solid var(--border);
 }
 
 /* ── Dashboard two-col grid ── */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-top: 20px;
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 20px;
+ margin-top: 20px;
 }
 
 /* ── Responsive ── */
 @media (max-width: 1023px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  .client-cards {
-    grid-template-columns: 1fr;
-  }
+ .dashboard-grid {
+ grid-template-columns: 1fr;
+ }
+ .client-cards {
+ grid-template-columns: 1fr;
+ }
 }
 @media (max-width: 640px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .welcome-banner { padding: 20px; }
-  .welcome-greeting { font-size: 20px; }
-  .bar-chart { gap: 6px; }
-  .h-bar-label { width: 70px; font-size: 11px; }
-  .h-bar-amount { width: 80px; font-size: 11px; }
-  .form-actions { flex-direction: column; }
-  .form-actions .btn { width: 100%; }
+ .stats-grid { grid-template-columns: repeat(2, 1fr); }
+ .welcome-banner { padding: 20px; }
+ .welcome-greeting { font-size: 20px; }
+ .bar-chart { gap: 6px; }
+ .h-bar-label { width: 70px; font-size: 11px; }
+ .h-bar-amount { width: 80px; font-size: 11px; }
+ .form-actions { flex-direction: column; }
+ .form-actions .btn { width: 100%; }
 }
 </style>
+<!-- 2026-05-21: 거래처 관리 통합 UI CSS — inline <style> 보다 뒤에 위치해야 override 가능 -->
+<link rel="stylesheet" href="css/client-mgmt.css">
 </head>
-<body>
+<body data-dashboard-role="exec">
 <div class="layout">
 
-  <!-- ═══ Sidebar ═══ -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="assets/logo-white.png" alt="RTBIO">
-      <div class="logo-text">Medical Device Platform</div>
-    </div>
-    <div class="sidebar-user">
-      <div class="sidebar-user-avatar">김</div>
-      <div>
-        <div class="sidebar-user-name">김영업</div>
-        <div class="sidebar-user-role">영업팀</div>
-      </div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">영업</div>
-      <div class="nav-item active" data-page="page-exec-dashboard" onclick="navigateTo('page-exec-dashboard')">
-        <span class="nav-icon">📊</span> 영업 대시보드
-      </div>
-      <div class="nav-item" data-page="page-sales-status" onclick="navigateTo('page-sales-status')">
-        <span class="nav-icon">💰</span> 영업 현황
-      </div>
-      <div class="nav-item" data-page="page-client-status" onclick="navigateTo('page-client-status')">
-        <span class="nav-icon">🏢</span> 거래처 현황
-      </div>
-      <div class="nav-item" data-page="page-assignments" onclick="navigateTo('page-assignments')">
-        <span class="nav-icon">👥</span> 담당자 관리
-      </div>
-      <div class="nav-item" data-page="page-conference" onclick="navigateTo('page-conference')">
-        <span class="nav-icon">🎓</span> 학회 관리
-      </div>
-      <div class="nav-section">기타</div>
-      <div class="nav-item" data-page="page-usage" onclick="navigateTo('page-usage')">
-        <span class="nav-icon">📝</span> 사용량 입력
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div style="padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:8px;">
-        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;">👤 모드</div>
-        <select id="userModeSelect" onchange="changeUserMode()" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;font-size:12px;">
-          <option value="manager">관리자 (팀장)</option>
-          <option value="park">박진우 (팀장)</option>
-          <option value="shin">신현호 (주임)</option>
-          <option value="lee">이경동 (사원)</option>
-        </select>
-      </div>
-      <a href="index.html">&larr; 역할 선택</a>
-    </div>
-  </aside>
+ <!-- ═══ Sidebar ═══ -->
+ <aside class="sidebar">
+ <div class="sidebar-logo">
+ <img src="assets/logo-white.png" alt="RTBIO">
+ <div class="logo-text">Medical Device Platform</div>
+ </div>
+ <div class="sidebar-user">
+ <div class="sidebar-user-avatar">김</div>
+ <div>
+ <div class="sidebar-user-name">김영업</div>
+ <div class="sidebar-user-role">영업팀</div>
+ </div>
+ </div>
+ <nav class="sidebar-nav">
+ <div class="nav-section">영업</div>
+ <div class="nav-item active" data-page="page-exec-dashboard" onclick="navigateTo('page-exec-dashboard')">
+ 영업 대시보드
+ </div>
+ <div class="nav-item" data-page="page-sales-status" onclick="navigateTo('page-sales-status')">
+ 영업 현황
+ </div>
+ <div class="nav-item" data-page="page-client-status" onclick="navigateTo('page-client-status')">
+ 거래처 관리
+ </div>
+ <div class="nav-item" data-page="page-assignments" onclick="navigateTo('page-assignments')">
+ 담당자 관리
+ </div>
+ <div class="nav-item" data-page="page-conference" onclick="navigateTo('page-conference')">
+ 학회 관리
+ </div>
+ <!-- 2026-05-12 미팅: 영업 사원 마스터 계정 + 인센티브 -->
+ <div class="nav-item" data-page="page-rep-master" onclick="navigateTo('page-rep-master')">
+ 영업사원 계정
+ </div>
+ <div class="nav-section">기타</div>
+ <!-- 2026-05-22: 영업팀도 거래처로 공지 발송 가능 (자료/혜택 안내 등) -->
+ <div class="nav-item" data-page="page-notices" onclick="navigateTo('page-notices')">
+ 📢 공지사항
+ </div>
+ <div class="nav-item" data-page="page-usage" onclick="navigateTo('page-usage')">
+ 사용량 입력
+ </div>
+ <!-- 알티바이오 ISO 13485 품질양식 보고서 작성 -->
+ <div class="nav-item" data-page="page-reports" onclick="navigateTo('page-reports')">
+ 보고서 작성
+ </div>
+ <!-- 원본 DB 조회/편집/Export — 데이터 탐색기 -->
+ <div class="nav-item" data-page="page-data-explorer" onclick="navigateTo('page-data-explorer')">
+ 데이터 탐색기
+ </div>
+ </nav>
+ <div class="sidebar-footer">
+ <div style="padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:8px;">
+ <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;"> 모드</div>
+ <select id="userModeSelect" onchange="changeUserMode()" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;font-size:12px;">
+ <option value="manager">관리자 (팀장)</option>
+ <option value="park">박진우 (팀장)</option>
+ <option value="shin">신현호 (주임)</option>
+ <option value="lee">이경동 (사원)</option>
+ </select>
+ </div>
+ <a href="index.html">&larr; 역할 선택</a>
+ </div>
+ </aside>
 
-  <!-- ═══ Mobile Overlay ═══ -->
-  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+ <!-- ═══ Mobile Overlay ═══ -->
+ <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-  <!-- ═══ Main Content ═══ -->
-  <main class="main-content">
+ <!-- ═══ Main Content ═══ -->
+ <main class="main-content">
 
-    <!-- Mobile Top Bar -->
-    <div class="mobile-topbar">
-      <button class="hamburger" onclick="toggleSidebar()">
-        <span></span><span></span><span></span>
-      </button>
-      <span class="topbar-title">영업팀</span>
-    </div>
+ <!-- Mobile Top Bar -->
+ <div class="mobile-topbar">
+ <button class="hamburger" onclick="toggleSidebar()">
+ <span></span><span></span><span></span>
+ </button>
+ <span class="topbar-title">영업팀</span>
+ </div>
 
-    <!-- ────────────────────────────────────────
-         P18: 경영 대시보드
-    ──────────────────────────────────────── -->
-    <div class="page active" id="page-exec-dashboard">
-      <div class="page-inner" style="padding:0 0 40px;">
+ <!-- ────────────────────────────────────────
+ P18: 경영 대시보드
+ ──────────────────────────────────────── -->
+ <div class="page active" id="page-exec-dashboard">
+ <div class="page-inner" style="padding:0 0 40px;">
 
-        <!-- Widget Dashboard Toolbar -->
-        <div class="dashboard-toolbar">
-          <div class="toolbar-left">
-            <h1>📊 영업 대시보드</h1>
-            <div class="kebab-wrapper">
-              <button class="kebab-btn" id="kebabBtn" title="더보기">⋮</button>
-              <div class="kebab-menu" id="kebabMenu">
-                <button class="kebab-item" id="btnExport">📤 대시보드 내보내기</button>
-                <button class="kebab-item" id="btnImport">📥 대시보드 가져오기</button>
-                <div class="kebab-divider"></div>
-                <button class="kebab-item" id="btnReset">🔄 기본 레이아웃으로 초기화</button>
-              </div>
-            </div>
-          </div>
-          <div class="toolbar-right">
-            <button class="tb-btn primary" id="btnAddWidget">➕ 위젯 추가</button>
-          </div>
-        </div>
+ <!-- Widget Dashboard Toolbar -->
+ <div class="dashboard-toolbar">
+ <div class="toolbar-left">
+ <h1> 영업 대시보드</h1>
+ <div class="kebab-wrapper">
+ <button class="kebab-btn" id="kebabBtn" title="더보기">⋮</button>
+ <div class="kebab-menu" id="kebabMenu">
+ <button class="kebab-item" id="btnExport"> 대시보드 내보내기</button>
+ <button class="kebab-item" id="btnImport"> 대시보드 가져오기</button>
+ <div class="kebab-divider"></div>
+ <button class="kebab-item" id="btnReset"> 기본 레이아웃으로 초기화</button>
+ </div>
+ </div>
+ </div>
+ <div class="toolbar-right">
+ <button class="tb-btn primary" id="btnAddWidget">➕ 위젯 추가</button>
+ </div>
+ </div>
 
-        <!-- Grid -->
-        <div class="grid-stack" id="gridStack"></div>
+ <!-- 영업팀 #1 (2026-04): 월 수금액 + 월 미수금 + 거래처/주문 KPI -->
+ <div class="stats-grid" id="exec-monthly-kpi" style="margin-bottom:20px;"></div>
 
-      </div>
-    </div>
+ <!-- Grid -->
+ <div class="grid-stack" id="gridStack"></div>
 
-    <!-- ────────────────────────────────────────
-         P16: 사용량 입력
-    ──────────────────────────────────────── -->
-    <div class="page" id="page-usage">
-      <div class="page-inner">
+ </div>
+ </div>
 
-        <div class="main-header">
-          <div>
-            <div class="main-title">사용량 입력</div>
-            <div class="main-subtitle">거래처의 실사용 수량을 입력합니다</div>
-          </div>
-        </div>
+ <!-- ────────────────────────────────────────
+ P15.5: 공지사항 (2026-05-22 추가, NoticeModule 공통 모듈 사용)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-notices">
+ <!-- pageTemplate() 가 동적으로 채움 (navigateTo 시) -->
+ </div>
 
-        <!-- Client & Period selectors -->
-        <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
-          <div class="form-group" style="margin-bottom:0; min-width:200px;">
-            <label>거래처 선택</label>
-            <select class="form-select" id="usage-client-select" onchange="onUsageClientChange()">
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0; min-width:240px;">
-            <label>마감 기간</label>
-            <div class="form-input" style="background:var(--bg); color:var(--text-secondary);" id="usage-period">
-              2026.03.26 ~ 2026.04.25
-            </div>
-          </div>
-        </div>
+ <!-- ────────────────────────────────────────
+ P16: 사용량 입력
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-usage">
+ <div class="page-inner">
 
-        <!-- Usage Input Table -->
-        <div class="usage-table-wrap">
-          <table class="usage-table" id="usage-table">
-            <thead>
-              <tr>
-                <th>제품명</th>
-                <th>사이즈</th>
-                <th class="text-right">전월사용</th>
-                <th class="text-right">당월사용</th>
-                <th class="text-right">단가</th>
-                <th class="text-right">소계</th>
-              </tr>
-            </thead>
-            <tbody id="usage-body"></tbody>
-            <tfoot id="usage-foot"></tfoot>
-          </table>
-        </div>
+ <div class="main-header">
+ <div>
+ <div class="main-title">사용량 입력</div>
+ <div class="main-subtitle">거래처의 실사용 수량을 입력합니다</div>
+ </div>
+ </div>
 
-        <!-- Actions -->
-        <div class="form-actions">
-          <button class="btn btn-outline" onclick="saveUsageDraft()">임시저장</button>
-          <button class="btn btn-primary" onclick="submitUsage()">제출</button>
-        </div>
+ <!-- Client & Period selectors -->
+ <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
+ <div class="form-group" style="margin-bottom:0; min-width:200px;">
+ <label>거래처 선택</label>
+ <select class="form-select" id="usage-client-select" onchange="onUsageClientChange()">
+ </select>
+ </div>
+ <div class="form-group" style="margin-bottom:0; min-width:240px;">
+ <label>마감 기간</label>
+ <div class="form-input" style="background:var(--bg); color:var(--text-secondary);" id="usage-period">
+ 2026.03.26 ~ 2026.04.25
+ </div>
+ </div>
+ </div>
 
-        <!-- Past Submissions -->
-        <div class="section-header" style="margin-top:36px;">이전 제출 내역</div>
-        <div class="card">
-          <div style="overflow-x:auto;">
-            <table class="submissions-table">
-              <thead>
-                <tr>
-                  <th>기간</th>
-                  <th>거래처</th>
-                  <th class="text-right">항목수</th>
-                  <th class="text-right">금액</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>2026.02.26 ~ 03.25</td>
-                  <td>한빛정형외과</td>
-                  <td class="text-right">3</td>
-                  <td class="text-right">₩1,256,000</td>
-                  <td><span class="badge badge-complete">제출완료</span></td>
-                </tr>
-                <tr>
-                  <td>2026.02.26 ~ 03.25</td>
-                  <td>세종재활의학과</td>
-                  <td class="text-right">4</td>
-                  <td class="text-right">₩2,180,000</td>
-                  <td><span class="badge badge-complete">제출완료</span></td>
-                </tr>
-                <tr>
-                  <td>2026.01.26 ~ 02.25</td>
-                  <td>한빛정형외과</td>
-                  <td class="text-right">3</td>
-                  <td class="text-right">₩1,410,000</td>
-                  <td><span class="badge badge-complete">제출완료</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+ <!-- Usage Input Table -->
+ <div class="usage-table-wrap">
+ <table class="usage-table" id="usage-table">
+ <thead>
+ <tr>
+ <th>제품명</th>
+ <th>사이즈</th>
+ <th class="text-right">전월사용</th>
+ <th class="text-right">당월사용</th>
+ <th class="text-right">단가</th>
+ <th class="text-right">소계</th>
+ </tr>
+ </thead>
+ <tbody id="usage-body"></tbody>
+ <tfoot id="usage-foot"></tfoot>
+ </table>
+ </div>
 
-      </div>
-    </div>
+ <!-- Actions -->
+ <div class="form-actions">
+ <button class="btn btn-outline" onclick="saveUsageDraft()">임시저장</button>
+ <button class="btn btn-primary" onclick="submitUsage()">제출</button>
+ </div>
 
-    <!-- ────────────────────────────────────────
-         영업 현황 (신규)
-    ──────────────────────────────────────── -->
-    <div class="page" id="page-sales-status">
-      <div class="page-inner">
-        <div class="main-header">
-          <div>
-            <div class="main-title">💰 영업 현황</div>
-            <div class="main-subtitle" id="sales-status-subtitle">기간별 매출 및 담당자별 실적</div>
-          </div>
-        </div>
+ <!-- 영업팀 #4 (2026-04, HWPX): 품목별 사용량 + 품목별 판매액 (전체 거래처 합계) -->
+ <div class="section-header" style="margin-top:36px;"> 품목별 사용량 · 판매액 <span class="count">전체 거래처 합계</span></div>
+ <div class="card">
+ <div class="card-body" style="padding:0;overflow-x:auto;">
+ <table class="data-table" id="usage-summary-table">
+ <thead>
+ <tr>
+ <th>제품명</th>
+ <th>규격</th>
+ <th class="text-right">전월 사용량</th>
+ <th class="text-right">당월 사용량</th>
+ <th class="text-right">증감</th>
+ <th class="text-right">단가</th>
+ <th class="text-right">월 판매액</th>
+ </tr>
+ </thead>
+ <tbody id="usage-summary-body"></tbody>
+ <tfoot id="usage-summary-foot"></tfoot>
+ </table>
+ </div>
+ <div style="font-size:12px;color:var(--text-muted);padding:8px 16px;">
+ 사용량 = USAGE_DATA 전 거래처 합산 / 판매액 = 사용량 × 단가 (월 정산 기준)
+ </div>
+ </div>
 
-        <!-- 기간 필터 -->
-        <div class="card" style="margin-bottom:20px;padding:16px;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label>시작일</label>
-              <input type="date" class="form-input" id="sales-from" value="2026-04-01">
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>종료일</label>
-              <input type="date" class="form-input" id="sales-to" value="2026-04-16">
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label>유형</label>
-              <select class="form-select" id="sales-type" onchange="renderSalesStatus()">
-                <option value="all">전체</option>
-                <option value="병원">병원만</option>
-                <option value="대리점">대리점만</option>
-                <option value="기타">기타만</option>
-              </select>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="renderSalesStatus()">조회</button>
-            <div style="margin-left:auto;display:flex;gap:6px;">
-              <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('today')">오늘</button>
-              <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('week')">이번 주</button>
-              <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('month')">이번 달</button>
-            </div>
-          </div>
-        </div>
+ <!-- Past Submissions -->
+ <div class="section-header" style="margin-top:36px;">이전 제출 내역</div>
+ <div class="card">
+ <div style="overflow-x:auto;">
+ <table class="submissions-table">
+ <thead>
+ <tr>
+ <th>기간</th>
+ <th>거래처</th>
+ <th class="text-right">항목수</th>
+ <th class="text-right">금액</th>
+ <th>상태</th>
+ </tr>
+ </thead>
+ <tbody>
+ <tr>
+ <td>2026.02.26 ~ 03.25</td>
+ <td>한빛정형외과</td>
+ <td class="text-right">3</td>
+ <td class="text-right">₩1,256,000</td>
+ <td><span class="badge badge-complete">제출완료</span></td>
+ </tr>
+ <tr>
+ <td>2026.02.26 ~ 03.25</td>
+ <td>세종재활의학과</td>
+ <td class="text-right">4</td>
+ <td class="text-right">₩2,180,000</td>
+ <td><span class="badge badge-complete">제출완료</span></td>
+ </tr>
+ <tr>
+ <td>2026.01.26 ~ 02.25</td>
+ <td>한빛정형외과</td>
+ <td class="text-right">3</td>
+ <td class="text-right">₩1,410,000</td>
+ <td><span class="badge badge-complete">제출완료</span></td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
 
-        <!-- KPI 카드 -->
-        <div class="stats-grid" id="sales-kpi"></div>
+ </div>
+ </div>
 
-        <!-- 대리점 / 병원 분리 그래프 -->
-        <div class="dashboard-grid mt-16">
-          <div class="card">
-            <div class="card-header"><span class="text-h3">🏥 병원 매출</span></div>
-            <div class="card-body"><canvas id="hospital-chart" height="180"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><span class="text-h3">🏬 대리점 매출</span></div>
-            <div class="card-body"><canvas id="agency-chart" height="180"></canvas></div>
-          </div>
-        </div>
+ <!-- ────────────────────────────────────────
+ 영업 현황 (신규)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-sales-status">
+ <div class="page-inner">
+ <div class="main-header">
+ <div>
+ <div class="main-title"> 영업 현황</div>
+ <div class="main-subtitle" id="sales-status-subtitle">기간별 매출 및 담당자별 실적</div>
+ </div>
+ </div>
 
-        <!-- 담당자별 매출 표 -->
-        <div class="card mt-16">
-          <div class="card-header"><span class="text-h3">👥 담당자별 매출</span></div>
-          <div class="card-body" style="padding:0;">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>담당자</th>
-                  <th>역할</th>
-                  <th class="text-right">담당 거래처</th>
-                  <th class="text-right">발주 건수</th>
-                  <th class="text-right">매출액</th>
-                  <th class="text-right">신규</th>
-                </tr>
-              </thead>
-              <tbody id="sales-staff-tbody"></tbody>
-            </table>
-          </div>
-        </div>
+ <!-- 기간 필터 -->
+ <div class="card" style="margin-bottom:20px;padding:16px;">
+ <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+ <div class="form-group" style="margin-bottom:0;">
+ <label>시작일</label>
+ <input type="date" class="form-input" id="sales-from" value="2026-04-01">
+ </div>
+ <div class="form-group" style="margin-bottom:0;">
+ <label>종료일</label>
+ <input type="date" class="form-input" id="sales-to" value="2026-04-16">
+ </div>
+ <div class="form-group" style="margin-bottom:0;">
+ <label>유형</label>
+ <select class="form-select" id="sales-type" onchange="renderSalesStatus()">
+ <option value="all">전체</option>
+ <option value="병원">병원만</option>
+ <option value="대리점">대리점만</option>
+ <option value="기타">기타만</option>
+ </select>
+ </div>
+ <button class="btn btn-primary btn-sm" onclick="renderSalesStatus()">조회</button>
+ <div style="margin-left:auto;display:flex;gap:6px;">
+ <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('today')">오늘</button>
+ <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('week')">이번 주</button>
+ <button class="btn btn-outline btn-sm" onclick="setSalesDateRange('month')">이번 달</button>
+ </div>
+ </div>
+ </div>
 
-        <!-- 제품 드릴다운 -->
-        <div class="card mt-16">
-          <div class="card-header"><span class="text-h3">📦 품목/부위/사이즈 드릴다운</span></div>
-          <div class="card-body" id="product-drilldown"></div>
-        </div>
+ <!-- KPI 카드 -->
+ <div class="stats-grid" id="sales-kpi"></div>
 
-      </div>
-    </div>
+ <!-- 대리점 / 병원 분리 그래프 -->
+ <div class="dashboard-grid mt-16">
+ <div class="card">
+ <div class="card-header"><span class="text-h3"> 병원 매출</span></div>
+ <div class="card-body"><canvas id="hospital-chart" height="180"></canvas></div>
+ </div>
+ <div class="card">
+ <div class="card-header"><span class="text-h3"> 대리점 매출</span></div>
+ <div class="card-body"><canvas id="agency-chart" height="180"></canvas></div>
+ </div>
+ </div>
 
-    <!-- ────────────────────────────────────────
-         담당자 관리 (신규)
-    ──────────────────────────────────────── -->
-    <div class="page" id="page-assignments">
-      <div class="page-inner">
-        <div class="main-header">
-          <div>
-            <div class="main-title">👥 담당자 관리</div>
-            <div class="main-subtitle">영업사원별 담당 거래처 배정</div>
-          </div>
-          <button class="btn btn-primary" onclick="showAssignModal()">+ 거래처 배정</button>
-        </div>
+ <!-- 담당자별 매출 표 -->
+ <!-- 영업팀 #3 (2026-04): 반품건수 컬럼 추가 -->
+ <div class="card mt-16">
+ <div class="card-header"><span class="text-h3"> 담당자별 매출</span></div>
+ <div class="card-body" style="padding:0;">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>담당자</th>
+ <th>역할</th>
+ <th class="text-right">담당 거래처</th>
+ <th class="text-right">발주 건수</th>
+ <th class="text-right">매출액</th>
+ <th class="text-right">반품건수</th>
+ <th class="text-right">신규</th>
+ </tr>
+ </thead>
+ <tbody id="sales-staff-tbody"></tbody>
+ </table>
+ </div>
+ </div>
 
-        <div id="staff-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;"></div>
-      </div>
-    </div>
+ <!-- 제품 드릴다운 -->
+ <div class="card mt-16">
+ <div class="card-header"><span class="text-h3"> 품목/부위/사이즈 드릴다운</span></div>
+ <div class="card-body" id="product-drilldown"></div>
+ </div>
 
-    <!-- ────────────────────────────────────────
-         학회 관리 (신규)
-    ──────────────────────────────────────── -->
-    <div class="page" id="page-conference">
-      <div class="page-inner">
-        <div class="main-header">
-          <div>
-            <div class="main-title">🎓 학회 관리</div>
-            <div class="main-subtitle">학회 방명록 및 영업 성공률 추적</div>
-          </div>
-          <button class="btn btn-primary" onclick="showConferenceModal()">+ 학회 등록</button>
-        </div>
+ </div>
+ </div>
 
-        <!-- KPI -->
-        <div class="stats-grid" id="conf-kpi"></div>
+ <!-- ────────────────────────────────────────
+ 담당자 관리 (신규)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-assignments">
+ <div class="page-inner">
+ <div class="main-header">
+ <div>
+ <div class="main-title"> 담당자 관리</div>
+ <div class="main-subtitle">영업사원별 담당 거래처 배정</div>
+ </div>
+ <button class="btn btn-primary" onclick="showAssignModal()">+ 거래처 배정</button>
+ </div>
 
-        <!-- 학회 목록 -->
-        <div class="card mt-16">
-          <div class="card-header"><span class="text-h3">최근 학회</span></div>
-          <div class="card-body" style="padding:0;">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>학회명</th>
-                  <th>종류</th>
-                  <th>날짜</th>
-                  <th class="text-right">방명록</th>
-                  <th class="text-right">접촉</th>
-                  <th class="text-right">신규거래</th>
-                  <th class="text-right">성공률</th>
-                  <th>담당자 배분</th>
-                </tr>
-              </thead>
-              <tbody id="conf-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+ <div id="staff-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;"></div>
+ </div>
+ </div>
 
-    <!-- ────────────────────────────────────────
-         P17: 거래처 현황
-    ──────────────────────────────────────── -->
-    <div class="page" id="page-client-status">
-      <div class="page-inner">
+ <!-- ────────────────────────────────────────
+ 학회 관리 (신규)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-conference">
+ <div class="page-inner">
+ <div class="main-header">
+ <div>
+ <div class="main-title"> 학회 관리</div>
+ <div class="main-subtitle">학회 방명록 및 영업 성공률 추적</div>
+ </div>
+ <button class="btn btn-primary" onclick="showConferenceModal()">+ 학회 등록</button>
+ </div>
 
-        <div class="main-header">
-          <div>
-            <div class="main-title">거래처 현황</div>
-            <div class="main-subtitle">전체 거래처 상태 및 결제 현황</div>
-          </div>
-        </div>
+ <!-- KPI -->
+ <div class="stats-grid" id="conf-kpi"></div>
 
-        <!-- Summary Stats -->
-        <div class="stats-grid" id="client-stats"></div>
+ <!-- 학회 목록 -->
+ <!-- 영업팀 #5: 부스비/설치비 컬럼 추가, 성공률 정의 = 신규거래 / 접촉 -->
+ <div class="card mt-16">
+ <div class="card-header"><span class="text-h3">최근 학회</span></div>
+ <div class="card-body" style="padding:0;overflow-x:auto;">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>학회명</th>
+ <th>종류</th>
+ <th>날짜</th>
+ <th class="text-right">부스비</th>
+ <th class="text-right">설치비</th>
+ <th class="text-right">방명록(방문자)</th>
+ <th class="text-right">접촉</th>
+ <th class="text-right">신규거래</th>
+ <th class="text-right">성공률</th>
+ <th>담당자 배분</th>
+ </tr>
+ </thead>
+ <tbody id="conf-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
 
-        <!-- Filter Bar -->
-        <div class="filter-bar mt-24">
-          <label>유형:</label>
-          <select id="filter-type" onchange="applyClientFilter()">
-            <option value="all">전체</option>
-            <option value="대리점">대리점</option>
-            <option value="병원">병원</option>
-            <option value="기타">기타</option>
-          </select>
-          <label style="margin-left:12px;">정렬:</label>
-          <select id="filter-sort" onchange="applyClientFilter()">
-            <option value="name">이름순</option>
-            <option value="revenue">매출순</option>
-            <option value="receivable">미수금순</option>
-          </select>
-        </div>
+ <!-- ────────────────────────────────────────
+ P-DE: 데이터 탐색기 (원본 DB)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-data-explorer">
+ <div class="page-inner">
+ <div class="main-header">
+ <div>
+ <div class="main-title"> 데이터 탐색기</div>
+ <div class="main-subtitle">원본 DB 직접 조회 · 필터링 · 편집 · CSV/Excel 출력</div>
+ </div>
+ </div>
+ <div class="de-shell">
+ <div class="de-toolbar">
+ <select id="de-table-select"></select>
+ <div id="de-table-title"></div>
+ <div id="de-toolbar-actions"></div>
+ </div>
+ <div id="de-filter-bar" class="de-filter-bar"></div>
+ <div id="de-summary-bar"></div>
+ <div class="de-grid-wrap">
+ <table class="de-grid">
+ <thead id="de-grid-head"></thead>
+ <tbody id="de-grid-body"></tbody>
+ </table>
+ </div>
+ <div id="de-pagination" class="de-pagination"></div>
+ </div>
+ </div>
+ </div>
 
-        <!-- Client Cards -->
-        <div class="client-cards" id="client-cards"></div>
+ <!-- ────────────────────────────────────────
+ 2026-05-12 미팅: 영업사원 마스터 계정 페이지
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-rep-master">
+   <div class="page-inner">
+     <div class="main-header">
+       <div>
+         <div class="main-title">영업사원 마스터 계정</div>
+         <div class="main-subtitle">사원별 담당 거래처 + 월별 매출 + 인센티브 계산</div>
+       </div>
+     </div>
+     <!-- Rep Cards -->
+     <div id="rep-master-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:20px;"></div>
+     <!-- Detail Section -->
+     <div class="section-header">선택한 사원 상세 <span class="count" id="rep-detail-name"></span></div>
+     <div id="rep-detail-area" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;"></div>
+   </div>
+ </div>
 
-      </div>
-    </div>
+ <!-- ────────────────────────────────────────
+ P-RPT: 보고서 작성 (알티바이오 ISO 13485 품질양식)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-reports">
+ <div class="page-inner">
+ <div class="main-header">
+ <div>
+ <div class="main-title"> 보고서 작성</div>
+ <div class="main-subtitle">알티바이오 ISO 13485 품질양식 — AI 어시스턴트로 자동 채움 + PDF 출력</div>
+ </div>
+ </div>
+ <div class="rb-shell">
+ <div class="rb-form-area">
+ <div class="rb-form-toolbar">
+ <select id="rb-form-select" class="form-select"></select>
+ <div id="rb-status" class="rb-status"></div>
+ </div>
+ <div class="rb-form-body" id="rb-form-body">
+ <div style="text-align:center;padding:60px;color:#999;">양식을 선택하면 미리보기가 나타납니다.</div>
+ </div>
+ <div class="rb-action-bar">
+ <button class="btn btn-outline btn-sm" onclick="rbSaveDraft()"> 임시저장</button>
+ <div class="rb-action-spacer"></div>
+ <button class="btn btn-outline btn-sm" onclick="rbPrint()"> 양식대로 인쇄</button>
+ <button class="btn btn-primary btn-sm" onclick="rbExportPdf()"> PDF 출력</button>
+ </div>
+ </div>
+ <div class="rb-ai-area">
+ <div class="rb-ai-header">
+ <div class="rb-ai-header-title"> AI 어시스턴트</div>
+ <div class="rb-ai-header-sub">자연어로 말씀하시면 양식을 자동으로 채워드립니다</div>
+ </div>
+ <div class="rb-ai-messages" id="rb-ai-messages"></div>
+ <div class="rb-ai-input-area">
+ <div class="rb-ai-input-row">
+ <textarea id="rb-ai-input" class="rb-ai-input" placeholder="예: 한빛정형외과로 발주서 작성" rows="1"></textarea>
+ <button class="rb-ai-send" onclick="sendAiMessage()" title="전송">↑</button>
+ </div>
+ <div class="rb-ai-suggestions" id="rb-ai-suggestions"></div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-  </main>
+ <!-- ────────────────────────────────────────
+ P17: 거래처 관리 (2026-05-22: 경영지원팀과 100% 동일 폼)
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-client-status"></div>
+
+ </main>
 </div>
 
 <!-- Widget Picker Modal -->
 <div class="picker-overlay" id="pickerOverlay">
-  <div class="picker-modal">
-    <div class="picker-header">
-      <h2>➕ 위젯 추가</h2>
-      <button class="picker-close" id="pickerClose">✕</button>
-    </div>
-    <div class="picker-section">
-      <h3>📌 프리셋 위젯</h3>
-      <div class="preset-list" id="presetList"></div>
-    </div>
-    <div class="picker-section">
-      <h3>🎨 빈 위젯으로 추가</h3>
-      <div class="picker-grid" id="widgetTypeGrid"></div>
-    </div>
-  </div>
+ <div class="picker-modal">
+ <div class="picker-header">
+ <h2>➕ 위젯 추가</h2>
+ <button class="picker-close" id="pickerClose">✕</button>
+ </div>
+ <div class="picker-section">
+ <h3> 프리셋 위젯</h3>
+ <div class="preset-list" id="presetList"></div>
+ </div>
+ <div class="picker-section">
+ <h3> 빈 위젯으로 추가</h3>
+ <div class="picker-grid" id="widgetTypeGrid"></div>
+ </div>
+ </div>
 </div>
 
 <!-- Widget Context Menu -->
 <div class="widget-ctx" id="widgetCtx">
-  <button class="widget-ctx-item" data-action="edit">✏️ 위젯 수정</button>
-  <button class="widget-ctx-item" data-action="duplicate">📋 복제</button>
-  <div class="widget-ctx-divider"></div>
-  <button class="widget-ctx-item" data-action="refresh">🔄 새로고침</button>
-  <div class="widget-ctx-divider"></div>
-  <button class="widget-ctx-item danger" data-action="delete">🗑️ 삭제</button>
+ <button class="widget-ctx-item" data-action="edit">✏ 위젯 수정</button>
+ <button class="widget-ctx-item" data-action="duplicate"> 복제</button>
+ <div class="widget-ctx-divider"></div>
+ <button class="widget-ctx-item" data-action="refresh"> 새로고침</button>
+ <div class="widget-ctx-divider"></div>
+ <button class="widget-ctx-item danger" data-action="delete"> 삭제</button>
 </div>
 
 <!-- Widget Edit Modal -->
 <div class="edit-overlay" id="editOverlay">
-  <div class="edit-modal">
-    <div class="edit-modal-header">
-      <h2>✏️ 위젯 수정</h2>
-      <button class="edit-modal-close" id="editClose">✕</button>
-    </div>
-    <div class="edit-modal-body">
-      <div class="edit-field">
-        <label>위젯 제목</label>
-        <input type="text" id="editTitle" placeholder="위젯 제목을 입력하세요">
-      </div>
-      <div class="edit-field">
-        <label>위젯 타입</label>
-        <select id="editType"></select>
-      </div>
-      <div class="edit-field">
-        <label>데이터 소스</label>
-        <select id="editPreset"><option value="">✏️ 직접 설정 (커스텀)</option></select>
-      </div>
-      <div class="custom-section" id="customSection">
-        <div class="edit-field">
-          <label>데이터 테이블</label>
-          <select id="customTable">
-            <option value="orders">📋 주문</option>
-            <option value="products">📦 제품</option>
-            <option value="inventory">🏭 재고</option>
-            <option value="clients">🏢 거래처</option>
-            <option value="payments">💳 입금</option>
-          </select>
-        </div>
-        <div class="edit-field"><label>표시 컬럼</label><div class="col-chips" id="colChips"></div></div>
-        <div class="edit-field"><label>필터 조건</label><div id="filterRows"></div><button class="add-condition-btn" id="addFilterBtn">+ 조건 추가</button></div>
-        <div class="agg-row">
-          <div class="agg-field"><label>그룹핑</label><select id="customGroup"><option value="">없음</option><option value="client">거래처별</option><option value="product">제품별</option><option value="status">상태별</option><option value="date">날짜별</option></select></div>
-          <div class="agg-field"><label>집계</label><select id="customAgg"><option value="">없음</option><option value="sum">합계</option><option value="avg">평균</option><option value="count">건수</option></select></div>
-          <div class="agg-field"><label>정렬</label><select id="customSort"><option value="desc">내림차순 ↓</option><option value="asc">오름차순 ↑</option></select></div>
-        </div>
-        <div class="preview-section"><h4>📋 미리보기</h4><div class="preview-table-wrap" id="previewWrap"></div><div class="preview-count" id="previewCount"></div></div>
-      </div>
-    </div>
-    <div class="edit-modal-footer">
-      <button class="tb-btn" id="editCancel">취소</button>
-      <button class="tb-btn primary" id="editSave">저장</button>
-    </div>
-  </div>
+ <div class="edit-modal">
+ <div class="edit-modal-header">
+ <h2>✏ 위젯 수정</h2>
+ <button class="edit-modal-close" id="editClose">✕</button>
+ </div>
+ <div class="edit-modal-body">
+ <div class="edit-field">
+ <label>위젯 제목</label>
+ <input type="text" id="editTitle" placeholder="위젯 제목을 입력하세요">
+ </div>
+ <div class="edit-field">
+ <label>위젯 타입</label>
+ <select id="editType"></select>
+ </div>
+ <div class="edit-field">
+ <label>데이터 소스</label>
+ <select id="editPreset"><option value="">✏ 직접 설정 (커스텀)</option></select>
+ </div>
+ <div class="custom-section" id="customSection">
+ <div class="edit-field">
+ <label>데이터 테이블</label>
+ <select id="customTable">
+ <option value="orders"> 주문</option>
+ <option value="products"> 제품</option>
+ <option value="inventory"> 재고</option>
+ <option value="clients"> 거래처</option>
+ <option value="payments"> 입금</option>
+ </select>
+ </div>
+ <div class="edit-field"><label>표시 컬럼</label><div class="col-chips" id="colChips"></div></div>
+ <div class="edit-field"><label>필터 조건</label><div id="filterRows"></div><button class="add-condition-btn" id="addFilterBtn">+ 조건 추가</button></div>
+ <div class="agg-row">
+ <div class="agg-field"><label>그룹핑</label><select id="customGroup"><option value="">없음</option><option value="client">거래처별</option><option value="product">제품별</option><option value="status">상태별</option><option value="date">날짜별</option></select></div>
+ <div class="agg-field"><label>집계</label><select id="customAgg"><option value="">없음</option><option value="sum">합계</option><option value="avg">평균</option><option value="count">건수</option></select></div>
+ <div class="agg-field"><label>정렬</label><select id="customSort"><option value="desc">내림차순 ↓</option><option value="asc">오름차순 ↑</option></select></div>
+ </div>
+ <div class="preview-section"><h4> 미리보기</h4><div class="preview-table-wrap" id="previewWrap"></div><div class="preview-count" id="previewCount"></div></div>
+ </div>
+ </div>
+ <div class="edit-modal-footer">
+ <button class="tb-btn" id="editCancel">취소</button>
+ <button class="tb-btn primary" id="editSave">저장</button>
+ </div>
+ </div>
 </div>
+
+<!-- 데이터 탐색기 사이드 패널 (전역 fixed) -->
+<div id="de-panel" class="de-panel"></div>
 
 <div class="toast" id="toast"></div>
 <input type="file" id="importFile" accept=".json" style="display:none">
 
 <script src="js/data.js"></script>
 <script src="js/shared.js"></script>
+<script src="js/shared-ui.js"></script>
+<script src="js/client-mgmt.js"></script>
+<script src="js/notice.js"></script>
 <script src="js/ai-assistant.js"></script>
 <script src="js/widget-dashboard.js"></script>
+<script src="js/report-templates.js"></script>
+<script src="js/report-builder.js"></script>
+<script src="js/data-explorer-schemas.js"></script>
+<script src="js/data-explorer.js"></script>
 <script>
 /* ═══════════════════════════════════════
-   Exec Portal — Page Logic
-   ═══════════════════════════════════════ */
+ Exec Portal — Page Logic
+ ═══════════════════════════════════════ */
 
 // ── Navigation ──
 function navigateTo(pageId) {
-  goTo(pageId);
-  document.querySelector('.sidebar')?.classList.remove('open');
-  document.querySelector('.sidebar-overlay')?.classList.remove('show');
+ goTo(pageId);
+ document.querySelector('.sidebar')?.classList.remove('open');
+ document.querySelector('.sidebar-overlay')?.classList.remove('show');
 
-  // Render page-specific content
-  if (pageId === 'page-sales-status') renderSalesStatus();
-  if (pageId === 'page-assignments') renderAssignments();
-  if (pageId === 'page-conference') renderConferences();
+ // Render page-specific content
+ if (pageId === 'page-sales-status') renderSalesStatus();
+ if (pageId === 'page-assignments') renderAssignments();
+ if (pageId === 'page-conference') renderConferences();
+ // 2026-05-22: 공지사항 공통 모듈 (영업팀 발송자)
+ if (pageId === 'page-notices') {
+   const host = document.getElementById('page-notices');
+   if (host && !host.dataset.ready && typeof NoticeModule !== 'undefined') {
+     host.innerHTML = NoticeModule.pageTemplate();
+     host.dataset.ready = '1';
+   }
+   if (typeof NoticeModule !== 'undefined') {
+     NoticeModule.init({ authorTeam: '영업팀' });
+     NoticeModule.render();
+   }
+ }
+}
+
+// 2026-05-22: NoticeModule 영업팀으로 초기화 (init 시점에)
+if (typeof NoticeModule !== 'undefined') {
+  NoticeModule.init({ authorTeam: '영업팀' });
 }
 
 // ═══════════════════════════════════════
@@ -895,53 +1043,56 @@ function navigateTo(pageId) {
 // ═══════════════════════════════════════
 
 // ── Sales Staff Data ──
+// 영업팀 #3 (2026-04, HWPX): 담당자별 매출 표에 반품건수 컬럼 추가
+// returnCount = InventoryAdjustment.reason='반품' row 수 (mock)
 const SALES_STAFF = [
-  { id: 'park', name: '박진우', role: '팀장', color: '#1B3A5C', newClients: 3 },
-  { id: 'shin', name: '신현호', role: '주임', color: '#00A8B5', newClients: 5 },
-  { id: 'lee', name: '이경동', role: '사원', color: '#F57C00', newClients: 2 }
+ { id: 'park', name: '박진우', role: '팀장', color: '#1B3A5C', newClients: 3, returnCount: 2 },
+ { id: 'shin', name: '신현호', role: '주임', color: '#00A8B5', newClients: 5, returnCount: 4 },
+ { id: 'lee', name: '이경동', role: '사원', color: '#F57C00', newClients: 2, returnCount: 1 }
 ];
 
 // ── Client-Staff assignment (mock) ──
 const CLIENT_ASSIGNMENTS = {
-  park: ['한빛정형외과', '서울바이오'],
-  shin: ['메디팜 의료기', '세종재활의학과'],
-  lee: ['대한메디칼', '미래의료기']
+ park: ['한빛정형외과', '서울바이오'],
+ shin: ['메디팜 의료기', '세종재활의학과'],
+ lee: ['대한메디칼', '미래의료기']
 };
 
 // ── Current user mode ──
 let currentUserMode = 'manager';
 function changeUserMode() {
-  currentUserMode = document.getElementById('userModeSelect').value;
-  showToast(`모드 전환: ${currentUserMode === 'manager' ? '관리자' : SALES_STAFF.find(s => s.id === currentUserMode)?.name}`);
-  // Refresh current page
-  const activePage = document.querySelector('.page.active')?.id;
-  if (activePage === 'page-sales-status') renderSalesStatus();
-  if (activePage === 'page-assignments') renderAssignments();
-  if (activePage === 'page-client-status') renderClientCards();
+ currentUserMode = document.getElementById('userModeSelect').value;
+ showToast(`모드 전환: ${currentUserMode === 'manager' ? '관리자' : SALES_STAFF.find(s => s.id === currentUserMode)?.name}`);
+ // Refresh current page
+ const activePage = document.querySelector('.page.active')?.id;
+ if (activePage === 'page-sales-status') renderSalesStatus();
+ if (activePage === 'page-assignments') renderAssignments();
+ if (activePage === 'page-client-status') renderClientCards();
 }
 
 // ── Conference Data ──
+// 영업팀 #5 (2026-04, HWPX): boothFee(부스비)/setupFee(설치비) 추가
 const CONFERENCES = [
-  { id: 'c1', name: '대한정형외과학회 2026 춘계', type: '정형외과', date: '2026-04-05', visitors: 120, contacted: 85, newClients: 8, assignments: { park: 40, shin: 40, lee: 40 } },
-  { id: 'c2', name: '대한재활의학회 학술대회', type: '재활의학', date: '2026-03-22', visitors: 80, contacted: 62, newClients: 5, assignments: { park: 30, shin: 25, lee: 25 } },
-  { id: 'c3', name: '대한신경외과학회', type: '신경외과', date: '2026-03-08', visitors: 95, contacted: 70, newClients: 4, assignments: { park: 35, shin: 30, lee: 30 } },
+ { id: 'c1', name: '대한정형외과학회 2026 춘계', type: '정형외과', date: '2026-04-05', visitors: 120, contacted: 85, newClients: 8, boothFee: 4500000, setupFee: 1200000, assignments: { park: 40, shin: 40, lee: 40 } },
+ { id: 'c2', name: '대한재활의학회 학술대회', type: '재활의학', date: '2026-03-22', visitors: 80, contacted: 62, newClients: 5, boothFee: 3200000, setupFee: 800000, assignments: { park: 30, shin: 25, lee: 25 } },
+ { id: 'c3', name: '대한신경외과학회', type: '신경외과', date: '2026-03-08', visitors: 95, contacted: 70, newClients: 4, boothFee: 3800000, setupFee: 950000, assignments: { park: 35, shin: 30, lee: 30 } },
 ];
 
 // ── Conference Guestbook (B-6) ──
 const CONFERENCE_VISITORS = {
-  'c1': [
-    { id: 'v1', name: '김철수', phone: '010-1234-5678', org: '강남정형외과', assignedTo: 'park', status: '접촉완료', note: '견적 요청 예정' },
-    { id: 'v2', name: '이영희', phone: '010-2222-3333', org: '분당재활병원', assignedTo: 'shin', status: '팔로우업', note: '2차 방문 요청' },
-    { id: 'v3', name: '박준호', phone: '010-5555-6666', org: '세종정형외과', assignedTo: 'lee', status: '신규계약', note: '리코트 상지 M 10ea 발주' },
-    { id: 'v4', name: '최민수', phone: '010-7777-8888', org: '부산해운대정형외과', assignedTo: 'park', status: '미접촉', note: '' },
-  ],
-  'c2': [
-    { id: 'v5', name: '정수진', phone: '010-1111-2222', org: '서울재활의학센터', assignedTo: 'shin', status: '접촉완료', note: '' },
-    { id: 'v6', name: '한지민', phone: '010-3333-4444', org: '인천재활병원', assignedTo: 'lee', status: '신규계약', note: '스프린트 무릎 5ea' },
-  ],
-  'c3': [
-    { id: 'v7', name: '강혁준', phone: '010-9999-0000', org: '서울신경외과', assignedTo: 'park', status: '팔로우업', note: '카탈로그 발송 완료' },
-  ],
+ 'c1': [
+ { id: 'v1', name: '김철수', phone: '010-1234-5678', org: '강남정형외과', assignedTo: 'park', status: '접촉완료', note: '견적 요청 예정' },
+ { id: 'v2', name: '이영희', phone: '010-2222-3333', org: '분당재활병원', assignedTo: 'shin', status: '팔로우업', note: '2차 방문 요청' },
+ { id: 'v3', name: '박준호', phone: '010-5555-6666', org: '세종정형외과', assignedTo: 'lee', status: '신규계약', note: '리코트 상지 M 10ea 발주' },
+ { id: 'v4', name: '최민수', phone: '010-7777-8888', org: '부산해운대정형외과', assignedTo: 'park', status: '미접촉', note: '' },
+ ],
+ 'c2': [
+ { id: 'v5', name: '정수진', phone: '010-1111-2222', org: '서울재활의학센터', assignedTo: 'shin', status: '접촉완료', note: '' },
+ { id: 'v6', name: '한지민', phone: '010-3333-4444', org: '인천재활병원', assignedTo: 'lee', status: '신규계약', note: '스프린트 무릎 5ea' },
+ ],
+ 'c3': [
+ { id: 'v7', name: '강혁준', phone: '010-9999-0000', org: '서울신경외과', assignedTo: 'park', status: '팔로우업', note: '카탈로그 발송 완료' },
+ ],
 };
 const VISITOR_STATUSES = ['미접촉', '접촉완료', '팔로우업', '신규계약', '거절'];
 
@@ -949,692 +1100,748 @@ const VISITOR_STATUSES = ['미접촉', '접촉완료', '팔로우업', '신규�
 // 영업 현황 페이지
 // ══════════════════════════════════════
 function renderSalesStatus() {
-  const from = document.getElementById('sales-from')?.value || '2026-04-01';
-  const to = document.getElementById('sales-to')?.value || '2026-04-16';
-  const type = document.getElementById('sales-type')?.value || 'all';
+ const from = document.getElementById('sales-from')?.value || '2026-04-01';
+ const to = document.getElementById('sales-to')?.value || '2026-04-16';
+ const type = document.getElementById('sales-type')?.value || 'all';
 
-  document.getElementById('sales-status-subtitle').textContent = `${from} ~ ${to} · ${type === 'all' ? '전체' : type}`;
+ document.getElementById('sales-status-subtitle').textContent = `${from} ~ ${to} · ${type === 'all' ? '전체' : type}`;
 
-  // Mock 매출 계산
-  const hospitalTotal = 84620000;
-  const agencyTotal = 57180000;
-  const totalOrders = 42;
-  const totalNew = SALES_STAFF.reduce((sum, s) => sum + s.newClients, 0);
+ // Mock 매출 계산
+ const hospitalTotal = 84620000;
+ const agencyTotal = 57180000;
+ const totalOrders = 42;
+ const totalNew = SALES_STAFF.reduce((sum, s) => sum + s.newClients, 0);
 
-  // KPI
-  document.getElementById('sales-kpi').innerHTML = `
-    <div class="stat-card stat-primary">
-      <div class="stat-label">총 매출</div>
-      <div class="stat-value">${formatCurrency(hospitalTotal + agencyTotal)}</div>
-      <div class="stat-sub">목표 대비 89.2%</div>
-    </div>
-    <div class="stat-card stat-accent">
-      <div class="stat-label">🏥 병원 매출</div>
-      <div class="stat-value">${formatCurrency(hospitalTotal)}</div>
-      <div class="stat-sub">전체의 59.6%</div>
-    </div>
-    <div class="stat-card stat-warning">
-      <div class="stat-label">🏬 대리점 매출</div>
-      <div class="stat-value">${formatCurrency(agencyTotal)}</div>
-      <div class="stat-sub">전체의 40.4%</div>
-    </div>
-    <div class="stat-card stat-success">
-      <div class="stat-label">신규 거래처</div>
-      <div class="stat-value">${totalNew}개</div>
-      <div class="stat-sub">발주 ${totalOrders}건</div>
-    </div>
-  `;
+ // KPI
+ document.getElementById('sales-kpi').innerHTML = `
+ <div class="stat-card stat-primary">
+ <div class="stat-label">총 매출</div>
+ <div class="stat-value">${formatCurrency(hospitalTotal + agencyTotal)}</div>
+ <div class="stat-sub">목표 대비 89.2%</div>
+ </div>
+ <div class="stat-card stat-accent">
+ <div class="stat-label"> 병원 매출</div>
+ <div class="stat-value">${formatCurrency(hospitalTotal)}</div>
+ <div class="stat-sub">전체의 59.6%</div>
+ </div>
+ <div class="stat-card stat-warning">
+ <div class="stat-label"> 대리점 매출</div>
+ <div class="stat-value">${formatCurrency(agencyTotal)}</div>
+ <div class="stat-sub">전체의 40.4%</div>
+ </div>
+ <div class="stat-card stat-success">
+ <div class="stat-label">신규 거래처</div>
+ <div class="stat-value">${totalNew}개</div>
+ <div class="stat-sub">발주 ${totalOrders}건</div>
+ </div>
+ `;
 
-  // Chart: 병원
-  if (typeof Chart !== 'undefined') {
-    const hCtx = document.getElementById('hospital-chart')?.getContext('2d');
-    if (hCtx) {
-      if (window._hospitalChart) window._hospitalChart.destroy();
-      window._hospitalChart = new Chart(hCtx, {
-        type: 'bar',
-        data: {
-          labels: ['한빛정형외과', '세종재활의학과', '미래의료기'],
-          datasets: [{ data: [35200000, 28400000, 21020000], backgroundColor: '#00A8B5', borderRadius: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-    }
-    const aCtx = document.getElementById('agency-chart')?.getContext('2d');
-    if (aCtx) {
-      if (window._agencyChart) window._agencyChart.destroy();
-      window._agencyChart = new Chart(aCtx, {
-        type: 'bar',
-        data: {
-          labels: ['메디팜 의료기', '대한메디칼', '서울바이오'],
-          datasets: [{ data: [22400000, 19800000, 14980000], backgroundColor: '#F57C00', borderRadius: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-    }
-  }
+ // Chart: 병원
+ if (typeof Chart !== 'undefined') {
+ const hCtx = document.getElementById('hospital-chart')?.getContext('2d');
+ if (hCtx) {
+ if (window._hospitalChart) window._hospitalChart.destroy();
+ window._hospitalChart = new Chart(hCtx, {
+ type: 'bar',
+ data: {
+ labels: ['한빛정형외과', '세종재활의학과', '미래의료기'],
+ datasets: [{ data: [35200000, 28400000, 21020000], backgroundColor: '#00A8B5', borderRadius: 4 }]
+ },
+ options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+ });
+ }
+ const aCtx = document.getElementById('agency-chart')?.getContext('2d');
+ if (aCtx) {
+ if (window._agencyChart) window._agencyChart.destroy();
+ window._agencyChart = new Chart(aCtx, {
+ type: 'bar',
+ data: {
+ labels: ['메디팜 의료기', '대한메디칼', '서울바이오'],
+ datasets: [{ data: [22400000, 19800000, 14980000], backgroundColor: '#F57C00', borderRadius: 4 }]
+ },
+ options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+ });
+ }
+ }
 
-  // 담당자별 매출 (C-3: 행 클릭 → 드릴다운 필터)
-  const staffRows = SALES_STAFF.map(s => {
-    const clients = CLIENT_ASSIGNMENTS[s.id] || [];
-    const visible = currentUserMode === 'manager' || currentUserMode === s.id;
-    const sales = s.id === 'park' ? 42300000 : s.id === 'shin' ? 51200000 : 28500000;
-    const orders = s.id === 'park' ? 14 : s.id === 'shin' ? 18 : 10;
-    const isSelected = currentStaffFilter === s.id;
-    return `
-      <tr ${visible ? '' : 'style="opacity:0.3;"'}
-          style="cursor:pointer;${isSelected ? 'background:'+s.color+'15;outline:2px solid '+s.color+';' : ''}"
-          onclick="filterByStaff('${s.id}')"
-          title="클릭 → 이 담당자 기준 품목 드릴다운">
-        <td><div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:32px;height:32px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">${s.name[0]}</div>
-          ${s.name} ${isSelected ? '<span style="font-size:11px;color:'+s.color+';">● 선택됨</span>' : ''}
-        </div></td>
-        <td>${s.role}</td>
-        <td class="text-right">${clients.length}곳</td>
-        <td class="text-right">${orders}건</td>
-        <td class="text-right"><strong>${formatCurrency(sales)}</strong></td>
-        <td class="text-right"><span class="badge badge-complete">${s.newClients}건</span></td>
-      </tr>
-    `;
-  }).join('');
-  document.getElementById('sales-staff-tbody').innerHTML = staffRows;
+ // 담당자별 매출 (C-3: 행 클릭 → 드릴다운 필터)
+ const staffRows = SALES_STAFF.map(s => {
+ const clients = CLIENT_ASSIGNMENTS[s.id] || [];
+ const visible = currentUserMode === 'manager' || currentUserMode === s.id;
+ const sales = s.id === 'park' ? 42300000 : s.id === 'shin' ? 51200000 : 28500000;
+ const orders = s.id === 'park' ? 14 : s.id === 'shin' ? 18 : 10;
+ const isSelected = currentStaffFilter === s.id;
+ return `
+ <tr ${visible ? '' : 'style="opacity:0.3;"'}
+ style="cursor:pointer;${isSelected ? 'background:'+s.color+'15;outline:2px solid '+s.color+';' : ''}"
+ onclick="filterByStaff('${s.id}')"
+ title="클릭 → 이 담당자 기준 품목 드릴다운">
+ <td><div style="display:flex;align-items:center;gap:8px;">
+ <div style="width:32px;height:32px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">${s.name[0]}</div>
+ ${s.name} ${isSelected ? '<span style="font-size:11px;color:'+s.color+';">● 선택됨</span>' : ''}
+ </div></td>
+ <td>${s.role}</td>
+ <td class="text-right">${clients.length}곳</td>
+ <td class="text-right">${orders}건</td>
+ <td class="text-right"><strong>${formatCurrency(sales)}</strong></td>
+ <td class="text-right">${s.returnCount > 0 ? `<span class="badge" style="background:#fef3c7;color:#92400e;">${s.returnCount}건</span>` : '<span style="color:var(--text-tertiary);">-</span>'}</td>
+ <td class="text-right"><span class="badge badge-complete">${s.newClients}건</span></td>
+ </tr>
+ `;
+ }).join('');
+ document.getElementById('sales-staff-tbody').innerHTML = staffRows;
 
-  // 제품 드릴다운
-  renderProductDrilldown();
+ // 제품 드릴다운
+ renderProductDrilldown();
 }
 
 // C-3: 담당자 필터 상태
 let currentStaffFilter = null;
 
 function filterByStaff(staffId) {
-  currentStaffFilter = (currentStaffFilter === staffId) ? null : staffId;
-  renderSalesStatus();
-  const staff = SALES_STAFF.find(s => s.id === staffId);
-  if (currentStaffFilter) {
-    showToast(`${staff.name} 담당자 기준 드릴다운`);
-  } else {
-    showToast('전체 담당자 드릴다운');
-  }
+ currentStaffFilter = (currentStaffFilter === staffId) ? null : staffId;
+ renderSalesStatus();
+ const staff = SALES_STAFF.find(s => s.id === staffId);
+ if (currentStaffFilter) {
+ showToast(`${staff.name} 담당자 기준 드릴다운`);
+ } else {
+ showToast('전체 담당자 드릴다운');
+ }
 }
 
 function renderProductDrilldown() {
-  // 담당자별 mock 비중 (C-3)
-  const staffShare = { park: 0.33, shin: 0.42, lee: 0.25 };
-  const scale = currentStaffFilter ? staffShare[currentStaffFilter] : 1;
-  const staff = currentStaffFilter ? SALES_STAFF.find(s => s.id === currentStaffFilter) : null;
+ // 담당자별 mock 비중 (C-3)
+ const staffShare = { park: 0.33, shin: 0.42, lee: 0.25 };
+ const scale = currentStaffFilter ? staffShare[currentStaffFilter] : 1;
+ const staff = currentStaffFilter ? SALES_STAFF.find(s => s.id === currentStaffFilter) : null;
 
-  const _v = (n) => '₩' + formatNumber(Math.round(n * scale));
-  const _q = (n) => Math.round(n * scale);
+ const _v = (n) => '₩' + formatNumber(Math.round(n * scale));
+ const _q = (n) => Math.round(n * scale);
 
-  const brands = [
-    { name: '리코트 플러스', totalN: 58420000, parts: [
-      { name: '상지', sizes: [['S', 120, 4800000], ['M', 210, 8400000], ['L', 180, 7200000], ['XL', 95, 3800000]] },
-      { name: '하지', sizes: [['S', 85, 3825000], ['M', 142, 6390000], ['L', 168, 7560000]] },
-    ] },
-    { name: '스프린트', totalN: 42180000, parts: [
-      { name: '무릎', sizes: [['M', 240, 12000000], ['L', 215, 10750000], ['XL', 130, 6500000]] },
-    ] },
-    { name: '레오 롱 버전', totalN: 41200000, parts: [
-      { name: '상지', sizes: [['M', 88, 7040000], ['L', 92, 7360000]] },
-      { name: '하지', sizes: [['M', 75, 6750000], ['L', 105, 9450000]] },
-    ] },
-  ];
+ const brands = [
+ { name: '리코트 플러스', totalN: 58420000, parts: [
+ { name: '상지', sizes: [['S', 120, 4800000], ['M', 210, 8400000], ['L', 180, 7200000], ['XL', 95, 3800000]] },
+ { name: '하지', sizes: [['S', 85, 3825000], ['M', 142, 6390000], ['L', 168, 7560000]] },
+ ] },
+ { name: '스프린트', totalN: 42180000, parts: [
+ { name: '무릎', sizes: [['M', 240, 12000000], ['L', 215, 10750000], ['XL', 130, 6500000]] },
+ ] },
+ { name: '레오 롱 버전', totalN: 41200000, parts: [
+ { name: '상지', sizes: [['M', 88, 7040000], ['L', 92, 7360000]] },
+ { name: '하지', sizes: [['M', 75, 6750000], ['L', 105, 9450000]] },
+ ] },
+ ];
 
-  const filterBanner = staff
-    ? `<div style="padding:10px 14px;background:${staff.color}15;border-left:4px solid ${staff.color};border-radius:6px;margin-bottom:10px;font-size:13px;">
-         👤 <strong style="color:${staff.color};">${staff.name}</strong> 담당 기준 품목 드릴다운 (담당 비중 ${(scale*100).toFixed(0)}%)
-         <button class="btn btn-sm btn-outline" style="margin-left:12px;padding:2px 8px;font-size:11px;" onclick="filterByStaff('${staff.id}')">✕ 필터 해제</button>
-       </div>` : '';
+ const filterBanner = staff
+ ? `<div style="padding:10px 14px;background:${staff.color}15;border-left:4px solid ${staff.color};border-radius:6px;margin-bottom:10px;font-size:13px;">
+ <strong style="color:${staff.color};">${staff.name}</strong> 담당 기준 품목 드릴다운 (담당 비중 ${(scale*100).toFixed(0)}%)
+ <button class="btn btn-sm btn-outline" style="margin-left:12px;padding:2px 8px;font-size:11px;" onclick="filterByStaff('${staff.id}')">✕ 필터 해제</button>
+ </div>` : '';
 
-  const html = filterBanner + brands.map((b, i) => `
-    <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
-      <div onclick="toggleDrill(${i})" style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:8px;">
-        <div><span id="drill-icon-${i}">▶</span> <strong>${b.name}</strong></div>
-        <strong style="color:var(--primary);">${_v(b.totalN)}</strong>
-      </div>
-      <div id="drill-body-${i}" style="display:none;padding:8px 16px;">
-        ${b.parts.map(p => `
-          <div style="margin-top:8px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">└ ${p.name}</div>
-            <table style="width:100%;font-size:12px;">
-              ${p.sizes.map(([sz, qty, amt]) => `
-                <tr>
-                  <td style="padding:4px 8px;">   ${sz}</td>
-                  <td style="padding:4px 8px;text-align:right;">${_q(qty)}개</td>
-                  <td style="padding:4px 8px;text-align:right;color:var(--primary);font-weight:600;">${_v(amt)}</td>
-                </tr>
-              `).join('')}
-            </table>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('product-drilldown').innerHTML = html;
+ const html = filterBanner + brands.map((b, i) => `
+ <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
+ <div onclick="toggleDrill(${i})" style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:8px;">
+ <div><span id="drill-icon-${i}">▶</span> <strong>${b.name}</strong></div>
+ <strong style="color:var(--primary);">${_v(b.totalN)}</strong>
+ </div>
+ <div id="drill-body-${i}" style="display:none;padding:8px 16px;">
+ ${b.parts.map(p => `
+ <div style="margin-top:8px;">
+ <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">└ ${p.name}</div>
+ <table style="width:100%;font-size:12px;">
+ ${p.sizes.map(([sz, qty, amt]) => `
+ <tr>
+ <td style="padding:4px 8px;"> ${sz}</td>
+ <td style="padding:4px 8px;text-align:right;">${_q(qty)}개</td>
+ <td style="padding:4px 8px;text-align:right;color:var(--primary);font-weight:600;">${_v(amt)}</td>
+ </tr>
+ `).join('')}
+ </table>
+ </div>
+ `).join('')}
+ </div>
+ </div>
+ `).join('');
+ document.getElementById('product-drilldown').innerHTML = html;
 }
 
 function toggleDrill(i) {
-  const body = document.getElementById(`drill-body-${i}`);
-  const icon = document.getElementById(`drill-icon-${i}`);
-  if (body.style.display === 'none') {
-    body.style.display = 'block';
-    icon.textContent = '▼';
-  } else {
-    body.style.display = 'none';
-    icon.textContent = '▶';
-  }
+ const body = document.getElementById(`drill-body-${i}`);
+ const icon = document.getElementById(`drill-icon-${i}`);
+ if (body.style.display === 'none') {
+ body.style.display = 'block';
+ icon.textContent = '▼';
+ } else {
+ body.style.display = 'none';
+ icon.textContent = '▶';
+ }
 }
 
 function setSalesDateRange(type) {
-  const today = new Date();
-  const to = today.toISOString().slice(0, 10);
-  let from;
-  if (type === 'today') from = to;
-  else if (type === 'week') {
-    const d = new Date(today); d.setDate(d.getDate() - 7);
-    from = d.toISOString().slice(0, 10);
-  } else {
-    from = to.slice(0, 8) + '01';
-  }
-  document.getElementById('sales-from').value = from;
-  document.getElementById('sales-to').value = to;
-  renderSalesStatus();
+ const today = new Date();
+ const to = today.toISOString().slice(0, 10);
+ let from;
+ if (type === 'today') from = to;
+ else if (type === 'week') {
+ const d = new Date(today); d.setDate(d.getDate() - 7);
+ from = d.toISOString().slice(0, 10);
+ } else {
+ from = to.slice(0, 8) + '01';
+ }
+ document.getElementById('sales-from').value = from;
+ document.getElementById('sales-to').value = to;
+ renderSalesStatus();
 }
 
 // ══════════════════════════════════════
 // 담당자 관리 페이지
 // ══════════════════════════════════════
 function renderAssignments() {
-  const grid = document.getElementById('staff-cards-grid');
-  const staffToShow = currentUserMode === 'manager'
-    ? SALES_STAFF
-    : SALES_STAFF.filter(s => s.id === currentUserMode);
+ const grid = document.getElementById('staff-cards-grid');
+ const staffToShow = currentUserMode === 'manager'
+ ? SALES_STAFF
+ : SALES_STAFF.filter(s => s.id === currentUserMode);
 
-  grid.innerHTML = staffToShow.map(s => {
-    const clients = CLIENT_ASSIGNMENTS[s.id] || [];
-    return `
-      <div class="card" style="padding:16px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-          <div style="width:48px;height:48px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">${s.name[0]}</div>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:15px;">${s.name}</div>
-            <div style="font-size:12px;color:var(--text-secondary);">${s.role} · 담당 ${clients.length}곳</div>
-          </div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:12px;">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">담당 거래처</div>
-          ${clients.map(c => `
-            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;">
-              <span style="font-size:13px;">${c}</span>
-              ${currentUserMode === 'manager' ? `<button onclick="removeAssign('${s.id}','${c}')" style="border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px;">✕</button>` : ''}
-            </div>
-          `).join('')}
-          ${currentUserMode === 'manager' ? `<button onclick="showAssignModal('${s.id}')" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;">+ 거래처 배정</button>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
+ grid.innerHTML = staffToShow.map(s => {
+ const clients = CLIENT_ASSIGNMENTS[s.id] || [];
+ return `
+ <div class="card" style="padding:16px;">
+ <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+ <div style="width:48px;height:48px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">${s.name[0]}</div>
+ <div style="flex:1;">
+ <div style="font-weight:700;font-size:15px;">${s.name}</div>
+ <div style="font-size:12px;color:var(--text-secondary);">${s.role} · 담당 ${clients.length}곳</div>
+ </div>
+ </div>
+ <div style="border-top:1px solid var(--border);padding-top:12px;">
+ <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">담당 거래처</div>
+ ${clients.map(c => `
+ <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+ <span style="font-size:13px;">${c}</span>
+ ${currentUserMode === 'manager' ? `<button onclick="removeAssign('${s.id}','${c}')" style="border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px;">✕</button>` : ''}
+ </div>
+ `).join('')}
+ ${currentUserMode === 'manager' ? `<button onclick="showAssignModal('${s.id}')" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;">+ 거래처 배정</button>` : ''}
+ </div>
+ </div>
+ `;
+ }).join('');
 }
 
 function showAssignModal(staffId) {
-  const staff = SALES_STAFF.find(s => s.id === staffId) || SALES_STAFF[0];
-  const currentClients = CLIENT_ASSIGNMENTS[staff.id] || [];
-  const allClients = ['한빛정형외과', '서울바이오', '메디팜 의료기', '세종재활의학과', '대한메디칼', '미래의료기', '강남나인병원', '부산연세정형외과'];
-  const available = allClients.filter(c => !currentClients.includes(c));
+ const staff = SALES_STAFF.find(s => s.id === staffId) || SALES_STAFF[0];
+ const currentClients = CLIENT_ASSIGNMENTS[staff.id] || [];
+ const allClients = ['한빛정형외과', '서울바이오', '메디팜 의료기', '세종재활의학과', '대한메디칼', '미래의료기', '강남나인병원', '부산연세정형외과'];
+ const available = allClients.filter(c => !currentClients.includes(c));
 
-  const body = `
-    <div class="form-group">
-      <label>담당자</label>
-      <select class="form-select" id="assign-staff">
-        ${SALES_STAFF.map(s => `<option value="${s.id}" ${s.id === staff.id ? 'selected' : ''}>${s.name}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-group">
-      <label>거래처 선택</label>
-      <select class="form-select" id="assign-client">
-        ${available.map(c => `<option value="${c}">${c}</option>`).join('')}
-      </select>
-    </div>
-  `;
-  showModal('거래처 배정', body, () => {
-    const sId = document.getElementById('assign-staff').value;
-    const client = document.getElementById('assign-client').value;
-    if (!CLIENT_ASSIGNMENTS[sId]) CLIENT_ASSIGNMENTS[sId] = [];
-    CLIENT_ASSIGNMENTS[sId].push(client);
-    showToast(`${client} → ${SALES_STAFF.find(s => s.id === sId).name}에게 배정`);
-    renderAssignments();
-  });
+ const body = `
+ <div class="form-group">
+ <label>담당자</label>
+ <select class="form-select" id="assign-staff">
+ ${SALES_STAFF.map(s => `<option value="${s.id}" ${s.id === staff.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+ </select>
+ </div>
+ <div class="form-group">
+ <label>거래처 선택</label>
+ <select class="form-select" id="assign-client">
+ ${available.map(c => `<option value="${c}">${c}</option>`).join('')}
+ </select>
+ </div>
+ `;
+ showModal('거래처 배정', body, () => {
+ const sId = document.getElementById('assign-staff').value;
+ const client = document.getElementById('assign-client').value;
+ if (!CLIENT_ASSIGNMENTS[sId]) CLIENT_ASSIGNMENTS[sId] = [];
+ CLIENT_ASSIGNMENTS[sId].push(client);
+ showToast(`${client} → ${SALES_STAFF.find(s => s.id === sId).name}에게 배정`);
+ renderAssignments();
+ });
 }
 
 function removeAssign(staffId, client) {
-  if (confirm(`"${client}"를 담당에서 제외할까요?`)) {
-    CLIENT_ASSIGNMENTS[staffId] = CLIENT_ASSIGNMENTS[staffId].filter(c => c !== client);
-    renderAssignments();
-    showToast('배정 해제됨');
-  }
+ if (confirm(`"${client}"를 담당에서 제외할까요?`)) {
+ CLIENT_ASSIGNMENTS[staffId] = CLIENT_ASSIGNMENTS[staffId].filter(c => c !== client);
+ renderAssignments();
+ showToast('배정 해제됨');
+ }
 }
 
 // ══════════════════════════════════════
 // 학회 관리 페이지
 // ══════════════════════════════════════
 function renderConferences() {
-  const totalVisitors = CONFERENCES.reduce((s, c) => s + c.visitors, 0);
-  const totalContacted = CONFERENCES.reduce((s, c) => s + c.contacted, 0);
-  const totalNew = CONFERENCES.reduce((s, c) => s + c.newClients, 0);
-  const successRate = (totalNew / totalContacted * 100).toFixed(1);
+ const totalVisitors = CONFERENCES.reduce((s, c) => s + c.visitors, 0);
+ const totalContacted = CONFERENCES.reduce((s, c) => s + c.contacted, 0);
+ const totalNew = CONFERENCES.reduce((s, c) => s + c.newClients, 0);
+ const successRate = (totalNew / totalContacted * 100).toFixed(1);
 
-  document.getElementById('conf-kpi').innerHTML = `
-    <div class="stat-card stat-primary">
-      <div class="stat-label">총 방명록</div>
-      <div class="stat-value">${totalVisitors}</div>
-      <div class="stat-sub">${CONFERENCES.length}개 학회</div>
-    </div>
-    <div class="stat-card stat-accent">
-      <div class="stat-label">접촉 완료</div>
-      <div class="stat-value">${totalContacted}</div>
-      <div class="stat-sub">접촉률 ${(totalContacted/totalVisitors*100).toFixed(0)}%</div>
-    </div>
-    <div class="stat-card stat-success">
-      <div class="stat-label">신규 거래처</div>
-      <div class="stat-value">${totalNew}건</div>
-      <div class="stat-sub">성공률 ${successRate}%</div>
-    </div>
-    <div class="stat-card stat-warning">
-      <div class="stat-label">미접촉</div>
-      <div class="stat-value">${totalVisitors - totalContacted}</div>
-      <div class="stat-sub">팔로우업 필요</div>
-    </div>
-  `;
+ document.getElementById('conf-kpi').innerHTML = `
+ <div class="stat-card stat-primary">
+ <div class="stat-label">총 방명록</div>
+ <div class="stat-value">${totalVisitors}</div>
+ <div class="stat-sub">${CONFERENCES.length}개 학회</div>
+ </div>
+ <div class="stat-card stat-accent">
+ <div class="stat-label">접촉 완료</div>
+ <div class="stat-value">${totalContacted}</div>
+ <div class="stat-sub">접촉률 ${(totalContacted/totalVisitors*100).toFixed(0)}%</div>
+ </div>
+ <div class="stat-card stat-success">
+ <div class="stat-label">신규 거래처</div>
+ <div class="stat-value">${totalNew}건</div>
+ <div class="stat-sub">성공률 ${successRate}%</div>
+ </div>
+ <div class="stat-card stat-warning">
+ <div class="stat-label">미접촉</div>
+ <div class="stat-value">${totalVisitors - totalContacted}</div>
+ <div class="stat-sub">팔로우업 필요</div>
+ </div>
+ `;
 
-  document.getElementById('conf-tbody').innerHTML = CONFERENCES.map(c => {
-    const rate = (c.newClients / c.contacted * 100).toFixed(1);
-    const assignStr = Object.entries(c.assignments).map(([sid, n]) => {
-      const staff = SALES_STAFF.find(s => s.id === sid);
-      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${staff.color}20;color:${staff.color};font-size:11px;font-weight:600;margin-right:4px;">${staff.name} ${n}</span>`;
-    }).join('');
-    return `
-      <tr style="cursor:pointer;" onclick="showConferenceGuestbook('${c.id}')">
-        <td><strong style="color:var(--primary);text-decoration:underline;">${c.name}</strong></td>
-        <td><span class="badge">${c.type}</span></td>
-        <td>${c.date}</td>
-        <td class="text-right">${c.visitors}</td>
-        <td class="text-right">${c.contacted}</td>
-        <td class="text-right"><span class="badge badge-complete">${c.newClients}</span></td>
-        <td class="text-right"><strong>${rate}%</strong></td>
-        <td>${assignStr}</td>
-      </tr>
-    `;
-  }).join('');
+ // 영업팀 #5: 부스비/설치비 노출
+ document.getElementById('conf-tbody').innerHTML = CONFERENCES.map(c => {
+ const rate = c.contacted > 0 ? (c.newClients / c.contacted * 100).toFixed(1) : '0.0';
+ const assignStr = Object.entries(c.assignments).map(([sid, n]) => {
+ const staff = SALES_STAFF.find(s => s.id === sid);
+ return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${staff.color}20;color:${staff.color};font-size:11px;font-weight:600;margin-right:4px;">${staff.name} ${n}</span>`;
+ }).join('');
+ const boothFee = c.boothFee || 0;
+ const setupFee = c.setupFee || 0;
+ return `
+ <tr style="cursor:pointer;" onclick="showConferenceGuestbook('${c.id}')">
+ <td><strong style="color:var(--primary);text-decoration:underline;">${c.name}</strong></td>
+ <td><span class="badge">${c.type}</span></td>
+ <td>${c.date}</td>
+ <td class="text-right" style="font-variant-numeric:tabular-nums;">${boothFee > 0 ? formatCurrency(boothFee) : '-'}</td>
+ <td class="text-right" style="font-variant-numeric:tabular-nums;">${setupFee > 0 ? formatCurrency(setupFee) : '-'}</td>
+ <td class="text-right">${c.visitors}</td>
+ <td class="text-right">${c.contacted}</td>
+ <td class="text-right"><span class="badge badge-complete">${c.newClients}</span></td>
+ <td class="text-right"><strong>${rate}%</strong></td>
+ <td>${assignStr}</td>
+ </tr>
+ `;
+ }).join('');
 }
 
 // ══════════════════════════════════════
 // B-6. 학회 방명록 개별 입력 모달
 // ══════════════════════════════════════
 function showConferenceGuestbook(confId) {
-  const conf = CONFERENCES.find(c => c.id === confId);
-  if (!conf) return;
-  const visitors = CONFERENCE_VISITORS[confId] = CONFERENCE_VISITORS[confId] || [];
+ const conf = CONFERENCES.find(c => c.id === confId);
+ if (!conf) return;
+ const visitors = CONFERENCE_VISITORS[confId] = CONFERENCE_VISITORS[confId] || [];
 
-  const staffOptions = SALES_STAFF.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  const statusOptions = VISITOR_STATUSES.map(s => `<option value="${s}">${s}</option>`).join('');
+ const staffOptions = SALES_STAFF.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+ const statusOptions = VISITOR_STATUSES.map(s => `<option value="${s}">${s}</option>`).join('');
 
-  const renderRows = () => visitors.map((v, i) => {
-    const staff = SALES_STAFF.find(s => s.id === v.assignedTo);
-    const statusBadge = {
-      '미접촉': 'background:#f5f5f5;color:#666;',
-      '접촉완료': 'background:#e3f2fd;color:#1976d2;',
-      '팔로우업': 'background:#fff3e0;color:#f57c00;',
-      '신규계약': 'background:#e8f5e9;color:#2e7d32;',
-      '거절': 'background:#ffebee;color:#c62828;',
-    }[v.status] || '';
-    return `<tr>
-      <td>${v.name}</td>
-      <td>${v.phone}</td>
-      <td>${v.org}</td>
-      <td>${staff ? `<span style="color:${staff.color};font-weight:600;">${staff.name}</span>` : '-'}</td>
-      <td><span class="badge" style="${statusBadge}">${v.status}</span></td>
-      <td style="font-size:11px;color:var(--text-secondary);">${v.note || '-'}</td>
-      <td><button class="btn btn-sm btn-outline" onclick="deleteConferenceVisitor('${confId}', ${i})">삭제</button></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">등록된 방명록이 없습니다</td></tr>';
+ const renderRows = () => visitors.map((v, i) => {
+ const staff = SALES_STAFF.find(s => s.id === v.assignedTo);
+ const statusBadge = {
+ '미접촉': 'background:#f5f5f5;color:#666;',
+ '접촉완료': 'background:#e3f2fd;color:#1976d2;',
+ '팔로우업': 'background:#fff3e0;color:#f57c00;',
+ '신규계약': 'background:#e8f5e9;color:#2e7d32;',
+ '거절': 'background:#ffebee;color:#c62828;',
+ }[v.status] || '';
+ return `<tr>
+ <td>${v.name}</td>
+ <td>${v.phone}</td>
+ <td>${v.org}</td>
+ <td>${staff ? `<span style="color:${staff.color};font-weight:600;">${staff.name}</span>` : '-'}</td>
+ <td><span class="badge" style="${statusBadge}">${v.status}</span></td>
+ <td style="font-size:11px;color:var(--text-secondary);">${v.note || '-'}</td>
+ <td><button class="btn btn-sm btn-outline" onclick="deleteConferenceVisitor('${confId}', ${i})">삭제</button></td>
+ </tr>`;
+ }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">등록된 방명록이 없습니다</td></tr>';
 
-  const body = `
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
-      📅 ${conf.date} · ${conf.type} · 전체 ${conf.visitors}명 · 접촉 ${conf.contacted}명 · 신규 ${conf.newClients}건
-    </div>
+ const body = `
+ <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+ ${conf.date} · ${conf.type} · 전체 ${conf.visitors}명 · 접촉 ${conf.contacted}명 · 신규 ${conf.newClients}건
+ </div>
 
-    <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
-      <div style="font-weight:600;margin-bottom:8px;font-size:13px;">➕ 방문자 추가</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-        <input type="text" class="form-input" id="gb-name" placeholder="이름">
-        <input type="text" class="form-input" id="gb-phone" placeholder="연락처 (010-0000-0000)">
-        <input type="text" class="form-input" id="gb-org" placeholder="소속 (병원/기관명)">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px;">
-        <select class="form-select" id="gb-assigned">${staffOptions}</select>
-        <select class="form-select" id="gb-status">${statusOptions}</select>
-        <input type="text" class="form-input" id="gb-note" placeholder="비고 (선택)">
-        <button class="btn btn-primary btn-sm" onclick="addConferenceVisitor('${confId}')">추가</button>
-      </div>
-    </div>
+ <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;">
+ <div style="font-weight:600;margin-bottom:8px;font-size:13px;">➕ 방문자 추가</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+ <input type="text" class="form-input" id="gb-name" placeholder="이름">
+ <input type="text" class="form-input" id="gb-phone" placeholder="연락처 (010-0000-0000)">
+ <input type="text" class="form-input" id="gb-org" placeholder="소속 (병원/기관명)">
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px;">
+ <select class="form-select" id="gb-assigned">${staffOptions}</select>
+ <select class="form-select" id="gb-status">${statusOptions}</select>
+ <input type="text" class="form-input" id="gb-note" placeholder="비고 (선택)">
+ <button class="btn btn-primary btn-sm" onclick="addConferenceVisitor('${confId}')">추가</button>
+ </div>
+ </div>
 
-    <div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:6px;">
-      <table class="data-table" style="width:100%;font-size:12px;">
-        <thead>
-          <tr>
-            <th>이름</th><th>연락처</th><th>소속</th><th>담당자</th><th>상태</th><th>비고</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="gb-tbody">${renderRows()}</tbody>
-      </table>
-    </div>
-    <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">
-      💾 방문자 추가/삭제 시 자동 저장 (프로토타입 Mock — 새로고침 시 초기화)
-    </div>
-  `;
+ <div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:6px;">
+ <table class="data-table" style="width:100%;font-size:12px;">
+ <thead>
+ <tr>
+ <th>이름</th><th>연락처</th><th>소속</th><th>담당자</th><th>상태</th><th>비고</th><th></th>
+ </tr>
+ </thead>
+ <tbody id="gb-tbody">${renderRows()}</tbody>
+ </table>
+ </div>
+ <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">
+ 방문자 추가/삭제 시 자동 저장 (프로토타입 Mock — 새로고침 시 초기화)
+ </div>
+ `;
 
-  showModal(`📖 ${conf.name} — 방명록`, body, () => {
-    showToast('방명록이 저장되었습니다');
-    renderConferences();
-  });
-  setTimeout(() => {
-    const confirmBtn = document.querySelector('.modal-confirm');
-    if (confirmBtn) confirmBtn.textContent = '닫기';
-  }, 10);
+ showModal(` ${conf.name} — 방명록`, body, () => {
+ showToast('방명록이 저장되었습니다');
+ renderConferences();
+ });
+ setTimeout(() => {
+ const confirmBtn = document.querySelector('.modal-confirm');
+ if (confirmBtn) confirmBtn.textContent = '닫기';
+ }, 10);
 }
 
 function _refreshGuestbookTable(confId) {
-  const visitors = CONFERENCE_VISITORS[confId] || [];
-  const tbody = document.getElementById('gb-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = visitors.map((v, i) => {
-    const staff = SALES_STAFF.find(s => s.id === v.assignedTo);
-    const statusBadge = {
-      '미접촉': 'background:#f5f5f5;color:#666;',
-      '접촉완료': 'background:#e3f2fd;color:#1976d2;',
-      '팔로우업': 'background:#fff3e0;color:#f57c00;',
-      '신규계약': 'background:#e8f5e9;color:#2e7d32;',
-      '거절': 'background:#ffebee;color:#c62828;',
-    }[v.status] || '';
-    return `<tr>
-      <td>${v.name}</td><td>${v.phone}</td><td>${v.org}</td>
-      <td>${staff ? `<span style="color:${staff.color};font-weight:600;">${staff.name}</span>` : '-'}</td>
-      <td><span class="badge" style="${statusBadge}">${v.status}</span></td>
-      <td style="font-size:11px;color:var(--text-secondary);">${v.note || '-'}</td>
-      <td><button class="btn btn-sm btn-outline" onclick="deleteConferenceVisitor('${confId}', ${i})">삭제</button></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">등록된 방명록이 없습니다</td></tr>';
+ const visitors = CONFERENCE_VISITORS[confId] || [];
+ const tbody = document.getElementById('gb-tbody');
+ if (!tbody) return;
+ tbody.innerHTML = visitors.map((v, i) => {
+ const staff = SALES_STAFF.find(s => s.id === v.assignedTo);
+ const statusBadge = {
+ '미접촉': 'background:#f5f5f5;color:#666;',
+ '접촉완료': 'background:#e3f2fd;color:#1976d2;',
+ '팔로우업': 'background:#fff3e0;color:#f57c00;',
+ '신규계약': 'background:#e8f5e9;color:#2e7d32;',
+ '거절': 'background:#ffebee;color:#c62828;',
+ }[v.status] || '';
+ return `<tr>
+ <td>${v.name}</td><td>${v.phone}</td><td>${v.org}</td>
+ <td>${staff ? `<span style="color:${staff.color};font-weight:600;">${staff.name}</span>` : '-'}</td>
+ <td><span class="badge" style="${statusBadge}">${v.status}</span></td>
+ <td style="font-size:11px;color:var(--text-secondary);">${v.note || '-'}</td>
+ <td><button class="btn btn-sm btn-outline" onclick="deleteConferenceVisitor('${confId}', ${i})">삭제</button></td>
+ </tr>`;
+ }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">등록된 방명록이 없습니다</td></tr>';
 }
 
 function addConferenceVisitor(confId) {
-  const name = document.getElementById('gb-name').value.trim();
-  const phone = document.getElementById('gb-phone').value.trim();
-  const org = document.getElementById('gb-org').value.trim();
-  const assignedTo = document.getElementById('gb-assigned').value;
-  const status = document.getElementById('gb-status').value;
-  const note = document.getElementById('gb-note').value.trim();
-  if (!name) { showToast('이름을 입력해주세요'); return; }
-  if (!org) { showToast('소속을 입력해주세요'); return; }
+ const name = document.getElementById('gb-name').value.trim();
+ const phone = document.getElementById('gb-phone').value.trim();
+ const org = document.getElementById('gb-org').value.trim();
+ const assignedTo = document.getElementById('gb-assigned').value;
+ const status = document.getElementById('gb-status').value;
+ const note = document.getElementById('gb-note').value.trim();
+ if (!name) { showToast('이름을 입력해주세요'); return; }
+ if (!org) { showToast('소속을 입력해주세요'); return; }
 
-  const visitors = CONFERENCE_VISITORS[confId] = CONFERENCE_VISITORS[confId] || [];
-  visitors.push({
-    id: 'v' + Date.now(),
-    name, phone, org, assignedTo, status, note,
-  });
+ const visitors = CONFERENCE_VISITORS[confId] = CONFERENCE_VISITORS[confId] || [];
+ visitors.push({
+ id: 'v' + Date.now(),
+ name, phone, org, assignedTo, status, note,
+ });
 
-  // 통계 업데이트
-  const conf = CONFERENCES.find(c => c.id === confId);
-  if (conf) {
-    conf.visitors = visitors.length;
-    conf.contacted = visitors.filter(v => v.status !== '미접촉' && v.status !== '거절').length;
-    conf.newClients = visitors.filter(v => v.status === '신규계약').length;
-  }
+ // 통계 업데이트
+ const conf = CONFERENCES.find(c => c.id === confId);
+ if (conf) {
+ conf.visitors = visitors.length;
+ conf.contacted = visitors.filter(v => v.status !== '미접촉' && v.status !== '거절').length;
+ conf.newClients = visitors.filter(v => v.status === '신규계약').length;
+ }
 
-  ['gb-name', 'gb-phone', 'gb-org', 'gb-note'].forEach(id => document.getElementById(id).value = '');
-  _refreshGuestbookTable(confId);
-  showToast('방문자가 추가되었습니다');
+ ['gb-name', 'gb-phone', 'gb-org', 'gb-note'].forEach(id => document.getElementById(id).value = '');
+ _refreshGuestbookTable(confId);
+ showToast('방문자가 추가되었습니다');
 }
 
 function deleteConferenceVisitor(confId, idx) {
-  const visitors = CONFERENCE_VISITORS[confId] || [];
-  if (idx < 0 || idx >= visitors.length) return;
-  visitors.splice(idx, 1);
+ const visitors = CONFERENCE_VISITORS[confId] || [];
+ if (idx < 0 || idx >= visitors.length) return;
+ visitors.splice(idx, 1);
 
-  const conf = CONFERENCES.find(c => c.id === confId);
-  if (conf) {
-    conf.visitors = visitors.length;
-    conf.contacted = visitors.filter(v => v.status !== '미접촉' && v.status !== '거절').length;
-    conf.newClients = visitors.filter(v => v.status === '신규계약').length;
-  }
+ const conf = CONFERENCES.find(c => c.id === confId);
+ if (conf) {
+ conf.visitors = visitors.length;
+ conf.contacted = visitors.filter(v => v.status !== '미접촉' && v.status !== '거절').length;
+ conf.newClients = visitors.filter(v => v.status === '신규계약').length;
+ }
 
-  _refreshGuestbookTable(confId);
-  showToast('방문자가 삭제되었습니다');
+ _refreshGuestbookTable(confId);
+ showToast('방문자가 삭제되었습니다');
 }
 
 // ══════════════════════════════════════
 // 거래처 상세 카드 (확장 필드)
 // ══════════════════════════════════════
 const CLIENT_EXTRA = {
-  'c1': { doctors: 3, firstDealDate: '2024-08-15', address: '서울시 강남구 테헤란로 124', region: '서울 강남', competitor: '- 경쟁사 X: 실리콘 밴드 20%\n- 경쟁사 Y: 플라스틱 스프린트', products: ['리코트 상지M', '리코트 상지L', '스프린트 무릎'] },
-  'c2': { doctors: 5, firstDealDate: '2023-03-22', address: '경기도 성남시 분당구 판교로 95', region: '경기 성남', competitor: '', products: ['리코트 하지', '레오 롱 하지'] },
-  'c3': { doctors: 2, firstDealDate: '2025-01-10', address: '부산광역시 해운대구 센텀로 45', region: '부산', competitor: '- 경쟁사 Z: 저가 브랜드 공급', products: ['스프린트 무릎', '레오 롱 상지'] },
-  'c4': { doctors: 4, firstDealDate: '2024-02-05', address: '세종특별자치시 도움로 12', region: '세종', competitor: '', products: ['리코트 플러스 전체', '스프린트'] },
-  'c5': { doctors: 1, firstDealDate: '2025-11-20', address: '서울시 송파구 올림픽로 300', region: '서울 송파', competitor: '- 메디팜 의료기와 동일 물품', products: ['리코트 상지M'] },
+ 'c1': { doctors: 3, firstDealDate: '2024-08-15', address: '서울시 강남구 테헤란로 124', region: '서울 강남', competitor: '- 경쟁사 X: 실리콘 밴드 20%\n- 경쟁사 Y: 플라스틱 스프린트', products: ['리코트 상지M', '리코트 상지L', '스프린트 무릎'] },
+ 'c2': { doctors: 5, firstDealDate: '2023-03-22', address: '경기도 성남시 분당구 판교로 95', region: '경기 성남', competitor: '', products: ['리코트 하지', '레오 롱 하지'] },
+ 'c3': { doctors: 2, firstDealDate: '2025-01-10', address: '부산광역시 해운대구 센텀로 45', region: '부산', competitor: '- 경쟁사 Z: 저가 브랜드 공급', products: ['스프린트 무릎', '레오 롱 상지'] },
+ 'c4': { doctors: 4, firstDealDate: '2024-02-05', address: '세종특별자치시 도움로 12', region: '세종', competitor: '', products: ['리코트 플러스 전체', '스프린트'] },
+ 'c5': { doctors: 1, firstDealDate: '2025-11-20', address: '서울시 송파구 올림픽로 300', region: '서울 송파', competitor: '- 메디팜 의료기와 동일 물품', products: ['리코트 상지M'] },
 };
 
 function showClientDetail(clientId) {
-  const c = CLIENTS.find(x => x.id === clientId);
-  if (!c) return;
-  const extra = CLIENT_EXTRA[clientId] || { doctors: '-', firstDealDate: '-', address: '-', region: '-', competitor: '', products: [] };
-  const cOrders = ORDERS.filter(o => o.clientId === c.id);
-  const cRevenue = cOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
-  const rec = RECEIVABLES.find(r => r.clientId === c.id);
-  const receivable = rec ? rec.amount : 0;
-  const assignedStaff = Object.entries(CLIENT_ASSIGNMENTS).find(([, cs]) => cs.includes(c.name));
-  const staffName = assignedStaff ? SALES_STAFF.find(s => s.id === assignedStaff[0])?.name : '미배정';
+ const c = CLIENTS.find(x => x.id === clientId);
+ if (!c) return;
+ const extra = CLIENT_EXTRA[clientId] || { doctors: '-', firstDealDate: '-', address: '-', region: '-', competitor: '', products: [] };
+ const cOrders = ORDERS.filter(o => o.clientId === c.id);
+ const cRevenue = cOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+ const rec = RECEIVABLES.find(r => r.clientId === c.id);
+ const receivable = rec ? rec.amount : 0;
+ const assignedStaff = Object.entries(CLIENT_ASSIGNMENTS).find(([, cs]) => cs.includes(c.name));
+ const staffName = assignedStaff ? SALES_STAFF.find(s => s.id === assignedStaff[0])?.name : '미배정';
 
-  const body = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
-      <div class="detail-row" style="grid-column:span 2;">
-        <span class="detail-label">거래처명</span>
-        <span class="detail-value"><strong>${c.name}</strong> <span class="badge">${c.type}</span></span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">담당 영업사원</span>
-        <span class="detail-value">${staffName}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">결제 조건</span>
-        <span class="detail-value">${c.paymentType}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">미수금</span>
-        <span class="detail-value" style="color:${receivable > 0 ? 'var(--danger)' : 'var(--text)'}">${formatCurrency(receivable)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">누적 매출</span>
-        <span class="detail-value">${formatCurrency(cRevenue)}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">의사 수</span>
-        <span class="detail-value">${extra.doctors}명</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">신규 거래일</span>
-        <span class="detail-value">${extra.firstDealDate}</span>
-      </div>
-      <div class="detail-row" style="grid-column:span 2;">
-        <span class="detail-label">지역 / 주소</span>
-        <span class="detail-value" style="text-align:right;font-size:12px;">${extra.region} · ${extra.address}</span>
-      </div>
-      <div class="detail-row" style="grid-column:span 2;">
-        <span class="detail-label">담당자</span>
-        <span class="detail-value">${c.manager} · ${c.phone}</span>
-      </div>
-    </div>
-    <div style="margin-top:16px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">📦 취급 품목</div>
-      <div>${extra.products.map(p => `<span class="badge" style="margin-right:4px;">${p}</span>`).join('') || '<span style="color:var(--text-muted);font-size:12px;">없음</span>'}</div>
-    </div>
-    <div style="margin-top:16px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">⚠️ 경쟁업체 품목 (비고)</div>
-      <textarea class="form-input" id="competitor-note" rows="3" placeholder="경쟁사 품목 및 특이사항 메모..." style="font-size:12px;">${extra.competitor}</textarea>
-    </div>
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-outline btn-sm" onclick="printPurchaseOrder('${clientId}')">📋 발주서 출력</button>
-      <button class="btn btn-outline btn-sm" onclick="printInvoiceSheet('${clientId}')">📄 거래명세표 출력</button>
-    </div>
-  `;
-  showModal(`${c.name} 상세`, body, () => {
-    const note = document.getElementById('competitor-note')?.value || '';
-    if (!CLIENT_EXTRA[clientId]) CLIENT_EXTRA[clientId] = {};
-    CLIENT_EXTRA[clientId].competitor = note;
-    showToast('저장되었습니다');
-  });
-  setTimeout(() => {
-    const confirmBtn = document.querySelector('.modal-confirm');
-    if (confirmBtn) confirmBtn.textContent = '비고 저장';
-  }, 10);
+ const body = `
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+ <div class="detail-row" style="grid-column:span 2;">
+ <span class="detail-label">거래처명</span>
+ <span class="detail-value"><strong>${c.name}</strong> <span class="badge">${c.type}</span></span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">담당 영업사원</span>
+ <span class="detail-value">${staffName}</span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">결제 조건</span>
+ <span class="detail-value">${c.paymentType}</span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">미수금</span>
+ <span class="detail-value" style="color:${receivable > 0 ? 'var(--danger)' : 'var(--text)'}">${formatCurrency(receivable)}</span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">누적 매출</span>
+ <span class="detail-value">${formatCurrency(cRevenue)}</span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">의사 수</span>
+ <span class="detail-value">${extra.doctors}명</span>
+ </div>
+ <div class="detail-row">
+ <span class="detail-label">신규 거래일</span>
+ <span class="detail-value">${extra.firstDealDate}</span>
+ </div>
+ <div class="detail-row" style="grid-column:span 2;">
+ <span class="detail-label">지역 / 주소</span>
+ <span class="detail-value" style="text-align:right;font-size:12px;">${extra.region} · ${extra.address}</span>
+ </div>
+ <div class="detail-row" style="grid-column:span 2;">
+ <span class="detail-label">담당자</span>
+ <span class="detail-value">${c.manager} · ${c.phone}</span>
+ </div>
+ </div>
+ <div style="margin-top:16px;">
+ <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;"> 취급 품목</div>
+ <div>${extra.products.map(p => `<span class="badge" style="margin-right:4px;">${p}</span>`).join('') || '<span style="color:var(--text-muted);font-size:12px;">없음</span>'}</div>
+ </div>
+ <!-- 영업팀 #2 (2026-04, HWPX): 병원 상세보기에 품목별 판매수량 -->
+ <div style="margin-top:16px;">
+ <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;"> 품목별 판매수량 (이번 달)</div>
+ ${(() => {
+ // 이 거래처의 이번달 주문 → productId 별 qty / 매출액 집계
+ const month = '2026-04';
+ const items = {};
+ cOrders.filter(o => (o.date || '').startsWith(month)).forEach(o => {
+ (o.items || []).forEach(it => {
+ const k = `${it.productId}|${it.size}`;
+ if (!items[k]) items[k] = { productId: it.productId, size: it.size, qty: 0, revenue: 0 };
+ items[k].qty += it.qty;
+ items[k].revenue += (it.unitPrice || 0) * it.qty;
+ });
+ });
+ const arr = Object.values(items).sort((a, b) => b.revenue - a.revenue);
+ if (arr.length === 0) {
+ return '<div style="color:var(--text-muted);font-size:12px;">이번 달 발주 내역이 없습니다.</div>';
+ }
+ const totalQty = arr.reduce((s, x) => s + x.qty, 0);
+ const totalRev = arr.reduce((s, x) => s + x.revenue, 0);
+ return `
+ <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+ <table style="width:100%;font-size:12px;border-collapse:collapse;">
+ <thead><tr style="background:var(--bg);">
+ <th style="text-align:left;padding:6px 10px;">제품</th>
+ <th style="text-align:left;padding:6px 10px;">규격</th>
+ <th style="text-align:right;padding:6px 10px;">수량</th>
+ <th style="text-align:right;padding:6px 10px;">판매액</th>
+ </tr></thead>
+ <tbody>
+ ${arr.map(x => `
+ <tr style="border-top:1px solid var(--border);">
+ <td style="padding:6px 10px;"><strong>${getProductName(x.productId)}</strong></td>
+ <td style="padding:6px 10px;">${x.size}</td>
+ <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;">${x.qty}</td>
+ <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;color:var(--primary);font-weight:600;">${formatCurrency(x.revenue)}</td>
+ </tr>
+ `).join('')}
+ <tr style="border-top:2px solid var(--border);background:var(--bg);font-weight:700;">
+ <td colspan="2" style="padding:6px 10px;">합계 (${arr.length}품목)</td>
+ <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;">${totalQty}</td>
+ <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;color:var(--primary);">${formatCurrency(totalRev)}</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ `;
+ })()}
+ </div>
+ <div style="margin-top:16px;">
+ <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;"> 경쟁업체 품목 (비고)</div>
+ <textarea class="form-input" id="competitor-note" rows="3" placeholder="경쟁사 품목 및 특이사항 메모..." style="font-size:12px;">${extra.competitor}</textarea>
+ </div>
+ <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
+ <button class="btn btn-outline btn-sm" onclick="printPurchaseOrder('${clientId}')"> 발주서 출력</button>
+ <button class="btn btn-outline btn-sm" onclick="printInvoiceSheet('${clientId}')"> 거래명세표 출력</button>
+ </div>
+ `;
+ showModal(`${c.name} 상세`, body, () => {
+ const note = document.getElementById('competitor-note')?.value || '';
+ if (!CLIENT_EXTRA[clientId]) CLIENT_EXTRA[clientId] = {};
+ CLIENT_EXTRA[clientId].competitor = note;
+ showToast('저장되었습니다');
+ });
+ setTimeout(() => {
+ const confirmBtn = document.querySelector('.modal-confirm');
+ if (confirmBtn) confirmBtn.textContent = '비고 저장';
+ }, 10);
 }
 
 // ══════════════════════════════════════
 // B-5. 발주서 / 거래명세표 출력 (프로토타입 — window.print())
 // ══════════════════════════════════════
 function _openPrintWindow(title, html) {
-  const w = window.open('', '_blank', 'width=820,height=1100');
-  if (!w) { showToast('팝업을 허용해주세요'); return; }
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
-    <style>
-      body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;color:#222;padding:32px;max-width:760px;margin:0 auto;}
-      h1{font-size:22px;text-align:center;letter-spacing:8px;margin:0 0 4px;border-bottom:3px double #222;padding-bottom:8px;}
-      .sub{text-align:center;font-size:12px;color:#666;margin-bottom:16px;}
-      table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px;}
-      th,td{border:1px solid #333;padding:6px 8px;text-align:left;}
-      th{background:#f0f0f0;text-align:center;}
-      .right{text-align:right;}
-      .center{text-align:center;}
-      .meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0;font-size:12px;}
-      .meta-box{border:1px solid #333;padding:8px 10px;}
-      .meta-box h3{margin:0 0 4px;font-size:12px;color:#1B3A5C;}
-      .total-row td{background:#f7f7f7;font-weight:700;}
-      .footer{margin-top:24px;font-size:11px;color:#555;text-align:right;}
-      @media print { body{padding:16px;} .no-print{display:none;} }
-      .no-print{margin-top:24px;text-align:center;}
-      .no-print button{padding:8px 16px;margin:0 4px;cursor:pointer;}
-    </style></head><body>${html}
-    <div class="no-print"><button onclick="window.print()">인쇄</button><button onclick="window.close()">닫기</button></div>
-    </body></html>`);
-  w.document.close();
+ const w = window.open('', '_blank', 'width=820,height=1100');
+ if (!w) { showToast('팝업을 허용해주세요'); return; }
+ w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+ <style>
+ body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;color:#222;padding:32px;max-width:760px;margin:0 auto;}
+ h1{font-size:22px;text-align:center;letter-spacing:8px;margin:0 0 4px;border-bottom:3px double #222;padding-bottom:8px;}
+ .sub{text-align:center;font-size:12px;color:#666;margin-bottom:16px;}
+ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px;}
+ th,td{border:1px solid #333;padding:6px 8px;text-align:left;}
+ th{background:#f0f0f0;text-align:center;}
+ .right{text-align:right;}
+ .center{text-align:center;}
+ .meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0;font-size:12px;}
+ .meta-box{border:1px solid #333;padding:8px 10px;}
+ .meta-box h3{margin:0 0 4px;font-size:12px;color:#1B3A5C;}
+ .total-row td{background:#f7f7f7;font-weight:700;}
+ .footer{margin-top:24px;font-size:11px;color:#555;text-align:right;}
+ @media print { body{padding:16px;} .no-print{display:none;} }
+ .no-print{margin-top:24px;text-align:center;}
+ .no-print button{padding:8px 16px;margin:0 4px;cursor:pointer;}
+ </style></head><body>${html}
+ <div class="no-print"><button onclick="window.print()">인쇄</button><button onclick="window.close()">닫기</button></div>
+ </body></html>`);
+ w.document.close();
 }
 
 function printPurchaseOrder(clientId) {
-  const c = CLIENTS.find(x => x.id === clientId);
-  if (!c) return;
-  const today = new Date().toISOString().slice(0, 10);
-  const extra = CLIENT_EXTRA[clientId] || {};
-  const cOrders = ORDERS.filter(o => o.clientId === clientId).slice(0, 5);
-  const rows = cOrders.flatMap(o => (o.items || []).map(it => {
-    const prod = PRODUCTS.find(p => p.id === it.productId);
-    const price = it.unitPrice || 0;
-    return `<tr>
-      <td>${prod ? prod.name : it.productId}${it.size ? ' / ' + it.size : ''}</td>
-      <td class="center">${it.qty}</td>
-      <td class="right">${formatNumber(price)}</td>
-      <td class="right">${formatNumber(price * it.qty)}</td>
-      <td>${o.date || ''}</td>
-    </tr>`;
-  })).join('') || '<tr><td colspan="5" class="center">발주 내역 없음</td></tr>';
+ const c = CLIENTS.find(x => x.id === clientId);
+ if (!c) return;
+ const today = new Date().toISOString().slice(0, 10);
+ const extra = CLIENT_EXTRA[clientId] || {};
+ const cOrders = ORDERS.filter(o => o.clientId === clientId).slice(0, 5);
+ const rows = cOrders.flatMap(o => (o.items || []).map(it => {
+ const prod = PRODUCTS.find(p => p.id === it.productId);
+ const price = it.unitPrice || 0;
+ return `<tr>
+ <td>${prod ? prod.name : it.productId}${it.size ? ' / ' + it.size : ''}</td>
+ <td class="center">${it.qty}</td>
+ <td class="right">${formatNumber(price)}</td>
+ <td class="right">${formatNumber(price * it.qty)}</td>
+ <td>${o.date || ''}</td>
+ </tr>`;
+ })).join('') || '<tr><td colspan="5" class="center">발주 내역 없음</td></tr>';
 
-  const html = `
-    <h1>발 주 서</h1>
-    <div class="sub">PURCHASE ORDER · 발행일 ${today}</div>
-    <div class="meta">
-      <div class="meta-box"><h3>공급자</h3>
-        알티바이오 주식회사<br>대표: 김대표<br>사업자: 123-45-67890<br>서울시 강남구</div>
-      <div class="meta-box"><h3>공급받는자 (거래처)</h3>
-        ${c.name}<br>담당자: ${c.manager || '-'}<br>연락처: ${c.phone || '-'}<br>주소: ${extra.address || '-'}</div>
-    </div>
-    <table>
-      <thead><tr><th>품목</th><th style="width:60px;">수량</th><th style="width:90px;">단가</th><th style="width:110px;">금액</th><th style="width:100px;">발주일</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="footer">※ 본 발주서는 프로토타입 출력 예시입니다.</div>
-  `;
-  _openPrintWindow(`발주서 - ${c.name}`, html);
+ const html = `
+ <h1>발 주 서</h1>
+ <div class="sub">PURCHASE ORDER · 발행일 ${today}</div>
+ <div class="meta">
+ <div class="meta-box"><h3>공급자</h3>
+ 알티바이오 주식회사<br>대표: 김대표<br>사업자: 123-45-67890<br>서울시 강남구</div>
+ <div class="meta-box"><h3>공급받는자 (거래처)</h3>
+ ${c.name}<br>담당자: ${c.manager || '-'}<br>연락처: ${c.phone || '-'}<br>주소: ${extra.address || '-'}</div>
+ </div>
+ <table>
+ <thead><tr><th>품목</th><th style="width:60px;">수량</th><th style="width:90px;">단가</th><th style="width:110px;">금액</th><th style="width:100px;">발주일</th></tr></thead>
+ <tbody>${rows}</tbody>
+ </table>
+ <div class="footer">※ 본 발주서는 프로토타입 출력 예시입니다.</div>
+ `;
+ _openPrintWindow(`발주서 - ${c.name}`, html);
 }
 
 function printInvoiceSheet(clientId) {
-  const c = CLIENTS.find(x => x.id === clientId);
-  if (!c) return;
-  const today = new Date().toISOString().slice(0, 10);
-  const extra = CLIENT_EXTRA[clientId] || {};
-  const cOrders = ORDERS.filter(o => o.clientId === clientId);
-  let grand = 0;
-  const rows = cOrders.flatMap(o => (o.items || []).map(it => {
-    const prod = PRODUCTS.find(p => p.id === it.productId);
-    const price = it.unitPrice || 0;
-    const amt = price * it.qty;
-    grand += amt;
-    return `<tr>
-      <td>${o.date || ''}</td>
-      <td>${prod ? prod.name : it.productId}${it.size ? ' / ' + it.size : ''}</td>
-      <td class="center">${it.qty}</td>
-      <td class="right">${formatNumber(price)}</td>
-      <td class="right">${formatNumber(amt)}</td>
-    </tr>`;
-  })).join('') || '<tr><td colspan="5" class="center">거래 내역 없음</td></tr>';
-  const vat = Math.round(grand * 0.1);
+ const c = CLIENTS.find(x => x.id === clientId);
+ if (!c) return;
+ const today = new Date().toISOString().slice(0, 10);
+ const extra = CLIENT_EXTRA[clientId] || {};
+ const cOrders = ORDERS.filter(o => o.clientId === clientId);
+ let grand = 0;
+ const rows = cOrders.flatMap(o => (o.items || []).map(it => {
+ const prod = PRODUCTS.find(p => p.id === it.productId);
+ const price = it.unitPrice || 0;
+ const amt = price * it.qty;
+ grand += amt;
+ return `<tr>
+ <td>${o.date || ''}</td>
+ <td>${prod ? prod.name : it.productId}${it.size ? ' / ' + it.size : ''}</td>
+ <td class="center">${it.qty}</td>
+ <td class="right">${formatNumber(price)}</td>
+ <td class="right">${formatNumber(amt)}</td>
+ </tr>`;
+ })).join('') || '<tr><td colspan="5" class="center">거래 내역 없음</td></tr>';
+ const vat = Math.round(grand * 0.1);
 
-  const html = `
-    <h1>거래명세표</h1>
-    <div class="sub">TRANSACTION STATEMENT · 발행일 ${today}</div>
-    <div class="meta">
-      <div class="meta-box"><h3>공급자</h3>
-        알티바이오 주식회사<br>대표: 김대표<br>사업자: 123-45-67890<br>서울시 강남구</div>
-      <div class="meta-box"><h3>공급받는자</h3>
-        ${c.name}<br>담당자: ${c.manager || '-'}<br>연락처: ${c.phone || '-'}<br>주소: ${extra.address || '-'}</div>
-    </div>
-    <table>
-      <thead><tr><th style="width:100px;">거래일</th><th>품목</th><th style="width:60px;">수량</th><th style="width:90px;">단가</th><th style="width:110px;">공급가액</th></tr></thead>
-      <tbody>
-        ${rows}
-        <tr class="total-row"><td colspan="4" class="right">공급가액 합계</td><td class="right">${formatNumber(grand)}</td></tr>
-        <tr class="total-row"><td colspan="4" class="right">부가세 (10%)</td><td class="right">${formatNumber(vat)}</td></tr>
-        <tr class="total-row"><td colspan="4" class="right">총 합계</td><td class="right">${formatNumber(grand + vat)}</td></tr>
-      </tbody>
-    </table>
-    <div class="footer">※ 본 거래명세표는 프로토타입 출력 예시입니다.</div>
-  `;
-  _openPrintWindow(`거래명세표 - ${c.name}`, html);
+ const html = `
+ <h1>거래명세표</h1>
+ <div class="sub">TRANSACTION STATEMENT · 발행일 ${today}</div>
+ <div class="meta">
+ <div class="meta-box"><h3>공급자</h3>
+ 알티바이오 주식회사<br>대표: 김대표<br>사업자: 123-45-67890<br>서울시 강남구</div>
+ <div class="meta-box"><h3>공급받는자</h3>
+ ${c.name}<br>담당자: ${c.manager || '-'}<br>연락처: ${c.phone || '-'}<br>주소: ${extra.address || '-'}</div>
+ </div>
+ <table>
+ <thead><tr><th style="width:100px;">거래일</th><th>품목</th><th style="width:60px;">수량</th><th style="width:90px;">단가</th><th style="width:110px;">공급가액</th></tr></thead>
+ <tbody>
+ ${rows}
+ <tr class="total-row"><td colspan="4" class="right">공급가액 합계</td><td class="right">${formatNumber(grand)}</td></tr>
+ <tr class="total-row"><td colspan="4" class="right">부가세 (10%)</td><td class="right">${formatNumber(vat)}</td></tr>
+ <tr class="total-row"><td colspan="4" class="right">총 합계</td><td class="right">${formatNumber(grand + vat)}</td></tr>
+ </tbody>
+ </table>
+ <div class="footer">※ 본 거래명세표는 프로토타입 출력 예시입니다.</div>
+ `;
+ _openPrintWindow(`거래명세표 - ${c.name}`, html);
 }
 
 function showConferenceModal() {
-  const body = `
-    <div class="form-group"><label>학회명</label><input type="text" class="form-input" id="conf-name" placeholder="예: 대한정형외과학회 2026 추계"></div>
-    <div class="form-group"><label>종류</label>
-      <select class="form-select" id="conf-type">
-        <option>정형외과</option><option>신경외과</option><option>재활의학</option><option>기타</option>
-      </select>
-    </div>
-    <div class="form-group"><label>날짜</label><input type="date" class="form-input" id="conf-date" value="2026-04-16"></div>
-    <div class="form-group"><label>방명록 건수</label><input type="number" class="form-input" id="conf-visitors" placeholder="예: 100" value="100"></div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">담당자별 배분은 등록 후 수정 가능합니다.</div>
-  `;
-  showModal('학회 등록', body, () => {
-    const name = document.getElementById('conf-name').value.trim();
-    const type = document.getElementById('conf-type').value;
-    const date = document.getElementById('conf-date').value;
-    const visitors = parseInt(document.getElementById('conf-visitors').value) || 0;
-    if (!name) return;
-    const per = Math.floor(visitors / 3);
-    CONFERENCES.unshift({
-      id: 'c' + Date.now(), name, type, date, visitors,
-      contacted: 0, newClients: 0,
-      assignments: { park: per, shin: per, lee: visitors - per * 2 }
-    });
-    renderConferences();
-    showToast('학회가 등록되었습니다');
-  });
+ const body = `
+ <div class="form-group"><label>학회명</label><input type="text" class="form-input" id="conf-name" placeholder="예: 대한정형외과학회 2026 추계"></div>
+ <div class="form-group"><label>종류</label>
+ <select class="form-select" id="conf-type">
+ <option>정형외과</option><option>신경외과</option><option>재활의학</option><option>기타</option>
+ </select>
+ </div>
+ <div class="form-group"><label>날짜</label><input type="date" class="form-input" id="conf-date" value="2026-04-16"></div>
+ <div class="form-group"><label>방명록 건수</label><input type="number" class="form-input" id="conf-visitors" placeholder="예: 100" value="100"></div>
+ <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">담당자별 배분은 등록 후 수정 가능합니다.</div>
+ `;
+ showModal('학회 등록', body, () => {
+ const name = document.getElementById('conf-name').value.trim();
+ const type = document.getElementById('conf-type').value;
+ const date = document.getElementById('conf-date').value;
+ const visitors = parseInt(document.getElementById('conf-visitors').value) || 0;
+ if (!name) return;
+ const per = Math.floor(visitors / 3);
+ CONFERENCES.unshift({
+ id: 'c' + Date.now(), name, type, date, visitors,
+ contacted: 0, newClients: 0,
+ assignments: { park: per, shin: per, lee: visitors - per * 2 }
+ });
+ renderConferences();
+ showToast('학회가 등록되었습니다');
+ });
 }
 
 // ── Helper: category name for discounts ──
@@ -1647,119 +1854,156 @@ const CLIENT_COLORS = ['#1B3A5C', '#00A8B5', '#F57C00', '#7C3AED', '#D32F2F'];
 // Screen 1: P18 경영 대시보드
 // ══════════════════════════════════════
 function renderExecDashboard() {
-  // Welcome banner
-  document.getElementById('welcome-date').textContent = '2026년 4월 11일 (금)';
-  document.getElementById('welcome-summary').textContent =
-    '오늘 ' + todayOrders.length + '건 발주, 매출 ' + formatCurrency(todayRevenue) + ' 발생';
+ // Welcome banner (dead element compat)
+ const dateEl = document.getElementById('welcome-date');
+ if (dateEl) dateEl.textContent = '2026년 4월 11일 (금)';
+ const summaryEl = document.getElementById('welcome-summary');
+ if (summaryEl) summaryEl.textContent =
+ '오늘 ' + todayOrders.length + '건 발주, 매출 ' + formatCurrency(todayRevenue) + ' 발생';
 
-  // Key Metrics
-  const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
-  document.getElementById('exec-stats').innerHTML = `
-    <div class="stat-card stat-primary">
-      <div class="stat-label">월 매출</div>
-      <div class="stat-value">${formatCurrency(MONTHLY_REVENUE)}</div>
-      <div class="stat-sub">목표 대비 95.7%</div>
-    </div>
-    <div class="stat-card stat-accent">
-      <div class="stat-label">오늘 매출</div>
-      <div class="stat-value">${formatCurrency(todayRevenue)}</div>
-      <div class="stat-sub">발주 ${todayOrders.length}건</div>
-    </div>
-    <div class="stat-card stat-danger">
-      <div class="stat-label">총 미수금</div>
-      <div class="stat-value">${formatCurrency(totalReceivables)}</div>
-      <div class="stat-sub">연체 ${overdueCount}건</div>
-    </div>
-    <div class="stat-card stat-success">
-      <div class="stat-label">활성 거래처</div>
-      <div class="stat-value">${CLIENTS.length}개</div>
-      <div class="stat-sub">대리점 ${CLIENTS.filter(c=>c.type==='대리점').length} / 병원 ${CLIENTS.filter(c=>c.type==='병원').length}</div>
-    </div>
-  `;
+ // 영업팀 #1 (2026-04): 월 수금액 + 월 미수금 KPI 추가
+ // 4 카드: 월 매출 / 월 수금액 / 월 미수금 / 활성 거래처
+ const monthlyKpi = document.getElementById('exec-monthly-kpi');
+ if (monthlyKpi) {
+ const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
+ // 월 수금액 = 이번 달 매출 - 이번 달 미수 잔액 (간단 mock)
+ const monthlyCollected = MONTHLY_REVENUE - totalReceivables;
+ monthlyKpi.innerHTML = `
+ <div class="stat-card stat-primary">
+ <div class="stat-label"> 월 매출 현황</div>
+ <div class="stat-value">${formatCurrency(MONTHLY_REVENUE)}</div>
+ <div class="stat-sub">목표 대비 95.7%</div>
+ </div>
+ <div class="stat-card stat-success">
+ <div class="stat-label"> 월 수금액 현황</div>
+ <div class="stat-value">${formatCurrency(monthlyCollected)}</div>
+ <div class="stat-sub">이번 달 PARTIAL+PAID 합</div>
+ </div>
+ <div class="stat-card stat-danger">
+ <div class="stat-label"> 월 미수금 현황</div>
+ <div class="stat-value">${formatCurrency(totalReceivables)}</div>
+ <div class="stat-sub">연체 ${overdueCount}건 · 거래처 ${RECEIVABLES.length}개</div>
+ </div>
+ <div class="stat-card stat-accent">
+ <div class="stat-label"> 담당 거래처</div>
+ <div class="stat-value">${CLIENTS.length}개</div>
+ <div class="stat-sub">대리점 ${CLIENTS.filter(c=>c.type==='대리점').length} / 병원 ${CLIENTS.filter(c=>c.type==='병원').length}</div>
+ </div>
+ `;
+ }
 
-  // Revenue bar chart (7 days)
-  const maxRev = Math.max(...DAILY_REVENUES.map(d => d.amount), 1);
-  const chartEl = document.getElementById('revenue-chart');
-  chartEl.innerHTML = DAILY_REVENUES.map(d => {
-    const pct = Math.round((d.amount / maxRev) * 100);
-    const isToday = d.date === '04-11';
-    return `
-      <div class="bar-col">
-        <div class="bar-value">${d.amount > 0 ? (d.amount >= 1000000 ? (d.amount/10000).toFixed(0) + '만' : formatNumber(d.amount)) : '-'}</div>
-        <div class="bar-fill${isToday ? ' today' : ''}" style="height:${Math.max(pct, 3)}%"></div>
-        <div class="bar-label">${d.date}</div>
-      </div>
-    `;
-  }).join('');
+ // legacy exec-stats (구 dashboard 버전 호환 — 요소 없으면 skip)
+ const execStats = document.getElementById('exec-stats');
+ if (execStats) {
+ const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
+ execStats.innerHTML = `
+ <div class="stat-card stat-primary">
+ <div class="stat-label">월 매출</div>
+ <div class="stat-value">${formatCurrency(MONTHLY_REVENUE)}</div>
+ <div class="stat-sub">목표 대비 95.7%</div>
+ </div>
+ <div class="stat-card stat-accent">
+ <div class="stat-label">오늘 매출</div>
+ <div class="stat-value">${formatCurrency(todayRevenue)}</div>
+ <div class="stat-sub">발주 ${todayOrders.length}건</div>
+ </div>
+ <div class="stat-card stat-danger">
+ <div class="stat-label">총 미수금</div>
+ <div class="stat-value">${formatCurrency(totalReceivables)}</div>
+ <div class="stat-sub">연체 ${overdueCount}건</div>
+ </div>
+ <div class="stat-card stat-success">
+ <div class="stat-label">활성 거래처</div>
+ <div class="stat-value">${CLIENTS.length}개</div>
+ <div class="stat-sub">대리점 ${CLIENTS.filter(c=>c.type==='대리점').length} / 병원 ${CLIENTS.filter(c=>c.type==='병원').length}</div>
+ </div>
+ `;
+ }
 
-  // Client revenue share (horizontal bar chart)
-  const clientTotals = {};
-  ORDERS.forEach(o => {
-    const total = calcOrderTotal(o);
-    clientTotals[o.clientId] = (clientTotals[o.clientId] || 0) + total;
-  });
-  const grandTotal = Object.values(clientTotals).reduce((s, v) => s + v, 0) || 1;
-  const sorted = Object.entries(clientTotals).sort((a, b) => b[1] - a[1]);
+ // Revenue bar chart (7 days) — 구 dashboard 버전 호환 (요소 없으면 skip)
+ const chartEl = document.getElementById('revenue-chart');
+ if (!chartEl) return;
+ const maxRev = Math.max(...DAILY_REVENUES.map(d => d.amount), 1);
+ chartEl.innerHTML = DAILY_REVENUES.map(d => {
+ const pct = Math.round((d.amount / maxRev) * 100);
+ const isToday = d.date === '04-11';
+ return `
+ <div class="bar-col">
+ <div class="bar-value">${d.amount > 0 ? (d.amount >= 1000000 ? (d.amount/10000).toFixed(0) + '만' : formatNumber(d.amount)) : '-'}</div>
+ <div class="bar-fill${isToday ? ' today' : ''}" style="height:${Math.max(pct, 3)}%"></div>
+ <div class="bar-label">${d.date}</div>
+ </div>
+ `;
+ }).join('');
 
-  const hChartEl = document.getElementById('client-revenue-chart');
-  hChartEl.innerHTML = sorted.map(([cid, amount], i) => {
-    const pct = Math.round((amount / grandTotal) * 100);
-    const color = CLIENT_COLORS[i % CLIENT_COLORS.length];
-    return `
-      <div class="h-bar-row">
-        <div class="h-bar-label">${getClientName(cid)}</div>
-        <div class="h-bar-track">
-          <div class="h-bar-fill" style="width:${Math.max(pct, 5)}%; background:${color};">
-            <span>${pct}%</span>
-          </div>
-        </div>
-        <div class="h-bar-amount">${formatCurrency(amount)}</div>
-      </div>
-    `;
-  }).join('');
+ // Client revenue share (horizontal bar chart)
+ const clientTotals = {};
+ ORDERS.forEach(o => {
+ const total = calcOrderTotal(o);
+ clientTotals[o.clientId] = (clientTotals[o.clientId] || 0) + total;
+ });
+ const grandTotal = Object.values(clientTotals).reduce((s, v) => s + v, 0) || 1;
+ const sorted = Object.entries(clientTotals).sort((a, b) => b[1] - a[1]);
 
-  // Receivables table
-  const rBody = document.getElementById('receivables-body');
-  rBody.innerHTML = RECEIVABLES.map(r => {
-    let riskClass, riskLabel;
-    if (r.overdueDays === 0) {
-      riskClass = 'risk-normal'; riskLabel = '정상';
-    } else if (r.overdueDays <= 14) {
-      riskClass = 'risk-warning'; riskLabel = '주의';
-    } else {
-      riskClass = 'risk-danger'; riskLabel = '위험';
-    }
-    const odClass = r.overdueDays === 0 ? 'overdue-0' : r.overdueDays <= 14 ? 'overdue-warn' : 'overdue-danger';
-    return `
-      <tr>
-        <td>${getClientName(r.clientId)}</td>
-        <td class="text-right">${formatCurrency(r.amount)}</td>
-        <td class="text-right"><span class="${odClass}">${r.overdueDays}일</span></td>
-        <td><span class="risk-badge ${riskClass}">${riskLabel}</span></td>
-      </tr>
-    `;
-  }).join('');
+ const hChartEl = document.getElementById('client-revenue-chart');
+ hChartEl.innerHTML = sorted.map(([cid, amount], i) => {
+ const pct = Math.round((amount / grandTotal) * 100);
+ const color = CLIENT_COLORS[i % CLIENT_COLORS.length];
+ return `
+ <div class="h-bar-row">
+ <div class="h-bar-label">${getClientName(cid)}</div>
+ <div class="h-bar-track">
+ <div class="h-bar-fill" style="width:${Math.max(pct, 5)}%; background:${color};">
+ <span>${pct}%</span>
+ </div>
+ </div>
+ <div class="h-bar-amount">${formatCurrency(amount)}</div>
+ </div>
+ `;
+ }).join('');
 
-  document.getElementById('receivables-foot').innerHTML = `
-    <tr>
-      <td style="font-weight:700; background:var(--bg); border-bottom:none;">합계</td>
-      <td class="text-right" style="font-weight:700; background:var(--bg); border-bottom:none;">${formatCurrency(totalReceivables)}</td>
-      <td style="background:var(--bg); border-bottom:none;"></td>
-      <td style="background:var(--bg); border-bottom:none;"></td>
-    </tr>
-  `;
+ // Receivables table
+ const rBody = document.getElementById('receivables-body');
+ rBody.innerHTML = RECEIVABLES.map(r => {
+ let riskClass, riskLabel;
+ if (r.overdueDays === 0) {
+ riskClass = 'risk-normal'; riskLabel = '정상';
+ } else if (r.overdueDays <= 14) {
+ riskClass = 'risk-warning'; riskLabel = '주의';
+ } else {
+ riskClass = 'risk-danger'; riskLabel = '위험';
+ }
+ const odClass = r.overdueDays === 0 ? 'overdue-0' : r.overdueDays <= 14 ? 'overdue-warn' : 'overdue-danger';
+ return `
+ <tr>
+ <td>${getClientName(r.clientId)}</td>
+ <td class="text-right">${formatCurrency(r.amount)}</td>
+ <td class="text-right"><span class="${odClass}">${r.overdueDays}일</span></td>
+ <td><span class="risk-badge ${riskClass}">${riskLabel}</span></td>
+ </tr>
+ `;
+ }).join('');
 
-  // Today's orders mini-table
-  document.getElementById('today-order-count').textContent = todayOrders.length + '건';
-  const tBody = document.getElementById('today-orders-body');
-  tBody.innerHTML = todayOrders.map(o => `
-    <tr>
-      <td class="mono">${o.id}</td>
-      <td>${getClientName(o.clientId)}</td>
-      <td class="text-right fw-600">${formatCurrency(calcOrderTotal(o))}</td>
-      <td>${statusBadge(o.status)}</td>
-    </tr>
-  `).join('');
+ document.getElementById('receivables-foot').innerHTML = `
+ <tr>
+ <td style="font-weight:700; background:var(--bg); border-bottom:none;">합계</td>
+ <td class="text-right" style="font-weight:700; background:var(--bg); border-bottom:none;">${formatCurrency(totalReceivables)}</td>
+ <td style="background:var(--bg); border-bottom:none;"></td>
+ <td style="background:var(--bg); border-bottom:none;"></td>
+ </tr>
+ `;
+
+ // Today's orders mini-table
+ document.getElementById('today-order-count').textContent = todayOrders.length + '건';
+ const tBody = document.getElementById('today-orders-body');
+ tBody.innerHTML = todayOrders.map(o => `
+ <tr>
+ <td class="mono">${o.id}</td>
+ <td>${getClientName(o.clientId)}</td>
+ <td class="text-right fw-600">${formatCurrency(calcOrderTotal(o))}</td>
+ <td>${statusBadge(o.status)}</td>
+ </tr>
+ `).join('');
 }
 
 // ══════════════════════════════════════
@@ -1768,235 +2012,328 @@ function renderExecDashboard() {
 
 // Usage data per client (dummy pre-filled)
 const USAGE_DATA = {
-  'C002': [
-    { productId: 'P004', size: 'L', prevQty: 5, curQty: 3, unitPrice: 24500 },
-    { productId: 'P017', size: 'M', prevQty: 8, curQty: 6, unitPrice: 22000 },
-    { productId: 'P022', size: 'S', prevQty: 30, curQty: 25, unitPrice: 11640 },
-  ],
-  'C004': [
-    { productId: 'P004', size: 'M', prevQty: 10, curQty: 8, unitPrice: 24500 },
-    { productId: 'P017', size: 'L', prevQty: 6, curQty: 7, unitPrice: 22000 },
-    { productId: 'P001', size: 'S', prevQty: 15, curQty: 12, unitPrice: 19800 },
-    { productId: 'P022', size: 'M', prevQty: 20, curQty: 18, unitPrice: 11640 },
-  ],
+ 'C002': [
+ { productId: 'P004', size: 'L', prevQty: 5, curQty: 3, unitPrice: 24500 },
+ { productId: 'P017', size: 'M', prevQty: 8, curQty: 6, unitPrice: 22000 },
+ { productId: 'P022', size: 'S', prevQty: 30, curQty: 25, unitPrice: 11640 },
+ ],
+ 'C004': [
+ { productId: 'P004', size: 'M', prevQty: 10, curQty: 8, unitPrice: 24500 },
+ { productId: 'P017', size: 'L', prevQty: 6, curQty: 7, unitPrice: 22000 },
+ { productId: 'P001', size: 'S', prevQty: 15, curQty: 12, unitPrice: 19800 },
+ { productId: 'P022', size: 'M', prevQty: 20, curQty: 18, unitPrice: 11640 },
+ ],
 };
 
 let currentUsageClient = 'C002';
 
 function renderUsageInput(clientId) {
-  currentUsageClient = clientId;
+ currentUsageClient = clientId;
 
-  // Populate client dropdown (hospitals only)
-  const sel = document.getElementById('usage-client-select');
-  const hospitals = CLIENTS.filter(c => c.type === '병원');
-  sel.innerHTML = hospitals.map(c =>
-    `<option value="${c.id}" ${c.id === clientId ? 'selected' : ''}>${c.name}</option>`
-  ).join('');
+ // Populate client dropdown (hospitals only)
+ const sel = document.getElementById('usage-client-select');
+ const hospitals = CLIENTS.filter(c => c.type === '병원');
+ sel.innerHTML = hospitals.map(c =>
+ `<option value="${c.id}" ${c.id === clientId ? 'selected' : ''}>${c.name}</option>`
+ ).join('');
 
-  // Update period based on client
-  const client = getClient(clientId);
-  document.getElementById('usage-period').textContent = client
-    ? (client.closingPeriod === '전달26일~당월25일' ? '2026.03.26 ~ 2026.04.25' : '2026.04.01 ~ 2026.04.30')
-    : '2026.03.26 ~ 2026.04.25';
+ // Update period based on client
+ const client = getClient(clientId);
+ document.getElementById('usage-period').textContent = client
+ ? (client.closingPeriod === '전달26일~당월25일' ? '2026.03.26 ~ 2026.04.25' : '2026.04.01 ~ 2026.04.30')
+ : '2026.03.26 ~ 2026.04.25';
 
-  // Build usage rows
-  const rows = USAGE_DATA[clientId] || [];
-  const tbody = document.getElementById('usage-body');
-  tbody.innerHTML = rows.map((r, i) => {
-    const subtotal = r.curQty * r.unitPrice;
-    return `
-      <tr>
-        <td>${getProductName(r.productId)}</td>
-        <td>${r.size}</td>
-        <td class="text-right text-muted">${r.prevQty}</td>
-        <td class="text-right">
-          <input type="number" class="qty-input" min="0"
-            value="${r.curQty}"
-            data-row="${i}"
-            onchange="updateUsageRow(${i}, this.value)"
-            oninput="updateUsageRow(${i}, this.value)">
-        </td>
-        <td class="text-right">${formatCurrency(r.unitPrice)}</td>
-        <td class="text-right fw-600" id="usage-subtotal-${i}">${formatCurrency(subtotal)}</td>
-      </tr>
-    `;
-  }).join('');
+ // Build usage rows
+ const rows = USAGE_DATA[clientId] || [];
+ const tbody = document.getElementById('usage-body');
+ tbody.innerHTML = rows.map((r, i) => {
+ const subtotal = r.curQty * r.unitPrice;
+ return `
+ <tr>
+ <td>${getProductName(r.productId)}</td>
+ <td>${r.size}</td>
+ <td class="text-right text-muted">${r.prevQty}</td>
+ <td class="text-right">
+ <input type="number" class="qty-input" min="0"
+ value="${r.curQty}"
+ data-row="${i}"
+ onchange="updateUsageRow(${i}, this.value)"
+ oninput="updateUsageRow(${i}, this.value)">
+ </td>
+ <td class="text-right">${formatCurrency(r.unitPrice)}</td>
+ <td class="text-right fw-600" id="usage-subtotal-${i}">${formatCurrency(subtotal)}</td>
+ </tr>
+ `;
+ }).join('');
 
-  updateUsageTotal();
+ updateUsageTotal(); // updateUsageTotal 내부에서 renderUsageSummary 호출
 }
 
 function updateUsageRow(rowIdx, val) {
-  const rows = USAGE_DATA[currentUsageClient];
-  if (!rows || !rows[rowIdx]) return;
-  const qty = Math.max(0, parseInt(val) || 0);
-  rows[rowIdx].curQty = qty;
-  const subtotal = qty * rows[rowIdx].unitPrice;
-  document.getElementById('usage-subtotal-' + rowIdx).textContent = formatCurrency(subtotal);
-  updateUsageTotal();
+ const rows = USAGE_DATA[currentUsageClient];
+ if (!rows || !rows[rowIdx]) return;
+ const qty = Math.max(0, parseInt(val) || 0);
+ rows[rowIdx].curQty = qty;
+ const subtotal = qty * rows[rowIdx].unitPrice;
+ document.getElementById('usage-subtotal-' + rowIdx).textContent = formatCurrency(subtotal);
+ updateUsageTotal();
 }
 
 function updateUsageTotal() {
-  const rows = USAGE_DATA[currentUsageClient] || [];
-  const total = rows.reduce((s, r) => s + (r.curQty * r.unitPrice), 0);
-  document.getElementById('usage-foot').innerHTML = `
-    <tr class="total-row">
-      <td colspan="5" class="text-right">합계</td>
-      <td class="text-right">${formatCurrency(total)}</td>
-    </tr>
-  `;
+ const rows = USAGE_DATA[currentUsageClient] || [];
+ const total = rows.reduce((s, r) => s + (r.curQty * r.unitPrice), 0);
+ document.getElementById('usage-foot').innerHTML = `
+ <tr class="total-row">
+ <td colspan="5" class="text-right">합계</td>
+ <td class="text-right">${formatCurrency(total)}</td>
+ </tr>
+ `;
+ // 영업팀 #4: 전 거래처 품목별 사용량/판매액 요약 갱신
+ renderUsageSummary();
+}
+
+// 영업팀 #4 (2026-04): 전 거래처 사용량 합계 (productId+size 키)
+function renderUsageSummary() {
+ const summaryBody = document.getElementById('usage-summary-body');
+ if (!summaryBody) return;
+
+ // 전체 USAGE_DATA 의 모든 client × 모든 row 를 productId+size 기준으로 집계
+ const agg = {}; // key = productId|size, value = { productId, size, prevQty, curQty, unitPrice }
+ Object.values(USAGE_DATA).forEach(rows => {
+ rows.forEach(r => {
+ const key = `${r.productId}|${r.size}`;
+ if (!agg[key]) {
+ agg[key] = { productId: r.productId, size: r.size, prevQty: 0, curQty: 0, unitPrice: r.unitPrice };
+ }
+ agg[key].prevQty += r.prevQty;
+ agg[key].curQty += r.curQty;
+ // 단가는 평균이 아닌 최신값 사용 (mock 단순화)
+ });
+ });
+
+ const items = Object.values(agg).sort((a, b) => (b.curQty * b.unitPrice) - (a.curQty * a.unitPrice));
+ if (items.length === 0) {
+ summaryBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">데이터가 없습니다</td></tr>';
+ return;
+ }
+
+ summaryBody.innerHTML = items.map(it => {
+ const delta = it.curQty - it.prevQty;
+ const deltaPct = it.prevQty > 0 ? Math.round(delta / it.prevQty * 100) : 0;
+ const deltaColor = delta > 0 ? 'var(--success)' : delta < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+ const deltaSign = delta > 0 ? '▲' : delta < 0 ? '▼' : '─';
+ const sales = it.curQty * it.unitPrice;
+ return `
+ <tr>
+ <td><strong>${getProductName(it.productId)}</strong></td>
+ <td>${it.size}</td>
+ <td class="text-right text-muted">${it.prevQty}</td>
+ <td class="text-right fw-600">${it.curQty}</td>
+ <td class="text-right" style="color:${deltaColor};font-weight:600;">${deltaSign} ${Math.abs(delta)}${it.prevQty > 0 ? ' (' + (deltaPct >= 0 ? '+' : '') + deltaPct + '%)' : ''}</td>
+ <td class="text-right">${formatCurrency(it.unitPrice)}</td>
+ <td class="text-right fw-600" style="color:var(--primary);">${formatCurrency(sales)}</td>
+ </tr>
+ `;
+ }).join('');
+
+ const totalQty = items.reduce((s, it) => s + it.curQty, 0);
+ const totalSales = items.reduce((s, it) => s + (it.curQty * it.unitPrice), 0);
+ const foot = document.getElementById('usage-summary-foot');
+ if (foot) {
+ foot.innerHTML = `
+ <tr class="total-row" style="background:var(--bg);font-weight:700;">
+ <td colspan="3" class="text-right">합계 (${items.length}품목)</td>
+ <td class="text-right">${totalQty.toLocaleString()}</td>
+ <td colspan="2" class="text-right">월 판매액</td>
+ <td class="text-right" style="color:var(--primary);">${formatCurrency(totalSales)}</td>
+ </tr>
+ `;
+ }
 }
 
 function onUsageClientChange() {
-  const sel = document.getElementById('usage-client-select');
-  renderUsageInput(sel.value);
+ const sel = document.getElementById('usage-client-select');
+ renderUsageInput(sel.value);
 }
 
 function saveUsageDraft() {
-  showToast('임시 저장되었습니다', 'success');
+ showToast('임시 저장되었습니다', 'success');
 }
 
 function submitUsage() {
-  const clientName = getClientName(currentUsageClient);
-  showModal(
-    '사용량 제출',
-    '<p>사용량을 제출하시겠습니까?</p><p style="color:var(--text-secondary); font-size:13px; margin-top:8px;">제출 후 수정이 제한됩니다.</p>',
-    function() {
-      showToast('사용량이 제출되었습니다', 'success');
-    }
-  );
+ const clientName = getClientName(currentUsageClient);
+ showModal(
+ '사용량 제출',
+ '<p>사용량을 제출하시겠습니까?</p><p style="color:var(--text-secondary); font-size:13px; margin-top:8px;">제출 후 수정이 제한됩니다.</p>',
+ function() {
+ showToast('사용량이 제출되었습니다', 'success');
+ }
+ );
 }
 
 // ══════════════════════════════════════
-// Screen 3: P17 거래처 현황
+// Screen 3: P17 거래처 관리 (2026-05-22: 경영지원팀과 100% 동일)
 // ══════════════════════════════════════
-function renderClientStatus(typeFilter, sortBy) {
-  const dealerCount = CLIENTS.filter(c => c.type === '대리점').length;
-  const hospitalCount = CLIENTS.filter(c => c.type === '병원').length;
-  const overdueClients = RECEIVABLES.filter(r => r.overdueDays > 0).length;
-
-  // Stats
-  document.getElementById('client-stats').innerHTML = `
-    <div class="stat-card stat-primary">
-      <div class="stat-label">전체 거래처</div>
-      <div class="stat-value">${CLIENTS.length}</div>
-    </div>
-    <div class="stat-card stat-accent">
-      <div class="stat-label">대리점</div>
-      <div class="stat-value">${dealerCount}</div>
-    </div>
-    <div class="stat-card stat-success">
-      <div class="stat-label">병원</div>
-      <div class="stat-value">${hospitalCount}</div>
-    </div>
-    <div class="stat-card stat-danger">
-      <div class="stat-label">연체 거래처</div>
-      <div class="stat-value">${overdueClients}</div>
-    </div>
-  `;
-
-  // Filter clients
-  let filtered = CLIENTS.slice();
-  if (typeFilter && typeFilter !== 'all') {
-    filtered = filtered.filter(c => c.type === typeFilter);
+// - admin-portal 의 page-clients 와 똑같은 폼 사용
+// - client-mgmt.js 의 buildClientMgmtPageHTML() 로 page-client-status div 마운트
+function renderClientStatus() {
+  const host = document.getElementById('page-client-status');
+  if (!host || typeof buildClientMgmtPageHTML !== 'function') return;
+  if (!host.dataset.inited) {
+    host.innerHTML = buildClientMgmtPageHTML();
+    host.dataset.inited = '1';
   }
-
-  // Compute per-client data
-  const clientData = filtered.map(c => {
-    const cOrders = ORDERS.filter(o => o.clientId === c.id && o.date.startsWith('2026-04'));
-    const cRevenue = cOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
-    const rec = RECEIVABLES.find(r => r.clientId === c.id);
-    return {
-      client: c,
-      orderCount: cOrders.length,
-      revenue: cRevenue,
-      receivable: rec ? rec.amount : 0,
-      overdueDays: rec ? rec.overdueDays : 0,
-    };
-  });
-
-  // Sort
-  if (sortBy === 'revenue') {
-    clientData.sort((a, b) => b.revenue - a.revenue);
-  } else if (sortBy === 'receivable') {
-    clientData.sort((a, b) => b.receivable - a.receivable);
-  } else {
-    clientData.sort((a, b) => a.client.name.localeCompare(b.client.name, 'ko'));
+  if (typeof renderClients === 'function') {
+    renderClients(document.getElementById('client-search')?.value || '');
   }
-
-  // Render cards
-  const container = document.getElementById('client-cards');
-  container.innerHTML = clientData.map(d => {
-    const c = d.client;
-    const typeBadge = c.type === '대리점'
-      ? '<span class="badge badge-type-dealer">대리점</span>'
-      : '<span class="badge badge-type-hospital">병원</span>';
-
-    let odClass = 'overdue-0';
-    if (d.overdueDays > 0 && d.overdueDays <= 14) odClass = 'overdue-warn';
-    else if (d.overdueDays > 14) odClass = 'overdue-danger';
-
-    // Discount badges
-    const discountHTML = Object.entries(c.discounts)
-      .filter(([, v]) => v > 0)
-      .map(([cat, pct]) => `<span class="discount-badge">${CAT_LABELS[cat]} ${pct}%</span>`)
-      .join('');
-
-    return `
-      <div class="client-card">
-        <div class="client-card-header">
-          <span class="name">${c.name}</span>
-          ${typeBadge}
-        </div>
-        <div class="client-card-body">
-          <div class="client-info-row">
-            <span>👤 ${c.manager}</span>
-            <span>📞 ${c.phone}</span>
-            <span>💳 ${c.paymentType}</span>
-          </div>
-          <div class="client-metrics">
-            <div class="client-metric">
-              <div class="client-metric-label">이번달 발주</div>
-              <div class="client-metric-value">${d.orderCount}건</div>
-            </div>
-            <div class="client-metric">
-              <div class="client-metric-label">이번달 매출</div>
-              <div class="client-metric-value">${formatCurrency(d.revenue)}</div>
-            </div>
-            <div class="client-metric">
-              <div class="client-metric-label">미수금</div>
-              <div class="client-metric-value">${formatCurrency(d.receivable)}</div>
-            </div>
-            <div class="client-metric">
-              <div class="client-metric-label">연체일수</div>
-              <div class="client-metric-value ${odClass}">${d.overdueDays}일</div>
-            </div>
-          </div>
-          ${discountHTML ? '<div class="discount-badges">' + discountHTML + '</div>' : ''}
-        </div>
-        <div class="client-card-footer">
-          <button class="btn btn-outline btn-sm" onclick="showClientDetail('${c.id}')">상세 보기</button>
-          <button class="btn btn-outline btn-sm" onclick="showToast('${c.name} 명세서 생성','info')">명세서</button>
-        </div>
-      </div>
-    `;
-  }).join('');
 }
-
 function applyClientFilter() {
-  const typeFilter = document.getElementById('filter-type').value;
-  const sortBy = document.getElementById('filter-sort').value;
-  renderClientStatus(typeFilter, sortBy);
+  if (typeof renderClients === 'function') renderClients(document.getElementById('client-search')?.value || '');
 }
+// (영업 전용 진료과별 필터링은 거래처 관리 통합 폼의 유형/검색으로 흡수됨)
 
 // ══════════════════════════════════════
 // Init
 // ══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
-  renderExecDashboard();
-  renderUsageInput('C002');
-  renderClientStatus('all', 'name');
-  goTo('page-exec-dashboard');
+ renderExecDashboard();
+ renderUsageInput('C002');
+ renderClientStatus('all', 'name');
+ // 알티바이오 ISO 13485 품질양식 보고서 작성기 초기화 (영업팀 권한)
+ try { initReportBuilder({ team: 'sales', userName: '박진우', userRole: '영업팀 팀장' }); } catch(e) { console.warn('initReportBuilder failed', e); }
+ try { initDataExplorer({ team: 'sales', userName: '박진우' }); } catch(e) { console.warn('initDataExplorer failed', e); }
+ // 2026-05-12 미팅: 영업사원 마스터 + 알림 종
+ try { renderRepMaster && renderRepMaster(); } catch(e) {}
+ try {
+   // 알림 종 추가 (topbar 가 있으면)
+   const tb = document.querySelector('.mobile-topbar');
+   if (tb && typeof buildNotifyBell === 'function' && !document.querySelector('.notify-bell-wrap')) {
+     tb.insertAdjacentHTML('beforeend', '<div style="margin-left:auto;">' + buildNotifyBell() + '</div>');
+   }
+ } catch(e) {}
+ goTo('page-exec-dashboard');
 });
+
+// 2026-05-12 미팅: 영업사원 마스터 계정 페이지
+function renderRepMaster() {
+  const reps = window.SALES_REP_MASTERS || [];
+  const host = document.getElementById('rep-master-cards');
+  if (!host) return;
+  host.innerHTML = reps.map(rep => {
+    const apr = rep.monthlyAchievement['2026-04'] || 0;
+    const pct = rep.targetMonthly > 0 ? Math.round(apr / rep.targetMonthly * 100) : 0;
+    const incentive = apr > rep.targetMonthly ? Math.round((apr - rep.targetMonthly) * 0.1) : 0;
+    return `
+      <div onclick="showRepDetail('${rep.id}')" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all 0.15s;"
+           onmouseover="this.style.borderColor='var(--primary)';this.style.boxShadow='0 4px 12px rgba(27,58,92,0.08)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">${rep.name[0]}</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;">${rep.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${rep.email}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px;">
+          <div>
+            <div style="color:var(--text-muted);">담당 거래처</div>
+            <div style="font-size:18px;font-weight:700;">${rep.clientIds.length}<span style="font-size:12px;color:var(--text-secondary);">개</span></div>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);">4월 매출</div>
+            <div style="font-size:14px;font-weight:700;color:var(--primary);">${apr.toLocaleString()}원</div>
+          </div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:3px;">
+            <span>목표 달성률</span>
+            <span style="font-weight:600;color:${pct>=100?'var(--success)':pct>=70?'var(--warning)':'var(--danger)'};">${pct}%</span>
+          </div>
+          <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));width:${Math.min(pct,100)}%;"></div>
+          </div>
+        </div>
+        ${incentive > 0 ? `<div style="margin-top:6px;padding:6px 10px;background:#e8f5e9;color:#2E7D32;border-radius:4px;font-size:11px;text-align:center;font-weight:600;">🎁 인센티브: ${incentive.toLocaleString()}원 (초과분 10%)</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  // 기본으로 첫 사원 상세 표시
+  if (reps[0]) showRepDetail(reps[0].id);
+}
+
+function showRepDetail(repId) {
+  const rep = (window.SALES_REP_MASTERS||[]).find(r => r.id === repId);
+  if (!rep) return;
+  const myClients = (window.CLIENTS||[]).filter(c => rep.clientIds.includes(c.id));
+  const myOrders = (window.ORDERS||[]).filter(o => rep.clientIds.includes(o.clientId));
+  const monthOrders = myOrders.filter(o => o.date.startsWith('2026-04'));
+  // 거래처별 4월 매출 집계
+  const byClient = {};
+  monthOrders.forEach(o => {
+    const total = (o.items||[]).reduce((s,i) => s + (i.qty||0)*(i.unitPrice||0), 0);
+    byClient[o.clientId] = (byClient[o.clientId] || 0) + total;
+  });
+  document.getElementById('rep-detail-name').textContent = `${rep.name} 사원`;
+  document.getElementById('rep-detail-area').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div style="background:var(--bg-soft);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;color:var(--text-muted);">월별 매출 추이</div>
+        <div style="font-size:13px;margin-top:6px;">
+          ${Object.entries(rep.monthlyAchievement).map(([m, a]) => `<div>${m}: <b>${a.toLocaleString()}</b>원</div>`).join('')}
+        </div>
+      </div>
+      <div style="background:var(--bg-soft);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;color:var(--text-muted);">월 목표</div>
+        <div style="font-size:20px;font-weight:700;margin-top:6px;">${rep.targetMonthly.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-muted);">초과분의 10% 인센티브</div>
+      </div>
+      <div style="background:var(--bg-soft);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;color:var(--text-muted);">연락처</div>
+        <div style="font-size:13px;margin-top:6px;">📧 ${rep.email}</div>
+        <div style="font-size:13px;">📞 ${rep.phone}</div>
+      </div>
+    </div>
+    <table class="data-table" style="width:100%;">
+      <thead><tr>
+        <th>거래처 코드</th><th>거래처명</th><th>유형</th><th>진료과</th>
+        <th class="text-right">4월 매출</th><th class="text-right">발주 건수</th><th class="text-center">액션</th>
+      </tr></thead>
+      <tbody>
+        ${myClients.map(c => {
+          const apr = byClient[c.id] || 0;
+          const cnt = monthOrders.filter(o => o.clientId === c.id).length;
+          return `<tr>
+            <td class="mono" style="font-size:11px;">${c.id}</td>
+            <td><b>${c.name}</b></td>
+            <td>${c.type}</td>
+            <td>${c.specialty || '-'}</td>
+            <td class="text-right">${apr > 0 ? apr.toLocaleString()+'원' : '<span style="color:var(--text-muted);">-</span>'}</td>
+            <td class="text-right">${cnt > 0 ? cnt+'건' : '<span style="color:var(--text-muted);">-</span>'}</td>
+            <td class="text-center">
+              <button class="btn btn-primary btn-sm" onclick="orderForClient('${c.id}')">발주</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot><tr class="totals-row">
+        <td colspan="4" class="text-right">합 계</td>
+        <td class="text-right"><b>${Object.values(byClient).reduce((s,v)=>s+v,0).toLocaleString()}원</b></td>
+        <td class="text-right"><b>${monthOrders.length}건</b></td>
+        <td></td>
+      </tr></tfoot>
+    </table>
+  `;
+}
+
+function orderForClient(clientId) {
+  // 영업사원이 본인 담당 거래처를 선택해 발주 (거래처 포털로 이동 시뮬)
+  if (typeof showToast === 'function') {
+    const c = (window.CLIENTS||[]).find(x => x.id === clientId);
+    showToast(`${c?.name||clientId} 계정으로 발주 화면 이동 (백엔드 단계에서 SSO 연동)`, 'info');
+  }
+  // 거래처 포털 새 창
+  window.open(`client-portal.html?clientId=${clientId}`, '_blank');
+}
 </script>
 </body>
 </html>
