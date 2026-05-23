@@ -47,15 +47,13 @@ export default async function ConferenceDetailPage({
     <div className="space-y-6">
       <header>
         <div className="text-tiny text-ink-muted mb-1">
-          <Link href="/exec/conferences" className="text-primary hover:underline">
-            ← 학회 목록
+          <Link href="/exec/conferences" className="text-primary hover:underline"> ← 학회 목록
           </Link>
         </div>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-display m-0">🎓 {conf.name}</h1>
-            <p className="text-caption text-ink-secondary mt-1">
-              방문자 <strong className="text-primary">{visitors.length}</strong>명 ·
+            <h1 className="text-display m-0"> {conf.name}</h1>
+            <p className="text-caption text-ink-secondary mt-1"> 방문자 <strong className="text-primary">{visitors.length}</strong>명 ·
               등록일 {new Date(conf.createdAt).toLocaleDateString("ko-KR")}
             </p>
           </div>
@@ -85,6 +83,5 @@ export default async function ConferenceDetailPage({
           reps={reps}
         />
       </section>
-    </div>
-  );
+    </div> );
 }

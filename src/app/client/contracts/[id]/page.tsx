@@ -22,13 +22,12 @@ export default async function ClientContractDetailPage({
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <Link href="/client/contracts" className="text-caption text-primary hover:underline">
-        ← 계약서 목록
+      <Link href="/client/contracts" className="text-caption text-primary hover:underline"> ← 계약서 목록
       </Link>
 
       <header>
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-display m-0">📝 {c.title}</h1>
+          <h1 className="text-display m-0"> {c.title}</h1>
           <StageBadge stage={stage} daysLeft={daysLeft} />
         </div>
       </header>
@@ -44,8 +43,7 @@ export default async function ClientContractDetailPage({
             c.endDate ? new Date(c.endDate).toLocaleDateString("ko-KR") : "무기한"
           }
         />
-        <Row k="서명 여부" v={c.signed ? "✅ 서명 완료" : "서명 대기"} />
-        {c.pdfUrl && (
+        <Row k="서명 여부" v={c.signed ? "✅ 서명 완료" : "서명 대기"} /> {c.pdfUrl && (
           <div className="flex">
             <dt className="w-28 text-slate-500">PDF</dt>
             <dd className="flex-1">
@@ -54,26 +52,21 @@ export default async function ClientContractDetailPage({
                 target="_blank"
                 rel="noreferrer noopener"
                 className="text-sky-700 hover:underline"
-              >
-                📎 계약서 PDF 열기
+              > 계약서 PDF 열기
               </a>
             </dd>
-          </div>
-        )}
+          </div> )}
         {c.note && (
           <div className="flex">
             <dt className="w-28 text-slate-500">메모</dt>
             <dd className="flex-1 whitespace-pre-wrap">{c.note}</dd>
-          </div>
-        )}
+          </div> )}
       </section>
 
-      <footer className="text-xs text-slate-400">
-        등록 {new Date(c.createdAt).toLocaleDateString("ko-KR")} · 최종 수정{" "}
+      <footer className="text-xs text-slate-400"> 등록 {new Date(c.createdAt).toLocaleDateString("ko-KR")} · 최종 수정{" "}
         {new Date(c.updatedAt).toLocaleDateString("ko-KR")}
       </footer>
-    </div>
-  );
+    </div> );
 }
 
 function Row({ k, v }: { k: string; v: string }) {
@@ -81,8 +74,7 @@ function Row({ k, v }: { k: string; v: string }) {
     <div className="flex">
       <dt className="w-28 text-slate-500">{k}</dt>
       <dd className="flex-1 text-slate-800">{v}</dd>
-    </div>
-  );
+    </div> );
 }
 
 const STAGE_TONE: Record<string, string> = {
@@ -110,13 +102,9 @@ function StageBadge({
   return (
     <span
       className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${tone}`}
-    >
-      {label}
+    > {label}
       {daysLeft !== null && stage !== "ACTIVE" && (
-        <span className="ml-1 opacity-75">
-          {daysLeft >= 0 ? `D-${daysLeft}` : `D+${-daysLeft}`}
-        </span>
-      )}
-    </span>
-  );
+        <span className="ml-1 opacity-75"> {daysLeft >= 0 ? `D-${daysLeft}` : `D+${-daysLeft}`}
+        </span> )}
+    </span> );
 }

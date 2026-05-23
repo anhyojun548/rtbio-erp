@@ -60,17 +60,15 @@ export default async function MyOrdersPage({
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-display m-0">📦 내 주문</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            {user.name}님에게 배정된 거래처의 주문{" "}
+          <h1 className="text-display m-0"> 내 주문</h1>
+          <p className="text-caption text-ink-secondary mt-1"> {user.name}님에게 배정된 거래처의 주문{" "}
             <strong className="text-primary">{rows.length}건</strong>입니다.
           </p>
         </div>
         <Link
           href="/exec"
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          ← 대시보드
+        > ← 대시보드
         </Link>
       </header>
 
@@ -83,6 +81,5 @@ export default async function MyOrdersPage({
           to: searchParams.to ?? "",
         }}
       />
-    </div>
-  );
+    </div> );
 }

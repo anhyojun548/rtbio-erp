@@ -51,10 +51,8 @@ export default async function InvoiceListPage({
       label: "명세서 번호",
       width: "170px",
       render: (inv) => (
-        <Link href={`/admin/invoices/${inv.id}`} className="font-mono text-tiny text-primary hover:underline font-semibold">
-          {inv.status === "DRAFT" ? "(DRAFT)" : inv.invoiceNumber}
-        </Link>
-      ),
+        <Link href={`/admin/invoices/${inv.id}`} className="font-mono text-tiny text-primary hover:underline font-semibold"> {inv.status === "DRAFT" ? "(DRAFT)" : inv.invoiceNumber}
+        </Link> ),
     },
     {
       key: "issueDate",
@@ -70,20 +68,16 @@ export default async function InvoiceListPage({
         <>
           <div className="font-semibold text-ink">{inv.client.name}</div>
           <div className="font-mono text-tiny text-ink-muted">{inv.client.code}</div>
-        </>
-      ),
+        </> ),
     },
     {
       key: "order",
       label: "주문",
       width: "160px",
       hideOnMobile: true,
-      render: (inv) =>
-        inv.order ? (
-          <Link href={`/admin/orders/${inv.order.id}`} className="font-mono text-tiny text-primary hover:underline">
-            {inv.order.orderNumber}
-          </Link>
-        ) : "—",
+      render: (inv) => inv.order ? (
+          <Link href={`/admin/orders/${inv.order.id}`} className="font-mono text-tiny text-primary hover:underline"> {inv.order.orderNumber}
+          </Link> ) : "—",
     },
     {
       key: "items",
@@ -114,17 +108,15 @@ export default async function InvoiceListPage({
       align: "right",
       width: "70px",
       render: (inv) => (
-        <Link href={`/admin/invoices/${inv.id}`} className="text-tiny text-primary hover:underline">
-          상세
-        </Link>
-      ),
+        <Link href={`/admin/invoices/${inv.id}`} className="text-tiny text-primary hover:underline"> 상세
+        </Link> ),
     },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="📄 거래명세서"
+        title="거래명세서"
         subtitle="COMPLETED 주문을 기반으로 DRAFT 거래명세서를 생성한 뒤 발행(ISSUED)합니다. 발송 완료되면 SENT 로 표시할 수 있습니다."
       />
 
@@ -145,6 +137,5 @@ export default async function InvoiceListPage({
       />
 
       <p className="text-tiny text-ink-muted">총 {invoices.length}건</p>
-    </div>
-  );
+    </div> );
 }

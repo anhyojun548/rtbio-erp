@@ -83,12 +83,10 @@ export default async function DataExplorerPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="🔍 데이터 탐색기"
+        title="데이터 탐색기"
         subtitle={
-          <>
-            2023.01 ~ 2026.05 매입매출 거래원장. 엑셀/CSV 업로드와 필터별 다운로드를 지원합니다.
-          </>
-        }
+          <> 2023.01 ~ 2026.05 매입매출 거래원장. 엑셀/CSV 업로드와 필터별 다운로드를 지원합니다.
+          </> }
       />
 
       <DataExplorerBoard
@@ -107,6 +105,5 @@ export default async function DataExplorerPage({
         }}
         canUpload={canUpload}
       />
-    </div>
-  );
+    </div> );
 }

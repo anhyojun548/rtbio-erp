@@ -22,9 +22,8 @@ export default async function ClientPaymentsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-display m-0">💰 수금·미수금</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          월별 원장과 최근 수금 내역을 확인합니다. 미수금 관련 문의는 경영지원팀에 연락해주세요.
+        <h1 className="text-display m-0"> 수금·미수금</h1>
+        <p className="text-sm text-slate-500 mt-1"> 월별 원장과 최근 수금 내역을 확인합니다. 미수금 관련 문의는 경영지원팀에 연락해주세요.
         </p>
       </header>
 
@@ -54,15 +53,11 @@ export default async function ClientPaymentsPage() {
 
       <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="font-semibold text-slate-900 text-sm">
-            월별 원장 (최근 24개월)
+          <h2 className="font-semibold text-slate-900 text-sm"> 월별 원장 (최근 24개월)
           </h2>
-        </div>
-        {ledgers.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            아직 생성된 원장이 없습니다.
-          </div>
-        ) : (
+        </div> {ledgers.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 아직 생성된 원장이 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -74,20 +69,15 @@ export default async function ClientPaymentsPage() {
                 <th className="px-4 py-2 text-left">마감</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {ledgers.map((l) => (
+            <tbody className="divide-y divide-slate-100"> {ledgers.map((l) => (
                 <tr key={l.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2 font-mono text-xs">
-                    {l.closingMonth}
+                  <td className="px-4 py-2 font-mono text-xs"> {l.closingMonth}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-xs text-slate-600">
-                    {Number(l.carryOver).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums text-xs text-slate-600"> {Number(l.carryOver).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-xs">
-                    {Number(l.monthlySales).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums text-xs"> {Number(l.monthlySales).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-xs text-emerald-700">
-                    {Number(l.received).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums text-xs text-emerald-700"> {Number(l.received).toLocaleString()}
                   </td>
                   <td
                     className={`px-4 py-2 text-right tabular-nums font-semibold ${
@@ -95,36 +85,25 @@ export default async function ClientPaymentsPage() {
                         ? "text-rose-700"
                         : "text-slate-700"
                     }`}
-                  >
-                    {Number(l.balance).toLocaleString()}
+                  > {Number(l.balance).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-xs">
-                    {l.closedAt ? (
-                      <span className="text-emerald-700">
-                        🔒 {new Date(l.closedAt).toLocaleDateString("ko-KR")}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">진행 중</span>
-                    )}
+                  <td className="px-4 py-2 text-xs"> {l.closedAt ? (
+                      <span className="text-emerald-700"> {new Date(l.closedAt).toLocaleDateString("ko-KR")}
+                      </span> ) : (
+                      <span className="text-slate-400">진행 중</span> )}
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="font-semibold text-slate-900 text-sm">
-            최근 수금 내역 (최대 100건)
+          <h2 className="font-semibold text-slate-900 text-sm"> 최근 수금 내역 (최대 100건)
           </h2>
-        </div>
-        {payments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            아직 기록된 수금이 없습니다.
-          </div>
-        ) : (
+        </div> {payments.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 아직 기록된 수금이 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -135,30 +114,23 @@ export default async function ClientPaymentsPage() {
                 <th className="px-4 py-2 text-left">메모</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {payments.map((p) => (
+            <tbody className="divide-y divide-slate-100"> {payments.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2 tabular-nums">
-                    {new Date(p.paidAt).toLocaleDateString("ko-KR")}
+                  <td className="px-4 py-2 tabular-nums"> {new Date(p.paidAt).toLocaleDateString("ko-KR")}
                   </td>
                   <td className="px-4 py-2 text-slate-600">{p.method}</td>
                   <td className="px-4 py-2">
                     <PaymentStatusBadge status={p.status} />
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums font-semibold text-emerald-700">
-                    {Number(p.amount).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums font-semibold text-emerald-700"> {Number(p.amount).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-500">
-                    {p.note ?? "-"}
+                  <td className="px-4 py-2 text-xs text-slate-500"> {p.note ?? "-"}
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -180,8 +152,7 @@ function StatCard({
     <div className={`rounded-lg border p-4 ${toneCls}`}>
       <p className="text-xs opacity-75">{label}</p>
       <p className="text-xl font-bold mt-1 tabular-nums">{value}</p>
-    </div>
-  );
+    </div> );
 }
 
 const PAY_TONE: Record<string, string> = {
@@ -203,8 +174,6 @@ function PaymentStatusBadge({ status }: { status: string }) {
       className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
         PAY_TONE[status] ?? "bg-slate-100 text-slate-700"
       }`}
-    >
-      {PAY_LABEL[status] ?? status}
-    </span>
-  );
+    > {PAY_LABEL[status] ?? status}
+    </span> );
 }

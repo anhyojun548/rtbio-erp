@@ -16,16 +16,14 @@ export default async function QcInventoryPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-display m-0">📊 재고 관리</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            활성 제품의 사이즈별 재고를 조회하고, 입고·조정을 기록합니다.
+          <h1 className="text-display m-0"> 재고 관리</h1>
+          <p className="text-caption text-ink-secondary mt-1"> 활성 제품의 사이즈별 재고를 조회하고, 입고·조정을 기록합니다.
           </p>
         </div>
         <Link
           href="/admin/inventory/logs"
           className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          변동 이력
+        > 변동 이력
         </Link>
       </header>
 
@@ -43,8 +41,7 @@ export default async function QcInventoryPage() {
       </div>
 
       <InventorySummaryTable rows={rows} />
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -67,9 +64,7 @@ function StatCard({
         className={`mt-1 text-2xl font-semibold tabular-nums ${
           tone === "alert" ? "text-red-600" : "text-slate-900"
         }`}
-      >
-        {value.toLocaleString()}
+      > {value.toLocaleString()}
       </div>
-    </div>
-  );
+    </div> );
 }

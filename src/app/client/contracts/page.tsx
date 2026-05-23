@@ -19,9 +19,8 @@ export default async function ClientContractsPage({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-display m-0">📝 판매 계약서</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          체결된 판매 계약서 목록입니다. 계약 문의는 담당 영업사원에게 연락해주세요.
+        <h1 className="text-display m-0"> 판매 계약서</h1>
+        <p className="text-sm text-slate-500 mt-1"> 체결된 판매 계약서 목록입니다. 계약 문의는 담당 영업사원에게 연락해주세요.
         </p>
       </header>
 
@@ -42,23 +41,18 @@ export default async function ClientContractsPage({
         <button
           type="submit"
           className="rounded-md bg-sky-600 text-white text-sm px-4 py-1.5 hover:bg-sky-700"
-        >
-          조회
+        > 조회
         </button>
         <Link
           href="/client/contracts"
           className="rounded-md border border-slate-300 bg-white text-sm px-4 py-1.5 text-slate-700 hover:bg-slate-50"
-        >
-          초기화
+        > 초기화
         </Link>
       </form>
 
-      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        {rows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            등록된 계약서가 없습니다.
-          </div>
-        ) : (
+      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden"> {rows.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 등록된 계약서가 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -70,8 +64,7 @@ export default async function ClientContractsPage({
                 <th className="px-4 py-2 text-left">PDF</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((c) => {
+            <tbody className="divide-y divide-slate-100"> {rows.map((c) => {
                 const { status: stage, daysLeft } = classifyContract(
                   c.startDate,
                   c.endDate,
@@ -83,47 +76,37 @@ export default async function ClientContractsPage({
                       <Link
                         href={`/client/contracts/${c.id}`}
                         className="text-sky-700 hover:underline"
-                      >
-                        {c.title}
+                      > {c.title}
                       </Link>
                     </td>
-                    <td className="px-4 py-2 text-xs text-slate-600 tabular-nums">
-                      {new Date(c.startDate).toLocaleDateString("ko-KR")}
+                    <td className="px-4 py-2 text-xs text-slate-600 tabular-nums"> {new Date(c.startDate).toLocaleDateString("ko-KR")}
                     </td>
-                    <td className="px-4 py-2 text-xs text-slate-600 tabular-nums">
-                      {c.endDate
+                    <td className="px-4 py-2 text-xs text-slate-600 tabular-nums"> {c.endDate
                         ? new Date(c.endDate).toLocaleDateString("ko-KR")
                         : "무기한"}
                     </td>
                     <td className="px-4 py-2">
                       <StageBadge stage={stage} daysLeft={daysLeft} />
                     </td>
-                    <td className="px-4 py-2 text-xs">
-                      {c.signed ? "✅ 서명" : "대기"}
+                    <td className="px-4 py-2 text-xs"> {c.signed ? "✅ 서명" : "대기"}
                     </td>
-                    <td className="px-4 py-2 text-xs">
-                      {c.pdfUrl ? (
+                    <td className="px-4 py-2 text-xs"> {c.pdfUrl ? (
                         <a
                           href={c.pdfUrl}
                           target="_blank"
                           rel="noreferrer noopener"
                           className="text-sky-700 hover:underline"
-                        >
-                          📎 열기
-                        </a>
-                      ) : (
+                        > 열기
+                        </a> ) : (
                         "-"
                       )}
                     </td>
-                  </tr>
-                );
+                  </tr> );
               })}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
-    </div>
-  );
+    </div> );
 }
 
 const STAGE_TONE: Record<string, string> = {
@@ -151,13 +134,9 @@ function StageBadge({
   return (
     <span
       className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${tone}`}
-    >
-      {label}
+    > {label}
       {daysLeft !== null && stage !== "ACTIVE" && (
-        <span className="ml-1 opacity-75">
-          {daysLeft >= 0 ? `D-${daysLeft}` : `D+${-daysLeft}`}
-        </span>
-      )}
-    </span>
-  );
+        <span className="ml-1 opacity-75"> {daysLeft >= 0 ? `D-${daysLeft}` : `D+${-daysLeft}`}
+        </span> )}
+    </span> );
 }

@@ -48,10 +48,8 @@ export default async function ProductListPage({
       key: "name",
       label: "제품명",
       render: (p) => (
-        <Link href={`/admin/products/${p.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
-          {p.name}
-        </Link>
-      ),
+        <Link href={`/admin/products/${p.id}`} className="font-semibold text-ink hover:text-primary hover:underline"> {p.name}
+        </Link> ),
     },
     {
       key: "brand",
@@ -96,16 +94,11 @@ export default async function ProductListPage({
       label: "상태",
       align: "center",
       width: "80px",
-      render: (p) =>
-        p.active ? (
-          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold">
-            활성
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold">
-            비활성
-          </span>
-        ),
+      render: (p) => p.active ? (
+          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold"> 활성
+          </span> ) : (
+          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold"> 비활성
+          </span> ),
     },
     {
       key: "actions",
@@ -114,25 +107,21 @@ export default async function ProductListPage({
       width: "120px",
       render: (p) => (
         <div className="inline-flex gap-2 items-center">
-          <Link href={`/admin/products/${p.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline">
-            편집
+          <Link href={`/admin/products/${p.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline"> 편집
           </Link>
           <ToggleActiveButton id={p.id} active={p.active} />
-        </div>
-      ),
+        </div> ),
     },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="📦 제품 관리"
+        title="제품 관리"
         subtitle="제품 정보, 사이즈별 재고, 유통기한을 관리합니다."
         actions={
-          <Button href="/admin/products/new" variant="primary">
-            + 신규 제품
-          </Button>
-        }
+          <Button href="/admin/products/new" variant="primary"> + 신규 제품
+          </Button> }
       />
 
       <ProductListFilter
@@ -148,6 +137,5 @@ export default async function ProductListPage({
       />
 
       <p className="text-tiny text-ink-muted">총 {products.length}건</p>
-    </div>
-  );
+    </div> );
 }

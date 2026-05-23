@@ -40,14 +40,12 @@ export default async function ExecHome() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="🟡 영업 대시보드"
+        title="영업 대시보드"
         subtitle={
-          <>
-            {user.name}님 환영합니다. 배정된{" "}
+          <> {user.name}님 환영합니다. 배정된{" "}
             <strong className="text-primary">{clients.length}개</strong> 거래처에서{" "}
             이번 달({monthLabel}) 매출 현황입니다.
-          </>
-        }
+          </> }
       />
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -56,7 +54,7 @@ export default async function ExecHome() {
           value={clients.length}
           desc="활성 배정"
           variant="primary"
-          icon="🏢"
+          icon=""
           href="/exec/clients"
         />
         <StatCard
@@ -64,7 +62,7 @@ export default async function ExecHome() {
           value={activeOrderCount}
           desc="DRAFT+SUBMITTED+CONFIRMED"
           variant="warning"
-          icon="📋"
+          icon=""
           href="/exec/orders"
         />
         <StatCard
@@ -80,7 +78,7 @@ export default async function ExecHome() {
           value={`₩${thisMonthSales.toLocaleString()}`}
           desc="ISSUED+SENT 기준"
           variant="purple"
-          icon="💰"
+          icon=""
           href="/exec/clients"
         />
       </section>
@@ -88,63 +86,45 @@ export default async function ExecHome() {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-surface rounded shadow-sm border border-border">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="text-h3 m-0">🏆 Top 5 거래처 ({monthLabel})</h2>
-            <Link href="/exec/clients" className="text-tiny text-primary hover:underline">
-              전체 →
+            <h2 className="text-h3 m-0"> Top 5 거래처 ({monthLabel})</h2>
+            <Link href="/exec/clients" className="text-tiny text-primary hover:underline"> 전체 →
             </Link>
-          </div>
-          {topClients.length === 0 ? (
-            <div className="p-8 text-center text-caption text-ink-muted">
-              이번 달 발행된 거래명세서가 없습니다.
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {topClients.map((c, i) => (
+          </div> {topClients.length === 0 ? (
+            <div className="p-8 text-center text-caption text-ink-muted"> 이번 달 발행된 거래명세서가 없습니다.
+            </div> ) : (
+            <ul className="divide-y divide-border"> {topClients.map((c, i) => (
                 <li key={c.id} className="flex items-center px-5 py-3 text-caption hover:bg-canvas transition">
                   <span className="w-6 text-ink-muted tabular-nums font-semibold">{i + 1}.</span>
-                  <span className="flex-1 font-semibold text-ink truncate">
-                    {c.name}
+                  <span className="flex-1 font-semibold text-ink truncate"> {c.name}
                     <span className="ml-2 text-tiny font-mono text-ink-muted">{c.code}</span>
                   </span>
                   <span className="text-ink-secondary text-tiny tabular-nums mr-3">{c.count}건</span>
                   <span className="tabular-nums font-bold text-ink">₩{c.total.toLocaleString()}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+                </li> ))}
+            </ul> )}
         </div>
 
         <div className="bg-surface rounded shadow-sm border border-border">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="text-h3 m-0">📦 최근 주문 5건</h2>
-            <Link href="/exec/orders" className="text-tiny text-primary hover:underline">
-              전체 →
+            <h2 className="text-h3 m-0"> 최근 주문 5건</h2>
+            <Link href="/exec/orders" className="text-tiny text-primary hover:underline"> 전체 →
             </Link>
-          </div>
-          {orderSummary.recent.length === 0 ? (
-            <div className="p-8 text-center text-caption text-ink-muted">
-              등록된 주문이 없습니다.
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {orderSummary.recent.map((o) => (
+          </div> {orderSummary.recent.length === 0 ? (
+            <div className="p-8 text-center text-caption text-ink-muted"> 등록된 주문이 없습니다.
+            </div> ) : (
+            <ul className="divide-y divide-border"> {orderSummary.recent.map((o) => (
                 <li key={o.id} className="flex items-center px-5 py-3 text-caption hover:bg-canvas transition">
                   <div className="flex-1 min-w-0">
-                    <Link href={`/admin/orders/${o.id}`} className="text-primary hover:underline font-mono text-tiny font-semibold">
-                      {o.orderNumber ?? "(DRAFT)"}
+                    <Link href={`/admin/orders/${o.id}`} className="text-primary hover:underline font-mono text-tiny font-semibold"> {o.orderNumber ?? "(DRAFT)"}
                     </Link>
                     <div className="text-ink truncate">{o.client.name}</div>
                   </div>
                   <StatusBadge status={mapStatus(o.status)} variant="order" small />
-                  <span className="ml-3 text-tiny text-ink-muted tabular-nums">
-                    {new Date(o.orderDate).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
+                  <span className="ml-3 text-tiny text-ink-muted tabular-nums"> {new Date(o.orderDate).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                </li> ))}
+            </ul> )}
         </div>
       </section>
-    </div>
-  );
+    </div> );
 }

@@ -27,9 +27,8 @@ export default async function MyClientsPage() {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-display m-0">🏢 내 거래처</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            {user.name}님에게 배정된{" "}
+          <h1 className="text-display m-0"> 내 거래처</h1>
+          <p className="text-caption text-ink-secondary mt-1"> {user.name}님에게 배정된{" "}
             <strong className="text-primary">{clients.length}개</strong>{" "}
             거래처입니다. 이번 달({monthLabel}) 매출 기준 정렬/검색이 가능합니다.
           </p>
@@ -37,12 +36,10 @@ export default async function MyClientsPage() {
         <Link
           href="/exec"
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          ← 대시보드
+        > ← 대시보드
         </Link>
       </header>
 
       <MyClientsTable rows={view} />
-    </div>
-  );
+    </div> );
 }

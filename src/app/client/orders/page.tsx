@@ -76,9 +76,8 @@ export default async function ClientOrdersPage({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-display m-0">📦 발주 현황</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          우리 거래처 이름으로 등록된 모든 발주를 조회합니다.
+        <h1 className="text-display m-0"> 발주 현황</h1>
+        <p className="text-sm text-slate-500 mt-1"> 우리 거래처 이름으로 등록된 모든 발주를 조회합니다.
         </p>
       </header>
 
@@ -112,12 +111,9 @@ export default async function ClientOrdersPage({
             name="status"
             defaultValue={statusRaw}
             className="block rounded-md border border-slate-300 px-3 py-1.5 text-sm"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
+          > {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}> {o.label}
+              </option> ))}
           </select>
         </div>
         <div>
@@ -141,23 +137,18 @@ export default async function ClientOrdersPage({
         <button
           type="submit"
           className="rounded-md bg-sky-600 text-white text-sm px-4 py-1.5 hover:bg-sky-700"
-        >
-          조회
+        > 조회
         </button>
         <Link
           href="/client/orders"
           className="rounded-md border border-slate-300 bg-white text-sm px-4 py-1.5 text-slate-700 hover:bg-slate-50"
-        >
-          초기화
+        > 초기화
         </Link>
       </form>
 
-      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        {rows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            조건에 맞는 발주가 없습니다.
-          </div>
-        ) : (
+      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden"> {rows.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 조건에 맞는 발주가 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -170,43 +161,33 @@ export default async function ClientOrdersPage({
                 <th className="px-4 py-2 text-left">상태</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((o) => (
+            <tbody className="divide-y divide-slate-100"> {rows.map((o) => (
                 <tr key={o.id} className="hover:bg-slate-50">
                   <td className="px-4 py-2 font-mono text-xs">
                     <Link
                       href={`/client/orders/${o.id}`}
                       className="text-sky-700 hover:underline"
-                    >
-                      {o.orderNumber}
+                    > {o.orderNumber}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-600 tabular-nums">
-                    {new Date(o.orderDate).toLocaleDateString("ko-KR")}
+                  <td className="px-4 py-2 text-xs text-slate-600 tabular-nums"> {new Date(o.orderDate).toLocaleDateString("ko-KR")}
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-600">
-                    {o.shipToLabel ?? "-"}
+                  <td className="px-4 py-2 text-xs text-slate-600"> {o.shipToLabel ?? "-"}
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-600">
-                    {o.shipToRecipient ?? "-"}
+                  <td className="px-4 py-2 text-xs text-slate-600"> {o.shipToRecipient ?? "-"}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-xs">
-                    {o.itemCount}
+                  <td className="px-4 py-2 text-right tabular-nums text-xs"> {o.itemCount}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {o.totalAmount.toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums"> {o.totalAmount.toLocaleString()}
                   </td>
                   <td className="px-4 py-2">
                     <StatusBadge status={o.status} />
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -231,11 +212,9 @@ function StatCard({
         className={`text-xl font-bold mt-1 tabular-nums ${
           highlight ? "text-emerald-700" : "text-slate-900"
         }`}
-      >
-        {value}
+      > {value}
       </p>
-    </div>
-  );
+    </div> );
 }
 
 const ORDER_TONE: Record<string, string> = {
@@ -265,8 +244,6 @@ function StatusBadge({ status }: { status: string }) {
       className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
         ORDER_TONE[status] ?? "bg-slate-100 text-slate-700"
       }`}
-    >
-      {ORDER_LABEL[status] ?? status}
-    </span>
-  );
+    > {ORDER_LABEL[status] ?? status}
+    </span> );
 }

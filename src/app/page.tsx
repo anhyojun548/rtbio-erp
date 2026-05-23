@@ -38,7 +38,7 @@ const ROLE_CARDS: RoleCard[] = [
   {
     href: "/client",
     name: "거래처 (발주)",
-    icon: "🏪",
+    icon: "",
     desc: "대리점·병원 담당자가 제품을 발주하고 출고 상태를 확인합니다.",
     screens: ["발주폼", "발주내역", "출고상태", "거래명세서"],
     color: { from: "#9CA3AF", to: "#6B7280" },
@@ -47,7 +47,7 @@ const ROLE_CARDS: RoleCard[] = [
   {
     href: "/qc",
     name: "품질관리팀",
-    icon: "🟢",
+    icon: "",
     desc: "발주 확정, 담당자 배정, 출고 단계 관리, 재고 현황을 관리합니다.",
     screens: ["발주확정", "출고 칸반", "재고 현황", "샘플 출고", "유통기한"],
     color: { from: "#166534", to: "#14532D" },
@@ -56,7 +56,7 @@ const ROLE_CARDS: RoleCard[] = [
   {
     href: "/admin",
     name: "경영지원팀",
-    icon: "🔵",
+    icon: "",
     desc: "발주 관리, 거래처 관리, 거래명세서, 마감 원장, 보고서를 처리합니다.",
     screens: ["대시보드", "거래처", "주문/명세서", "수금/원장", "데이터 탐색기"],
     color: { from: "#1B3A5C", to: "#0F2840" },
@@ -65,7 +65,7 @@ const ROLE_CARDS: RoleCard[] = [
   {
     href: "/exec",
     name: "영업팀",
-    icon: "🟡",
+    icon: "",
     desc: "영업 대시보드, 거래처별 매출, 학회 방명록, 영업사원 인센티브를 관리합니다.",
     screens: ["영업 대시보드", "거래처", "학회 관리", "사용량", "보고서"],
     color: { from: "#B45309", to: "#92400E" },
@@ -74,7 +74,7 @@ const ROLE_CARDS: RoleCard[] = [
   {
     href: "/ceo",
     name: "임원진 대시보드",
-    icon: "🔴",
+    icon: "",
     desc: "통합 KPI 위젯, 직원별 매출, 베트남 발주 트래킹을 한 눈에 봅니다.",
     screens: ["임원 대시보드", "직원별 지표", "통합 현황", "위젯 편집"],
     color: { from: "#7C3AED", to: "#5B21B6" },
@@ -91,15 +91,13 @@ export default async function HomePage() {
       <main className="min-h-screen bg-canvas flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-surface rounded shadow-md p-8 space-y-6 text-center">
           <div>
-            <h1 className="text-h1 text-primary m-0">🔵 RTBIO ERP</h1>
+            <h1 className="text-h1 text-primary m-0"> RTBIO ERP</h1>
             <p className="text-caption text-ink-secondary mt-1">알티바이오 업무 자동화 시스템</p>
           </div>
-          <Button href="/login" variant="primary" size="lg" className="w-full">
-            로그인하기
+          <Button href="/login" variant="primary" size="lg" className="w-full"> 로그인하기
           </Button>
         </div>
-      </main>
-    );
+      </main> );
   }
 
   // 단일 역할 → 자동 리다이렉트
@@ -111,32 +109,25 @@ export default async function HomePage() {
   const visibleCards = ROLE_CARDS.filter((c) => c.allowedRoles.includes(user.role));
 
   return (
-    <main className="min-h-screen bg-canvas">
-      {/* Hero */}
+    <main className="min-h-screen bg-canvas"> {/* Hero */}
       <div className="bg-gradient-to-br from-primary to-primary-light text-white py-16 text-center">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="text-5xl mb-4">🏢</div>
+          <div className="text-5xl mb-4"></div>
           <h1 className="text-display m-0 text-white">RTBIO ERP</h1>
           <p className="text-h3 m-0 mt-2 text-white/85 font-normal">업무 자동화 시스템</p>
-          <p className="text-caption text-white/70 mt-3">
-            {user.name}님 환영합니다 · 사용할 포털을 선택하세요
+          <p className="text-caption text-white/70 mt-3"> {user.name}님 환영합니다 · 사용할 포털을 선택하세요
           </p>
-          <span className="inline-block mt-4 px-3 py-1 rounded-full text-tiny bg-white/15 backdrop-blur-sm">
-            Phase 5 · {new Date().toISOString().slice(0, 10)}
+          <span className="inline-block mt-4 px-3 py-1 rounded-full text-tiny bg-white/15 backdrop-blur-sm"> Phase 5 · {new Date().toISOString().slice(0, 10)}
           </span>
         </div>
-      </div>
-
-      {/* Role Grid */}
+      </div> {/* Role Grid */}
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {visibleCards.map((card) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"> {visibleCards.map((card) => (
             <Link
               key={card.href}
               href={card.href}
               className="group bg-surface rounded shadow-sm border border-border p-6 hover:shadow-lg hover:-translate-y-1 transition-all relative overflow-hidden"
-            >
-              {/* 상단 컬러 바 */}
+            > {/* 상단 컬러 바 */}
               <div
                 className="absolute top-0 left-0 right-0 h-1"
                 style={{ background: `linear-gradient(90deg, ${card.color.from}, ${card.color.to})` }}
@@ -152,30 +143,22 @@ export default async function HomePage() {
 
               <p className="text-caption text-ink-secondary mb-4 leading-relaxed">{card.desc}</p>
 
-              <div className="flex flex-wrap gap-1.5">
-                {card.screens.map((s) => (
+              <div className="flex flex-wrap gap-1.5"> {card.screens.map((s) => (
                   <span
                     key={s}
                     className="text-tiny px-2 py-0.5 rounded-full bg-canvas border border-border text-ink-secondary"
-                  >
-                    {s}
-                  </span>
-                ))}
+                  > {s}
+                  </span> ))}
               </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* 푸터 */}
+            </Link> ))}
+        </div> {/* 푸터 */}
         <div className="mt-12 text-center text-caption text-ink-muted">
           <p>RTBIO 업무 자동화 시스템 · Phase 5 (2026)</p>
           <p className="mt-1">
-            <Link href="/admin/data-explorer" className="text-primary hover:underline">📊 데이터 탐색기 (41K건)</Link>
-            {" · "}
+            <Link href="/admin/data-explorer" className="text-primary hover:underline"> 데이터 탐색기 (41K건)</Link> {" · "}
             <Link href="/api/auth/signout" className="text-ink-muted hover:text-primary hover:underline">로그아웃</Link>
           </p>
         </div>
       </div>
-    </main>
-  );
+    </main> );
 }

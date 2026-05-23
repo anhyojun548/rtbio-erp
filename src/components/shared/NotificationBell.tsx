@@ -11,8 +11,7 @@
  *     notifications={items}
  *     onMarkRead={(id) => ...}
  *     onMarkAllRead={() => ...}
- *   />
- *
+ *   /> *
  * prototype/js/shared-ui.js 의 buildNotifyBell + toggleNotifyDropdown + 관련 함수를 변환.
  */
 
@@ -95,43 +94,28 @@ export function NotificationBell({
         title={`알림 ${unread}건`}
         aria-label={`알림 ${unread}건`}
       >
-        <span className="text-lg">🔔</span>
-        {unread > 0 && (
+        <span className="text-lg"></span> {unread > 0 && (
           <span
             className="absolute top-0.5 right-0.5 bg-danger text-white text-tiny font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
-          >
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
+          > {unread > 99 ? "99+" : unread}
+          </span> )}
+      </button> {open && (
         <div
           className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] bg-surface border border-border rounded shadow-lg z-dropdown flex flex-col"
-        >
-          {/* Header */}
+        > {/* Header */}
           <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-            <strong className="text-h3">알림</strong>
-            {unread > 0 && onMarkAllRead && (
+            <strong className="text-h3">알림</strong> {unread > 0 && onMarkAllRead && (
               <button
                 type="button"
                 onClick={() => onMarkAllRead()}
                 className="text-tiny text-primary hover:underline"
-              >
-                모두 읽음
-              </button>
-            )}
-          </div>
-
-          {/* List */}
-          <div className="overflow-y-auto flex-1">
-            {notifications.length === 0 ? (
-              <div className="px-4 py-12 text-center text-tiny text-ink-muted">
-                새 알림이 없습니다
-              </div>
-            ) : (
-              <ul className="divide-y divide-border">
-                {notifications.map((n) => (
+              > 모두 읽음
+              </button> )}
+          </div> {/* List */}
+          <div className="overflow-y-auto flex-1"> {notifications.length === 0 ? (
+              <div className="px-4 py-12 text-center text-tiny text-ink-muted"> 새 알림이 없습니다
+              </div> ) : (
+              <ul className="divide-y divide-border"> {notifications.map((n) => (
                   <li
                     key={n.id}
                     onClick={() => {
@@ -144,23 +128,16 @@ export function NotificationBell({
                       ${n.urgent ? "border-l-4 border-l-danger" : ""}
                     `}
                   >
-                    <div className="text-caption font-semibold mb-1">
-                      {n.urgent && <span className="mr-1">🔴</span>}
+                    <div className="text-caption font-semibold mb-1"> {n.urgent && <span className="mr-1"></span>}
                       {n.title}
                     </div>
-                    <div className="text-caption text-ink-secondary mb-1 line-clamp-2">
-                      {n.message}
+                    <div className="text-caption text-ink-secondary mb-1 line-clamp-2"> {n.message}
                     </div>
-                    <div className="text-tiny text-ink-muted">
-                      {n.createdAt} · {typeLabel(n.type)}
+                    <div className="text-tiny text-ink-muted"> {n.createdAt} · {typeLabel(n.type)}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  </li> ))}
+              </ul> )}
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div> )}
+    </div> );
 }

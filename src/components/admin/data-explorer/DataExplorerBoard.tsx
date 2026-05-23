@@ -177,30 +177,24 @@ export function DataExplorerBoard({
               ? "bg-accent-light text-accent-dark"
               : "bg-warning-light text-warning"
           }`}
-        >
-          {r.kind === "SALE" ? "매출" : "매입"}
-        </span>
-      ),
+        > {r.kind === "SALE" ? "매출" : "매입"}
+        </span> ),
     },
     {
       key: "clientName",
       label: "거래처",
       render: (r) => (
         <>
-          <div className="text-caption text-ink">{r.clientName ?? "—"}</div>
-          {r.clientCode && <div className="font-mono text-tiny text-ink-muted">{r.clientCode}</div>}
-        </>
-      ),
+          <div className="text-caption text-ink">{r.clientName ?? "—"}</div> {r.clientCode && <div className="font-mono text-tiny text-ink-muted">{r.clientCode}</div>}
+        </> ),
     },
     {
       key: "productName",
       label: "품목",
       render: (r) => (
         <>
-          <div className="text-caption text-ink">{r.productName}</div>
-          {r.productCode && <div className="font-mono text-tiny text-ink-muted">{r.productCode}</div>}
-        </>
-      ),
+          <div className="text-caption text-ink">{r.productName}</div> {r.productCode && <div className="font-mono text-tiny text-ink-muted">{r.productCode}</div>}
+        </> ),
     },
     { key: "spec", label: "규격", width: "60px", cellClassName: "font-mono text-tiny" },
     { key: "qty", label: "수량", align: "right", width: "60px", cellClassName: "tabular-nums", render: (r) => Number(r.qty).toLocaleString() },
@@ -223,34 +217,31 @@ export function DataExplorerBoard({
   ];
 
   return (
-    <div className="space-y-6">
-      {/* 상단: 통계 카드 + 액션 */}
+    <div className="space-y-6"> {/* 상단: 통계 카드 + 액션 */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="조회된 행수" value={total} desc={`${aggregates.count.toLocaleString()}건`} variant="primary" icon="📋" />
+        <StatCard label="조회된 행수" value={total} desc={`${aggregates.count.toLocaleString()}건`} variant="primary" icon="" />
         <StatCard
           label="공급가 합"
           value={`₩${(aggregates.totalSupply / 10000).toFixed(0)}만`}
           desc={`₩${aggregates.totalSupply.toLocaleString()}`}
           variant="accent"
-          icon="💰"
+          icon=""
         />
         <StatCard
           label="부가세 합"
           value={`₩${(aggregates.totalVat / 10000).toFixed(0)}만`}
           desc={`₩${aggregates.totalVat.toLocaleString()}`}
           variant="warning"
-          icon="🧾"
+          icon=""
         />
         <StatCard
           label="합계금액"
           value={`₩${(aggregates.totalAmount / 10000).toFixed(0)}만`}
           desc={`매출 ${aggregates.byKind.find((b) => b.kind === "SALE")?.count ?? 0} · 매입 ${aggregates.byKind.find((b) => b.kind === "PURCHASE")?.count ?? 0}`}
           variant="success"
-          icon="📊"
+          icon=""
         />
-      </section>
-
-      {/* 필터 + 액션 */}
+      </section> {/* 필터 + 액션 */}
       <FilterBar>
         <FilterField label="검색 (거래처/품목/전표)" minWidth={240}>
           <SearchInput
@@ -273,17 +264,12 @@ export function DataExplorerBoard({
         <FilterField label="종료일">
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </FilterField>
-        <Button onClick={applyFilter} disabled={pending}>
-          {pending ? "조회 중..." : "조회"}
+        <Button onClick={applyFilter} disabled={pending}> {pending ? "조회 중..." : "조회"}
         </Button>
-        <Button onClick={resetFilter} variant="outline" disabled={pending}>
-          초기화
+        <Button onClick={resetFilter} variant="outline" disabled={pending}> 초기화
         </Button>
-      </FilterBar>
-
-      {/* 액션 바: 업로드 / 다운로드 */}
-      <div className="flex flex-wrap items-center gap-2 justify-end">
-        {canUpload && (
+      </FilterBar> {/* 액션 바: 업로드 / 다운로드 */}
+      <div className="flex flex-wrap items-center gap-2 justify-end"> {canUpload && (
           <>
             <input
               ref={fileRef}
@@ -297,38 +283,29 @@ export function DataExplorerBoard({
               variant="primary"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              icon={<span>📤</span>}
-            >
-              {uploading ? "업로드 중..." : "엑셀/CSV 업로드"}
+              icon={<span></span>}
+            > {uploading ? "업로드 중..." : "엑셀/CSV 업로드"}
             </Button>
-          </>
-        )}
+          </> )}
         <a
           href={downloadUrl("csv")}
           className="h-9 px-4 inline-flex items-center gap-1.5 bg-success text-white text-caption font-semibold rounded-xs hover:bg-success/90 transition"
-        >
-          📥 CSV
+        > CSV
         </a>
         <a
           href={downloadUrl("xlsx")}
           className="h-9 px-4 inline-flex items-center gap-1.5 bg-accent text-white text-caption font-semibold rounded-xs hover:bg-accent-dark transition"
-        >
-          📥 엑셀
+        > 엑셀
         </a>
-      </div>
-
-      {/* 테이블 */}
+      </div> {/* 테이블 */}
       <DataTable
         columns={columns}
         rows={rows}
         keyField="id"
         emptyMessage="조건에 맞는 거래가 없습니다."
-      />
-
-      {/* 페이지네이션 */}
+      /> {/* 페이지네이션 */}
       <div className="flex items-center justify-between text-caption">
-        <span className="text-ink-muted">
-          {total === 0
+        <span className="text-ink-muted"> {total === 0
             ? "총 0건"
             : `${(offset + 1).toLocaleString()}–${Math.min(offset + limit, total).toLocaleString()} / 총 ${total.toLocaleString()}건`}
         </span>
@@ -338,22 +315,18 @@ export function DataExplorerBoard({
             size="sm"
             onClick={() => goPage(Math.max(0, offset - limit))}
             disabled={pending || offset === 0}
-          >
-            ◀ 이전
+          > ◀ 이전
           </Button>
-          <span className="text-tiny text-ink-secondary tabular-nums">
-            {pageNo} / {totalPages}
+          <span className="text-tiny text-ink-secondary tabular-nums"> {pageNo} / {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => goPage(offset + limit)}
             disabled={pending || offset + limit >= total}
-          >
-            다음 ▶
+          > 다음 ▶
           </Button>
         </div>
       </div>
-    </div>
-  );
+    </div> );
 }

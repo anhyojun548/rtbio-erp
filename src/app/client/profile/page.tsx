@@ -13,9 +13,8 @@ export default async function ClientProfilePage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <header>
-        <h1 className="text-display m-0">👤 내 거래처 정보</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          정보 수정은 담당 영업사원에게 요청해주세요.
+        <h1 className="text-display m-0"> 내 거래처 정보</h1>
+        <p className="text-sm text-slate-500 mt-1"> 정보 수정은 담당 영업사원에게 요청해주세요.
         </p>
       </header>
 
@@ -34,45 +33,29 @@ export default async function ClientProfilePage() {
 
       <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="font-semibold text-slate-900 text-sm">
-            배송지 ({client.addresses.length}곳)
+          <h2 className="font-semibold text-slate-900 text-sm"> 배송지 ({client.addresses.length}곳)
           </h2>
-        </div>
-        {client.addresses.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500">
-            등록된 배송지가 없습니다.
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {client.addresses.map((a) => (
-              <li key={a.id} className="p-4 flex items-start gap-3">
-                {a.isDefault && (
-                  <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 mt-0.5">
-                    기본
-                  </span>
-                )}
+        </div> {client.addresses.length === 0 ? (
+          <div className="p-6 text-center text-sm text-slate-500"> 등록된 배송지가 없습니다.
+          </div> ) : (
+          <ul className="divide-y divide-slate-100"> {client.addresses.map((a) => (
+              <li key={a.id} className="p-4 flex items-start gap-3"> {a.isDefault && (
+                  <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 mt-0.5"> 기본
+                  </span> )}
                 <div className="flex-1">
-                  <div className="font-medium text-slate-900 text-sm">
-                    {a.label}
+                  <div className="font-medium text-slate-900 text-sm"> {a.label}
                   </div>
-                  <div className="text-xs text-slate-600 mt-0.5">
-                    {a.address} {a.addressDetail ?? ""}
+                  <div className="text-xs text-slate-600 mt-0.5"> {a.address} {a.addressDetail ?? ""}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {a.recipientName && <>수령인 {a.recipientName}</>}
-                    {a.phone && <> · 📞 {a.phone}</>}
+                  <div className="text-xs text-slate-500 mt-1"> {a.recipientName && <>수령인 {a.recipientName}</>}
+                    {a.phone && <> ·  {a.phone}</>}
                     {a.postalCode && <> · 우 {a.postalCode}</>}
-                  </div>
-                  {a.memo && (
-                    <div className="text-[11px] text-slate-400 mt-1 italic">
-                      {a.memo}
-                    </div>
-                  )}
+                  </div> {a.memo && (
+                    <div className="text-[11px] text-slate-400 mt-1 italic"> {a.memo}
+                    </div> )}
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              </li> ))}
+          </ul> )}
       </section>
 
       <section className="grid grid-cols-4 gap-3">
@@ -81,8 +64,7 @@ export default async function ClientProfilePage() {
         <StatCard label="수금 이력" value={`${client._count.payments} 건`} />
         <StatCard label="계약서" value={`${client._count.contracts} 건`} />
       </section>
-    </div>
-  );
+    </div> );
 }
 
 const CLIENT_TYPE_LABEL: Record<string, string> = {
@@ -96,20 +78,16 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div className="flex">
       <dt className="w-28 text-slate-500">{k}</dt>
-      <dd className={`flex-1 text-slate-800 ${mono ? "font-mono text-xs" : ""}`}>
-        {v}
+      <dd className={`flex-1 text-slate-800 ${mono ? "font-mono text-xs" : ""}`}> {v}
       </dd>
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-lg font-bold mt-1 tabular-nums text-slate-900">
-        {value}
+      <p className="text-lg font-bold mt-1 tabular-nums text-slate-900"> {value}
       </p>
-    </div>
-  );
+    </div> );
 }

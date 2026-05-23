@@ -72,20 +72,16 @@ export default async function ClientListPage({
       key: "name",
       label: "업체명",
       render: (c) => (
-        <Link href={`/admin/clients/${c.id}`} className="font-semibold text-ink hover:text-primary hover:underline">
-          {c.name}
-        </Link>
-      ),
+        <Link href={`/admin/clients/${c.id}`} className="font-semibold text-ink hover:text-primary hover:underline"> {c.name}
+        </Link> ),
     },
     {
       key: "type",
       label: "유형",
       width: "90px",
       render: (c) => (
-        <span className={`inline-block px-2 py-0.5 rounded-full text-tiny font-semibold ${TYPE_COLOR[c.type]}`}>
-          {TYPE_LABEL[c.type]}
-        </span>
-      ),
+        <span className={`inline-block px-2 py-0.5 rounded-full text-tiny font-semibold ${TYPE_COLOR[c.type]}`}> {TYPE_LABEL[c.type]}
+        </span> ),
     },
     {
       key: "representative",
@@ -120,16 +116,11 @@ export default async function ClientListPage({
       label: "상태",
       align: "center",
       width: "80px",
-      render: (c) =>
-        c.active ? (
-          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold">
-            활성
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold">
-            비활성
-          </span>
-        ),
+      render: (c) => c.active ? (
+          <span className="inline-flex items-center rounded-full bg-success-light text-success px-2 py-0.5 text-tiny font-semibold"> 활성
+          </span> ) : (
+          <span className="inline-flex items-center rounded-full bg-canvas text-ink-muted px-2 py-0.5 text-tiny font-semibold"> 비활성
+          </span> ),
     },
     {
       key: "actions",
@@ -138,25 +129,21 @@ export default async function ClientListPage({
       width: "120px",
       render: (c) => (
         <div className="inline-flex gap-2 items-center">
-          <Link href={`/admin/clients/${c.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline">
-            편집
+          <Link href={`/admin/clients/${c.id}/edit`} className="text-tiny text-ink-secondary hover:text-primary hover:underline"> 편집
           </Link>
           <ToggleActiveButton id={c.id} active={c.active} />
-        </div>
-      ),
+        </div> ),
     },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="🏢 거래처 관리"
+        title="거래처 관리"
         subtitle="병원·약국·대리점 등 거래처 정보와 복수 배송지를 관리합니다."
         actions={
-          <Button href="/admin/clients/new" variant="primary">
-            + 신규 거래처
-          </Button>
-        }
+          <Button href="/admin/clients/new" variant="primary"> + 신규 거래처
+          </Button> }
       />
 
       <ClientListFilter
@@ -171,6 +158,5 @@ export default async function ClientListPage({
       />
 
       <p className="text-tiny text-ink-muted">총 {clients.length}건</p>
-    </div>
-  );
+    </div> );
 }

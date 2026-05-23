@@ -20,31 +20,22 @@ export default async function CeoHome() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="🔴 임원진 대시보드"
+        title="임원진 대시보드"
         subtitle="내 위젯을 자유롭게 구성하세요 (R24). 각 카드를 클릭하면 상세 페이지로 이동합니다."
         actions={
-          <Button href="/ceo/customize" variant="primary" icon={<span>⚙️</span>}>
-            위젯 편집
-          </Button>
-        }
-      />
-
-      {widgets.length === 0 ? (
+          <Button href="/ceo/customize" variant="primary" icon={<span>⚙️</span>}> 위젯 편집
+          </Button> }
+      /> {widgets.length === 0 ? (
         <div className="rounded border-2 border-dashed border-border bg-surface p-12 text-center">
-          <div className="text-4xl mb-3">📊</div>
-          <div className="text-h3 font-semibold text-ink">
-            아직 위젯이 없습니다.
+          <div className="text-4xl mb-3"></div>
+          <div className="text-h3 font-semibold text-ink"> 아직 위젯이 없습니다.
           </div>
-          <p className="text-caption text-ink-secondary mt-1">
-            위젯 편집에서 기본 레이아웃을 추가해보세요.
+          <p className="text-caption text-ink-secondary mt-1"> 위젯 편집에서 기본 레이아웃을 추가해보세요.
           </p>
-          <Button href="/ceo/customize" variant="primary" className="mt-4">
-            편집으로 이동 →
+          <Button href="/ceo/customize" variant="primary" className="mt-4"> 편집으로 이동 →
           </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-12 gap-4">
-          {widgets.map((w) => {
+        </div> ) : (
+        <div className="grid grid-cols-12 gap-4"> {widgets.map((w) => {
             const v = values[w.preset];
             const span = Math.min(12, Math.max(1, w.width));
             return (
@@ -58,11 +49,8 @@ export default async function CeoHome() {
                   fallbackLabel={w.meta?.label ?? w.preset}
                   fallbackIcon={w.meta?.icon}
                 />
-              </div>
-            );
+              </div> );
           })}
-        </div>
-      )}
-    </div>
-  );
+        </div> )}
+    </div> );
 }

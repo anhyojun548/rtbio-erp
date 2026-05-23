@@ -62,9 +62,8 @@ export default async function ClientInvoicesPage({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-display m-0">📄 거래명세서</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          우리 거래처 이름으로 발행된 거래명세서 목록입니다.
+        <h1 className="text-display m-0"> 거래명세서</h1>
+        <p className="text-sm text-slate-500 mt-1"> 우리 거래처 이름으로 발행된 거래명세서 목록입니다.
         </p>
       </header>
 
@@ -99,12 +98,9 @@ export default async function ClientInvoicesPage({
             name="status"
             defaultValue={statusRaw}
             className="block rounded-md border border-slate-300 px-3 py-1.5 text-sm"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
+          > {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}> {o.label}
+              </option> ))}
           </select>
         </div>
         <div>
@@ -128,23 +124,18 @@ export default async function ClientInvoicesPage({
         <button
           type="submit"
           className="rounded-md bg-sky-600 text-white text-sm px-4 py-1.5 hover:bg-sky-700"
-        >
-          조회
+        > 조회
         </button>
         <Link
           href="/client/invoices"
           className="rounded-md border border-slate-300 bg-white text-sm px-4 py-1.5 text-slate-700 hover:bg-slate-50"
-        >
-          초기화
+        > 초기화
         </Link>
       </form>
 
-      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        {rows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            조건에 맞는 거래명세서가 없습니다.
-          </div>
-        ) : (
+      <section className="rounded-lg border border-slate-200 bg-white overflow-hidden"> {rows.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 조건에 맞는 거래명세서가 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -158,40 +149,31 @@ export default async function ClientInvoicesPage({
                 <th className="px-4 py-2 text-right">PDF</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.map((inv) => (
+            <tbody className="divide-y divide-slate-100"> {rows.map((inv) => (
                 <tr key={inv.id} className="hover:bg-slate-50">
                   <td className="px-4 py-2 font-mono text-xs">
                     <Link
                       href={`/client/invoices/${inv.id}`}
                       className="text-sky-700 hover:underline"
-                    >
-                      {inv.invoiceNumber}
+                    > {inv.invoiceNumber}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-600 tabular-nums">
-                    {new Date(inv.issueDate).toLocaleDateString("ko-KR")}
+                  <td className="px-4 py-2 text-xs text-slate-600 tabular-nums"> {new Date(inv.issueDate).toLocaleDateString("ko-KR")}
                   </td>
-                  <td className="px-4 py-2 text-xs font-mono text-slate-600">
-                    {inv.order?.orderNumber ? (
+                  <td className="px-4 py-2 text-xs font-mono text-slate-600"> {inv.order?.orderNumber ? (
                       <Link
                         href={`/client/orders/${inv.order.id}`}
                         className="text-sky-700 hover:underline"
-                      >
-                        {inv.order.orderNumber}
-                      </Link>
-                    ) : (
+                      > {inv.order.orderNumber}
+                      </Link> ) : (
                       "-"
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {Number(inv.supplyAmount).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums"> {Number(inv.supplyAmount).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-xs text-slate-600">
-                    {Number(inv.vatAmount).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums text-xs text-slate-600"> {Number(inv.vatAmount).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums font-semibold">
-                    {Number(inv.totalAmount).toLocaleString()}
+                  <td className="px-4 py-2 text-right tabular-nums font-semibold"> {Number(inv.totalAmount).toLocaleString()}
                   </td>
                   <td className="px-4 py-2">
                     <InvoiceStatusBadge status={inv.status} />
@@ -201,18 +183,14 @@ export default async function ClientInvoicesPage({
                       href={`/client/invoices/${inv.id}/pdf`}
                       className="text-xs text-sky-700 hover:underline"
                       target="_blank"
-                    >
-                      PDF
+                    > PDF
                     </Link>
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -237,11 +215,9 @@ function StatCard({
         className={`text-xl font-bold mt-1 tabular-nums ${
           highlight ? "text-emerald-700" : "text-slate-900"
         }`}
-      >
-        {value}
+      > {value}
       </p>
-    </div>
-  );
+    </div> );
 }
 
 const INVOICE_TONE: Record<string, string> = {
@@ -263,8 +239,6 @@ function InvoiceStatusBadge({ status }: { status: string }) {
       className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
         INVOICE_TONE[status] ?? "bg-slate-100 text-slate-700"
       }`}
-    >
-      {INVOICE_LABEL[status] ?? status}
-    </span>
-  );
+    > {INVOICE_LABEL[status] ?? status}
+    </span> );
 }

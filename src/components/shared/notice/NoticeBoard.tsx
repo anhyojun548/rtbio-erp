@@ -8,8 +8,7 @@
  *     authorTeam="영업팀"
  *     initialNotices={notices}
  *     clients={clients}
- *   />
- */
+ *   /> */
 
 import { useState, useTransition } from "react";
 import {
@@ -78,23 +77,16 @@ export function NoticeBoard({ authorTeam, initialNotices, clients, totalClients 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`📢 공지사항 — ${am.icon} ${authorTeam}`}
+        title={` 공지사항 — ${am.icon} ${authorTeam}`}
         subtitle="거래처에 발송하는 공지사항을 작성·관리합니다. 발송 즉시 거래처 포털에 표시됩니다."
         actions={
-          <Button onClick={() => setComposing(true)} variant="primary">
-            + 공지 작성
-          </Button>
-        }
-      />
-
-      {/* 목록 */}
+          <Button onClick={() => setComposing(true)} variant="primary"> + 공지 작성
+          </Button> }
+      /> {/* 목록 */}
       {initialNotices.length === 0 ? (
-        <div className="bg-surface border border-border rounded p-12 text-center text-ink-muted">
-          작성된 공지가 없습니다.
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {initialNotices.map((n) => {
+        <div className="bg-surface border border-border rounded p-12 text-center text-ink-muted"> 작성된 공지가 없습니다.
+        </div> ) : (
+        <ul className="space-y-3"> {initialNotices.map((n) => {
             const meta = NOTICE_AUTHOR_META[(n.createdByTeam as NoticeAuthorTeam)] ?? am;
             const targetCount =
               n.target === "ALL"      ? totalClients.all :
@@ -108,40 +100,30 @@ export function NoticeBoard({ authorTeam, initialNotices, clients, totalClients 
                 style={n.pinned ? { borderLeftWidth: 3, borderLeftColor: "#D32F2F" } : {}}
               >
                 <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {n.pinned && <span className="text-danger">📌</span>}
-                    <strong className="text-h3">{n.title}</strong>
-                    {n.priority === "HIGH" && (
-                      <span className="px-2 py-0.5 rounded-full text-tiny font-semibold bg-danger-light text-danger">긴급</span>
-                    )}
-                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}>
-                      {NOTICE_TARGET_LABEL[n.target]}
+                  <div className="flex items-center gap-2 flex-wrap"> {n.pinned && <span className="text-danger"></span>}
+                    <strong className="text-h3">{n.title}</strong> {n.priority === "HIGH" && (
+                      <span className="px-2 py-0.5 rounded-full text-tiny font-semibold bg-danger-light text-danger">긴급</span> )}
+                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}> {NOTICE_TARGET_LABEL[n.target]}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: meta.bg, color: meta.color }}>
-                      {meta.icon} {n.createdByTeam}
+                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: meta.bg, color: meta.color }}> {meta.icon} {n.createdByTeam}
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onDelete(n.id)} disabled={pending}>
-                      삭제
+                    <Button variant="outline" size="sm" onClick={() => onDelete(n.id)} disabled={pending}> 삭제
                     </Button>
                   </div>
                 </div>
                 <p className="text-caption text-ink mb-2 whitespace-pre-wrap">{n.body}</p>
                 <div className="flex items-center justify-between text-tiny text-ink-muted">
-                  <span>
-                    {fmtDateTime(n.createdAt)}
+                  <span> {fmtDateTime(n.createdAt)}
                     {n.expiresAt && ` · 만료: ${fmtDateTime(n.expiresAt)}`}
                   </span>
-                  <span>
-                    읽음 <strong className="text-ink">{n._count.readLogs}</strong> / 대상 <strong className="text-ink">{targetCount}</strong>
+                  <span> 읽음 <strong className="text-ink">{n._count.readLogs}</strong> / 대상 <strong className="text-ink">{targetCount}</strong>
                   </span>
                 </div>
-              </li>
-            );
+              </li> );
           })}
-        </ul>
-      )}
+        </ul> )}
 
       {/* 작성 모달 */}
       {composing && (
@@ -149,10 +131,8 @@ export function NoticeBoard({ authorTeam, initialNotices, clients, totalClients 
           authorTeam={authorTeam}
           clients={clients}
           onClose={() => setComposing(false)}
-        />
-      )}
-    </div>
-  );
+        /> )}
+    </div> );
 }
 
 // ── 작성 모달 ──────────────────────────────────────────
@@ -224,10 +204,8 @@ function ComposeModal({
           </div>
           <div>
             <Label>긴급도</Label>
-            <Select value={priority} onChange={(e) => setPriority(e.target.value as NoticePriorityType)}>
-              {NOTICE_PRIORITIES.map((p) => (
-                <option key={p} value={p}>{p === "HIGH" ? "🔴 긴급" : "일반"}</option>
-              ))}
+            <Select value={priority} onChange={(e) => setPriority(e.target.value as NoticePriorityType)}> {NOTICE_PRIORITIES.map((p) => (
+                <option key={p} value={p}>{p === "HIGH" ? " 긴급" : "일반"}</option> ))}
             </Select>
           </div>
         </div>
@@ -240,19 +218,15 @@ function ComposeModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>발송 대상</Label>
-            <Select value={target} onChange={(e) => setTarget(e.target.value as NoticeTargetType)}>
-              {NOTICE_TARGETS.map((t) => (
-                <option key={t} value={t}>{NOTICE_TARGET_LABEL[t]}</option>
-              ))}
+            <Select value={target} onChange={(e) => setTarget(e.target.value as NoticeTargetType)}> {NOTICE_TARGETS.map((t) => (
+                <option key={t} value={t}>{NOTICE_TARGET_LABEL[t]}</option> ))}
             </Select>
           </div>
           <div>
             <Label>만료일 (선택)</Label>
             <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
           </div>
-        </div>
-
-        {target === "SPECIFIC" && (
+        </div> {target === "SPECIFIC" && (
           <div>
             <Label required>대상 거래처 선택 (다중)</Label>
             <select
@@ -260,21 +234,16 @@ function ComposeModal({
               value={targetClientIds}
               onChange={(e) => setTargetClientIds(Array.from(e.target.selectedOptions).map((o) => o.value))}
               className="w-full border border-border rounded-xs px-3 py-2 text-caption h-32"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.type})
-                </option>
-              ))}
+            > {clients.map((c) => (
+                <option key={c.id} value={c.id}> {c.name} ({c.type})
+                </option> ))}
             </select>
             <p className="text-tiny text-ink-muted mt-1">선택된 거래처: {targetClientIds.length}개</p>
-          </div>
-        )}
+          </div> )}
 
         <div>
           <label className="flex items-center gap-2 text-caption cursor-pointer">
-            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-            상단 고정 (📌 표시)
+            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} /> 상단 고정 ( 표시)
           </label>
         </div>
 
@@ -283,8 +252,7 @@ function ComposeModal({
           <span>작성자: <strong>{authorTeam}</strong> (자동 설정)</span>
         </div>
       </div>
-    </Modal>
-  );
+    </Modal> );
 }
 
 function fmtDateTime(iso: string): string {

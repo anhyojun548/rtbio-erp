@@ -95,8 +95,7 @@ export function SalesHistoryBoard({
     next.set("repId", repId);
     next.set("from", fromDate);
     next.set("to", toDate);
-    start(() =>
-      router.push(`/admin/reports/sales-history?${next.toString()}`),
+    start(() => router.push(`/admin/reports/sales-history?${next.toString()}`),
     );
   }
 
@@ -106,25 +105,19 @@ export function SalesHistoryBoard({
       : history.events.filter((e) => e.type === typeFilter);
 
   return (
-    <div className="space-y-6">
-      {/* ─── 필터 바 ───────────────────────────────── */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
-        {isOwnerOrAdmin && (
+    <div className="space-y-6"> {/* ─── 필터 바 ───────────────────────────────── */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3"> {isOwnerOrAdmin && (
           <div>
             <label className="block text-xs text-slate-500 mb-1">담당자</label>
             <select
               value={repId}
               onChange={(e) => setRepId(e.target.value)}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm min-w-[180px]"
-            >
-              {reps.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.role})
-                </option>
-              ))}
+            > {reps.map((r) => (
+                <option key={r.id} value={r.id}> {r.name} ({r.role})
+                </option> ))}
             </select>
-          </div>
-        )}
+          </div> )}
         <div>
           <label className="block text-xs text-slate-500 mb-1">시작일</label>
           <input
@@ -147,62 +140,52 @@ export function SalesHistoryBoard({
           onClick={apply}
           disabled={pending}
           className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          조회
+        > 조회
         </button>
         <div className="ml-auto text-sm text-slate-500">
           <span className="font-medium text-slate-700">{currentRepName}</span> 님의 기간{" "}
-          <span className="font-mono text-xs">
-            {from} ~ {to}
+          <span className="font-mono text-xs"> {from} ~ {to}
           </span>
         </div>
-      </div>
-
-      {/* ─── 요약 카드 ─────────────────────────────── */}
+      </div> {/* ─── 요약 카드 ─────────────────────────────── */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard
           label="주문 접수"
-          icon="📝"
+          icon=""
           count={history.totals.orders.count}
           amount={history.totals.orders.amount}
           color="sky"
         />
         <SummaryCard
           label="명세서 발행"
-          icon="🧾"
+          icon=""
           count={history.totals.invoices.count}
           amount={history.totals.invoices.amount}
           color="emerald"
         />
         <SummaryCard
           label="수금 확인"
-          icon="💰"
+          icon=""
           count={history.totals.payments.count}
           amount={history.totals.payments.amount}
           color="amber"
         />
         <SummaryCard
           label="학회 방문자"
-          icon="🎓"
+          icon=""
           count={history.totals.visitors.count}
           amount={null}
           color="violet"
         />
-      </section>
-
-      {/* ─── 거래처별 Breakdown ─────────────────────── */}
+      </section> {/* ─── 거래처별 Breakdown ─────────────────────── */}
       <section className="rounded-lg border border-slate-200 bg-white overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900">거래처별 활동</h2>
-          <span className="text-xs text-slate-500">
-            {history.byClient.length}개 거래처
+          <span className="text-xs text-slate-500"> {history.byClient.length}개 거래처
           </span>
-        </div>
-        {history.byClient.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            해당 기간에 활동 내역이 없습니다.
-          </div>
-        ) : (
+        </div> {history.byClient.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 해당 기간에 활동 내역이 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-600 text-xs uppercase">
               <tr>
@@ -212,120 +195,85 @@ export function SalesHistoryBoard({
                 <th className="px-4 py-2 text-right font-medium">수금 합</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {history.byClient.map((c) => (
+            <tbody className="divide-y divide-slate-100"> {history.byClient.map((c) => (
                 <tr key={c.clientId} className="hover:bg-slate-50">
                   <td className="px-4 py-2">
                     <Link
                       href={`/admin/clients/${c.clientId}`}
                       className="text-sky-700 hover:underline"
-                    >
-                      {c.clientName}
+                    > {c.clientName}
                     </Link>
-                    <span className="ml-2 text-xs text-slate-400 font-mono">
-                      {c.clientCode}
+                    <span className="ml-2 text-xs text-slate-400 font-mono"> {c.clientCode}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {c.orders}
+                  <td className="px-4 py-2 text-right tabular-nums"> {c.orders}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-emerald-700">
-                    ₩{fmt(c.invoiceAmount)}
+                  <td className="px-4 py-2 text-right tabular-nums text-emerald-700"> ₩{fmt(c.invoiceAmount)}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-amber-700">
-                    ₩{fmt(c.paymentAmount)}
+                  <td className="px-4 py-2 text-right tabular-nums text-amber-700"> ₩{fmt(c.paymentAmount)}
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
-      </section>
-
-      {/* ─── 타임라인 ─────────────────────────────── */}
+          </table> )}
+      </section> {/* ─── 타임라인 ─────────────────────────────── */}
       <section className="rounded-lg border border-slate-200 bg-white">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-semibold text-slate-900">
-            이벤트 타임라인
-            <span className="ml-2 text-xs font-normal text-slate-500">
-              ({filteredEvents.length}건)
+          <h2 className="font-semibold text-slate-900"> 이벤트 타임라인
+            <span className="ml-2 text-xs font-normal text-slate-500"> ({filteredEvents.length}건)
             </span>
           </h2>
-          <div className="flex gap-1">
-            {(["ALL", ...Object.keys(SALES_EVENT_LABEL)] as const).map(
+          <div className="flex gap-1"> {(["ALL", ...Object.keys(SALES_EVENT_LABEL)] as const).map(
               (t) => (
                 <button
                   key={t}
-                  onClick={() =>
-                    setTypeFilter(t as SalesEventType | "ALL")
+                  onClick={() => setTypeFilter(t as SalesEventType | "ALL")
                   }
                   className={`rounded-md px-3 py-1 text-xs border ${
                     typeFilter === t
                       ? "bg-slate-900 text-white border-slate-900"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                   }`}
-                >
-                  {t === "ALL"
+                > {t === "ALL"
                     ? "전체"
                     : SALES_EVENT_LABEL[t as SalesEventType]}
-                </button>
-              ),
+                </button> ),
             )}
           </div>
-        </div>
-        {filteredEvents.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            해당 기간·필터에 해당하는 이벤트가 없습니다.
-          </div>
-        ) : (
-          <ol className="divide-y divide-slate-100">
-            {filteredEvents.map((e) => (
+        </div> {filteredEvents.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 해당 기간·필터에 해당하는 이벤트가 없습니다.
+          </div> ) : (
+          <ol className="divide-y divide-slate-100"> {filteredEvents.map((e) => (
               <li key={`${e.type}:${e.refId}`} className="p-4 hover:bg-slate-50">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl leading-none mt-0.5">
-                    {SALES_EVENT_ICON[e.type]}
+                  <span className="text-2xl leading-none mt-0.5"> {SALES_EVENT_ICON[e.type]}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs">
-                        {SALES_EVENT_LABEL[e.type]}
+                      <span className="rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs"> {SALES_EVENT_LABEL[e.type]}
                       </span>
-                      <span className="text-sm font-medium text-slate-900">
-                        {e.clientName}
-                      </span>
-                      {e.amount !== null && (
-                        <span className="text-sm tabular-nums text-slate-700">
-                          ₩{fmt(e.amount)}
-                        </span>
-                      )}
+                      <span className="text-sm font-medium text-slate-900"> {e.clientName}
+                      </span> {e.amount !== null && (
+                        <span className="text-sm tabular-nums text-slate-700"> ₩{fmt(e.amount)}
+                        </span> )}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {fmtDateTime(e.occurredAt)} ·{" "}
+                    <div className="mt-1 text-xs text-slate-500"> {fmtDateTime(e.occurredAt)} ·{" "}
                       {eventHref(e) ? (
                         <Link
                           href={eventHref(e)!}
                           className="text-sky-700 hover:underline"
-                        >
-                          {e.title}
-                        </Link>
-                      ) : (
-                        <span>{e.title}</span>
-                      )}
+                        > {e.title}
+                        </Link> ) : (
+                        <span>{e.title}</span> )}
                       {e.meta?.status && (
-                        <span className="ml-2 text-slate-400">
-                          [{String(e.meta.status)}]
-                        </span>
-                      )}
+                        <span className="ml-2 text-slate-400"> [{String(e.meta.status)}]
+                        </span> )}
                     </div>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ol>
-        )}
+              </li> ))}
+          </ol> )}
       </section>
-    </div>
-  );
+    </div> );
 }
 
 function SummaryCard({
@@ -366,14 +314,9 @@ function SummaryCard({
         <span>{icon}</span>
         <span>{label}</span>
       </div>
-      <div className={`text-2xl font-bold ${c.text} tabular-nums`}>
-        {count.toLocaleString()}
-      </div>
-      {amount !== null && (
-        <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
-          ₩{fmt(amount)}
-        </div>
-      )}
-    </div>
-  );
+      <div className={`text-2xl font-bold ${c.text} tabular-nums`}> {count.toLocaleString()}
+      </div> {amount !== null && (
+        <div className="text-xs text-slate-500 mt-0.5 tabular-nums"> ₩{fmt(amount)}
+        </div> )}
+    </div> );
 }

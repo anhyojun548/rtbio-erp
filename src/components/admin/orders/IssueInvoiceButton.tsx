@@ -53,11 +53,9 @@ export function IssueInvoiceButton({
         <Link
           href={`/admin/invoices/${existingInvoice.id}`}
           className="rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-emerald-700"
-        >
-          거래명세서 보기 →
+        > 거래명세서 보기 →
         </Link>
-      </div>
-    );
+      </div> );
   }
 
   return (
@@ -73,11 +71,8 @@ export function IssueInvoiceButton({
           onClick={run}
           disabled={pending}
           className="rounded-md bg-sky-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-sky-700 disabled:opacity-50"
-        >
-          {pending ? "생성 중…" : "🧾 거래명세서 발급"}
-        </button>
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        > {pending ? "생성 중…" : " 거래명세서 발급"}
+        </button> {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
-    </div>
-  );
+    </div> );
 }

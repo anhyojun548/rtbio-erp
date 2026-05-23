@@ -92,23 +92,20 @@ export default async function QcShipmentHistoryPage({
     <div className="space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-display m-0">📋 출고내역</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            완료된 출고(실재고 차감 이후) 목록입니다 (R17).
+          <h1 className="text-display m-0"> 출고내역</h1>
+          <p className="text-caption text-ink-secondary mt-1"> 완료된 출고(실재고 차감 이후) 목록입니다 (R17).
           </p>
         </div>
         <div className="flex gap-2">
           <Link
             href="/qc/shipments"
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            ← 칸반 보드
+          > ← 칸반 보드
           </Link>
           <a
             href={csvHref}
             className="rounded-md bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-700"
-          >
-            📥 CSV
+          > CSV
           </a>
         </div>
       </header>
@@ -133,8 +130,7 @@ export default async function QcShipmentHistoryPage({
           q: q ?? "",
         }}
       />
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -159,9 +155,7 @@ function StatCard({
         className={`text-xl font-bold mt-1 tabular-nums ${
           highlight ? "text-emerald-700" : "text-slate-900"
         }`}
-      >
-        {value}
+      > {value}
       </p>
-    </div>
-  );
+    </div> );
 }

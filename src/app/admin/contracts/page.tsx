@@ -59,17 +59,15 @@ export default async function ContractsPage({
     <div className="space-y-6">
       <header className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-display m-0">📝 판매 계약서</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            거래처별 계약 시작/종료일·서명 여부·PDF 를 관리합니다 (R20). 만료 30일
+          <h1 className="text-display m-0"> 판매 계약서</h1>
+          <p className="text-caption text-ink-secondary mt-1"> 거래처별 계약 시작/종료일·서명 여부·PDF 를 관리합니다 (R20). 만료 30일
             이내 계약은 자동으로 "만료임박" 상태가 됩니다.
           </p>
         </div>
         <Link
           href="/admin/contracts/new"
           className="h-9 px-4 inline-flex items-center bg-primary text-white text-caption font-semibold rounded-xs hover:bg-primary-light transition"
-        >
-          + 신규 계약
+        > + 신규 계약
         </Link>
       </header>
 
@@ -122,85 +120,66 @@ export default async function ContractsPage({
               <th className="px-4 py-3 text-right font-medium">액션</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map((r) => (
+          <tbody className="divide-y divide-slate-100"> {filtered.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium text-slate-900">
                   <Link
                     href={`/admin/contracts/${r.id}`}
                     className="hover:underline"
-                  >
-                    {r.title}
+                  > {r.title}
                   </Link>
                 </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/admin/clients/${r.client.id}`}
                     className="text-sky-700 hover:underline"
-                  >
-                    {r.client.name}
+                  > {r.client.name}
                   </Link>
-                  <span className="ml-1 text-xs text-slate-400 font-mono">
-                    {r.client.code}
+                  <span className="ml-1 text-xs text-slate-400 font-mono"> {r.client.code}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                  {r.startDate.toISOString().slice(0, 10)}
+                <td className="px-4 py-3 font-mono text-xs text-slate-600"> {r.startDate.toISOString().slice(0, 10)}
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                  {r.endDate ? r.endDate.toISOString().slice(0, 10) : "—"}
+                <td className="px-4 py-3 font-mono text-xs text-slate-600"> {r.endDate ? r.endDate.toISOString().slice(0, 10) : "—"}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={r.status} daysLeft={r.daysLeft} />
                 </td>
-                <td className="px-4 py-3">
-                  {r.signed ? (
-                    <span className="rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs">
-                      ✓ 서명
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400">미서명</span>
-                  )}
+                <td className="px-4 py-3"> {r.signed ? (
+                    <span className="rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs"> ✓ 서명
+                    </span> ) : (
+                    <span className="text-xs text-slate-400">미서명</span> )}
                 </td>
-                <td className="px-4 py-3">
-                  {r.pdfUrl ? (
+                <td className="px-4 py-3"> {r.pdfUrl ? (
                     <a
                       href={r.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sky-700 hover:underline text-xs"
-                    >
-                      📄 열기
-                    </a>
-                  ) : (
-                    <span className="text-xs text-slate-400">—</span>
-                  )}
+                    > 열기
+                    </a> ) : (
+                    <span className="text-xs text-slate-400">—</span> )}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/contracts/${r.id}`}
                     className="text-xs text-slate-600 hover:text-slate-900 hover:underline"
-                  >
-                    상세/편집
+                  > 상세/편집
                   </Link>
                 </td>
-              </tr>
-            ))}
+              </tr> ))}
             {filtered.length === 0 && (
               <tr>
                 <td
                   colSpan={8}
                   className="px-4 py-12 text-center text-sm text-slate-500"
-                >
-                  조회 결과가 없습니다.
+                > 조회 결과가 없습니다.
                 </td>
-              </tr>
-            )}
+              </tr> )}
           </tbody>
         </table>
       </div>
-    </div>
-  );
+    </div> );
 }
 
 function StatCard({
@@ -242,8 +221,7 @@ function StatCard({
       <div className={`text-xs font-medium ${c.text} mb-1`}>{label}</div>
       <div className={`text-2xl font-bold ${c.text} tabular-nums`}>{count}</div>
       <div className="text-xs text-slate-500 mt-0.5">계약</div>
-    </Link>
-  );
+    </Link> );
 }
 
 function StatusBadge({
@@ -267,9 +245,7 @@ function StatusBadge({
         ? ` · ${Math.abs(daysLeft)}일 경과`
         : "";
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs ${map[status]}`}>
-      {label}
+    <span className={`rounded-full px-2 py-0.5 text-xs ${map[status]}`}> {label}
       {suffix}
-    </span>
-  );
+    </span> );
 }

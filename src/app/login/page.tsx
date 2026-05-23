@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-canvas p-4">
       <div className="w-full max-w-sm bg-surface rounded shadow-md p-8 space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-h1 text-primary m-0">🔵 RTBIO ERP</h1>
+          <h1 className="text-h1 text-primary m-0"> RTBIO ERP</h1>
           <p className="text-caption text-ink-secondary">알티바이오 업무시스템 로그인</p>
         </div>
 
@@ -66,30 +66,23 @@ export default function LoginPage() {
               className="w-full h-10 px-3 rounded-md border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm"
               placeholder="rtbio1234!"
             />
-          </div>
-
-          {err && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {err}
-            </div>
-          )}
+          </div> {err && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2"> {err}
+            </div> )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full h-10 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300 text-white text-sm font-medium rounded-md transition"
-          >
-            {loading ? "로그인 중..." : "로그인"}
+          > {loading ? "로그인 중..." : "로그인"}
           </button>
         </form>
 
         <div className="text-xs text-slate-400 text-center space-y-1 pt-2 border-t border-slate-100">
           <p>테스트 계정 (seed)</p>
-          <p className="font-mono text-[11px]">
-            owner/admin/qc/sales1/sales2 @altibio.local · rtbio1234!
+          <p className="font-mono text-[11px]"> owner/admin/qc/sales1/sales2 @altibio.local · rtbio1234!
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div> );
 }

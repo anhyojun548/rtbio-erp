@@ -4,24 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const MENU = [
-  { href: "/client", label: "대시보드", icon: "📊" },
-  { href: "/client/orders", label: "발주 현황", icon: "📋" },
-  { href: "/client/invoices", label: "거래명세서", icon: "📄" },
-  { href: "/client/payments", label: "수금·미수금", icon: "💰" },
-  { href: "/client/contracts", label: "판매 계약서", icon: "📝" },
-  { href: "/client/profile", label: "내 정보", icon: "🏢" },
+  { href: "/client", label: "대시보드", icon: "" },
+  { href: "/client/orders", label: "발주 현황", icon: "" },
+  { href: "/client/invoices", label: "거래명세서", icon: "" },
+  { href: "/client/payments", label: "수금·미수금", icon: "" },
+  { href: "/client/contracts", label: "판매 계약서", icon: "" },
+  { href: "/client/profile", label: "내 정보", icon: "" },
 ];
 
 export function ClientSidebar() {
   const pathname = usePathname();
   return (
     <aside className="w-56 bg-white border-r border-slate-200 flex-shrink-0">
-      <nav className="py-4 text-sm">
-        {MENU.map((item) => {
+      <nav className="py-4 text-sm"> {MENU.map((item) => {
           // longest-prefix active detection
           const candidates = MENU.filter(
-            (m) =>
-              pathname === m.href ||
+            (m) => pathname === m.href ||
               (m.href !== "/client" && pathname.startsWith(m.href + "/")),
           );
           const longest = candidates.reduce(
@@ -41,10 +39,8 @@ export function ClientSidebar() {
             >
               <span>{item.icon}</span>
               <span>{item.label}</span>
-            </Link>
-          );
+            </Link> );
         })}
       </nav>
-    </aside>
-  );
+    </aside> );
 }

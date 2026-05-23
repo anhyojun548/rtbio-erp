@@ -62,11 +62,9 @@ export default async function QcSamplesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-display m-0">🎁 샘플 출고</h1>
-        <p className="text-caption text-ink-secondary mt-1">
-          거래처 대상 샘플 제공 기록을 남깁니다. 기록 시{" "}
-          <code className="text-tiny font-mono bg-canvas px-1.5 py-0.5 rounded-xs">
-            InventoryAdjustment.reason = &quot;샘플출고&quot;
+        <h1 className="text-display m-0"> 샘플 출고</h1>
+        <p className="text-caption text-ink-secondary mt-1"> 거래처 대상 샘플 제공 기록을 남깁니다. 기록 시{" "}
+          <code className="text-tiny font-mono bg-canvas px-1.5 py-0.5 rounded-xs"> InventoryAdjustment.reason = &quot;샘플출고&quot;
           </code>{" "}
           로 재고가 차감됩니다.
         </p>
@@ -80,15 +78,11 @@ export default async function QcSamplesPage() {
           <Link
             href="/admin/inventory/logs"
             className="text-xs text-sky-700 hover:underline"
-          >
-            전체 변동 이력 →
+          > 전체 변동 이력 →
           </Link>
-        </div>
-        {recent.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
-            기록된 샘플 출고가 없습니다.
-          </div>
-        ) : (
+        </div> {recent.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500"> 기록된 샘플 출고가 없습니다.
+          </div> ) : (
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
               <tr>
@@ -99,38 +93,28 @@ export default async function QcSamplesPage() {
                 <th className="px-4 py-2 text-left">메모</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {recent.map((r) => (
+            <tbody className="divide-y divide-slate-100"> {recent.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2 text-xs text-slate-500 tabular-nums">
-                    {new Date(r.createdAt).toLocaleString("ko-KR", {
+                  <td className="px-4 py-2 text-xs text-slate-500 tabular-nums"> {new Date(r.createdAt).toLocaleString("ko-KR", {
                       month: "2-digit",
                       day: "2-digit",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="px-4 py-2">
-                    {r.productSize.product.name}
-                    <span className="ml-2 text-[11px] font-mono text-slate-400">
-                      {r.productSize.product.code}
+                  <td className="px-4 py-2"> {r.productSize.product.name}
+                    <span className="ml-2 text-[11px] font-mono text-slate-400"> {r.productSize.product.code}
                     </span>
                   </td>
-                  <td className="px-4 py-2 font-mono text-xs">
-                    {r.productSize.sizeCode}
+                  <td className="px-4 py-2 font-mono text-xs"> {r.productSize.sizeCode}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-rose-700 font-semibold">
-                    {r.qty}
+                  <td className="px-4 py-2 text-right tabular-nums text-rose-700 font-semibold"> {r.qty}
                   </td>
-                  <td className="px-4 py-2 text-xs text-slate-600">
-                    {r.note ?? "-"}
+                  <td className="px-4 py-2 text-xs text-slate-600"> {r.note ?? "-"}
                   </td>
-                </tr>
-              ))}
+                </tr> ))}
             </tbody>
-          </table>
-        )}
+          </table> )}
       </section>
-    </div>
-  );
+    </div> );
 }

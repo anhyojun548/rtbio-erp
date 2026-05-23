@@ -4,21 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const MENU = [
-  { href: "/exec", label: "내 대시보드", icon: "📊" },
-  { href: "/exec/clients", label: "내 거래처", icon: "🏢" },
-  { href: "/exec/orders", label: "내 주문", icon: "📦" },
-  { href: "/exec/conferences", label: "학회 방명록", icon: "🎓" },
+  { href: "/exec", label: "내 대시보드", icon: "" },
+  { href: "/exec/clients", label: "내 거래처", icon: "" },
+  { href: "/exec/orders", label: "내 주문", icon: "" },
+  { href: "/exec/conferences", label: "학회 방명록", icon: "" },
 ];
 
 export function ExecSidebar() {
   const pathname = usePathname();
   return (
     <aside className="w-56 bg-white border-r border-slate-200 flex-shrink-0">
-      <nav className="py-4 text-sm">
-        {MENU.map((item) => {
+      <nav className="py-4 text-sm"> {MENU.map((item) => {
           const candidates = MENU.filter(
-            (m) =>
-              pathname === m.href ||
+            (m) => pathname === m.href ||
               (m.href !== "/exec" && pathname.startsWith(m.href + "/")),
           );
           const longest = candidates.reduce(
@@ -38,10 +36,8 @@ export function ExecSidebar() {
             >
               <span>{item.icon}</span>
               <span>{item.label}</span>
-            </Link>
-          );
+            </Link> );
         })}
       </nav>
-    </aside>
-  );
+    </aside> );
 }

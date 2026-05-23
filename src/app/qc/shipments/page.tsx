@@ -33,47 +33,37 @@ export default async function QcShipmentBoardPage() {
     <div className="space-y-4">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-display m-0">📦 출고 칸반</h1>
-          <p className="text-caption text-ink-secondary mt-1">
-            CONFIRMED 주문에서 <strong className="text-primary">출고 시작</strong> 하면 이 보드에 진입합니다.
+          <h1 className="text-display m-0"> 출고 칸반</h1>
+          <p className="text-caption text-ink-secondary mt-1"> CONFIRMED 주문에서 <strong className="text-primary">출고 시작</strong> 하면 이 보드에 진입합니다.
             terminal 단계(마지막 열) 도달 시 실재고가 차감됩니다.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-xs text-slate-500">
-            진행중 {shipments.filter((s) => !s.completedAt).length}건 · 완료{" "}
+          <div className="text-xs text-slate-500"> 진행중 {shipments.filter((s) => !s.completedAt).length}건 · 완료{" "}
             {shipments.filter((s) => s.completedAt).length}건
           </div>
           <Link
             href="/admin/shipments/columns"
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-          >
-            ⚙ 단계 관리
+          > ⚙ 단계 관리
           </Link>
         </div>
-      </header>
-
-      {columns.length === 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
-          칸반 단계가 아직 설정되어 있지 않습니다.
-        </div>
-      ) : (
+      </header> {columns.length === 0 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800"> 칸반 단계가 아직 설정되어 있지 않습니다.
+        </div> ) : (
         <div
           className="grid gap-3 overflow-x-auto pb-4"
           style={{
             gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))`,
           }}
-        >
-          {columns.map((col) => (
+        > {columns.map((col) => (
             <BoardColumn
               key={col.id}
               column={col}
               columns={columns}
               cards={byColumn.get(col.id) ?? []}
-            />
-          ))}
-        </div>
-      )}
+            /> ))}
+        </div> )}
 
       <div className="rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600 flex flex-wrap gap-4">
         <span>
@@ -83,12 +73,10 @@ export default async function QcShipmentBoardPage() {
         <Link
           href="/admin/orders?status=CONFIRMED"
           className="text-sky-700 hover:underline"
-        >
-          CONFIRMED 주문 보기 →
+        > CONFIRMED 주문 보기 →
         </Link>
       </div>
-    </div>
-  );
+    </div> );
 }
 
 function BoardColumn({
@@ -119,34 +107,24 @@ function BoardColumn({
         }`}
       >
         <div>
-          <div className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-            {column.label}
+          <div className="text-sm font-semibold text-slate-800 flex items-center gap-1.5"> {column.label}
             {isTerminal && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 font-medium">
-                terminal
-              </span>
-            )}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 font-medium"> terminal
+              </span> )}
           </div>
-          <div className="font-mono text-[10px] text-slate-400">
-            {column.key}
+          <div className="font-mono text-[10px] text-slate-400"> {column.key}
           </div>
         </div>
-        <span className="text-xs text-slate-500 tabular-nums">
-          {activeCount}/{cards.length}
+        <span className="text-xs text-slate-500 tabular-nums"> {activeCount}/{cards.length}
         </span>
       </div>
 
-      <div className="flex-1 p-2 space-y-2">
-        {cards.length === 0 ? (
-          <p className="text-[11px] text-slate-400 text-center py-6">
-            {isTerminal ? "완료된 출고 없음" : "진행중 출고 없음"}
-          </p>
-        ) : (
+      <div className="flex-1 p-2 space-y-2"> {cards.length === 0 ? (
+          <p className="text-[11px] text-slate-400 text-center py-6"> {isTerminal ? "완료된 출고 없음" : "진행중 출고 없음"}
+          </p> ) : (
           cards.map((sh) => (
-            <ShipmentCard key={sh.id} shipment={sh} columns={columns} />
-          ))
+            <ShipmentCard key={sh.id} shipment={sh} columns={columns} /> ))
         )}
       </div>
-    </div>
-  );
+    </div> );
 }

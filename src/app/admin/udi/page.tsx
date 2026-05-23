@@ -32,10 +32,8 @@ export default async function UdiPage() {
           r.status === "ACCEPTED"  ? "bg-success-light text-success" :
           r.status === "SUBMITTED" ? "bg-accent-light text-accent-dark" :
                                      "bg-canvas text-ink-muted"
-        }`}>
-          {UDI_STATUS_LABEL[r.status]}
-        </span>
-      ),
+        }`}> {UDI_STATUS_LABEL[r.status]}
+        </span> ),
     },
     { key: "receiptNo", label: "접수번호", cellClassName: "font-mono text-tiny", render: (r) => r.receiptNo ?? "—" },
     { key: "itemCount", label: "품목수", align: "right", width: "80px", cellClassName: "tabular-nums", render: (r) => r._count.items.toLocaleString() },
@@ -46,7 +44,7 @@ export default async function UdiPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="🏥 UDI 공급내역 보고"
+        title="UDI 공급내역 보고"
         subtitle="월별 병원 납품 거래를 식약처에 보고합니다. 거래명세서(ISSUED+SENT)에서 자동 집계."
       />
 
@@ -57,10 +55,8 @@ export default async function UdiPage() {
         emptyMessage="작성된 UDI 보고서가 없습니다."
       />
 
-      <div className="bg-primary-lighter border border-primary/10 rounded p-4 text-caption text-ink-secondary">
-        💡 신규 보고서는 <strong className="text-primary">서버 액션 createUdiReportFromInvoices</strong> 호출로 생성됩니다.
+      <div className="bg-primary-lighter border border-primary/10 rounded p-4 text-caption text-ink-secondary"> 신규 보고서는 <strong className="text-primary">서버 액션 createUdiReportFromInvoices</strong> 호출로 생성됩니다.
         해당 월 ISSUED+SENT 거래명세서의 HOSPITAL 거래처 라인이 자동 집계됩니다.
       </div>
-    </div>
-  );
+    </div> );
 }
