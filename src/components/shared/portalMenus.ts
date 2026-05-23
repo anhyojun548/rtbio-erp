@@ -27,7 +27,7 @@ export const ADMIN_MENU: NavSection[] = [
       { label: "거래명세서",   href: "/admin/invoices" },
       { label: "수금 관리",    href: "/admin/payments" },
       { label: "미수금 관리",  href: "/admin/receivables" },
-      { label: "세금계산서",   href: "/admin/tax-invoices", disabled: true },
+      // 세금계산서: 본 과업 범위 제외 (전자세금계산서 외부 API 연동 필요) — 마스터 플랜 §2
     ],
   },
   {
