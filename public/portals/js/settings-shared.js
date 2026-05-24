@@ -348,7 +348,7 @@
     `;
   }
 
-  // ── 저장 ──────────────────────────────────────────────────────────
+  // ── 저장 — localStorage + PATCH /api/settings (서버 동기화) ────────
   function save() {
     const current = loadStorage();
     const get = id => {
@@ -400,13 +400,41 @@
     }
 
     // undefined 제거
-    Object.keys(updates).forEach(k => { if (updates[k] === undefined) delete updates[k]; });
+    Object.keys(updates).forEach(function(k) { if (updates[k] === undefined) delete updates[k]; });
 
     const merged = Object.assign({}, current, updates);
-    if (saveStorage(merged)) {
-      if (typeof showToast === 'function') showToast('설정이 저장되었습니다', 'success');
+    // 1. 로컬 저장 (오프라인 fallback)
+    saveStorage(merged);
+
+    // 2. 서버 동기화 — PATCH /api/settings (bulk: items 배열 형식)
+    // TENANT_SETTING_KEYS 와 일치하는 키만 전송
+    var SERVER_KEYS = ['business_hour_start', 'business_hour_end', 'shipping_cutoff', 'reorder_multiplier', 'vat_rate'];
+    var KEY_MAP = {
+      workStart:      'business_hour_start',
+      workEnd:        'business_hour_end',
+      parcelCutoff:   'shipping_cutoff',
+      stockWarn:      'reorder_multiplier', // 경고 임계치 → reorder_multiplier 근사
+      // 나머지는 서버 스키마 없음 — localStorage 전용
+    };
+    var serverItems = [];
+    Object.keys(updates).forEach(function(k) {
+      var serverKey = KEY_MAP[k];
+      if (serverKey && updates[k] !== undefined && updates[k] !== null) {
+        serverItems.push({ key: serverKey, value: String(updates[k]) });
+      }
+    });
+
+    if (serverItems.length > 0 && global.apiClient && typeof global.apiClient.patch === 'function') {
+      global.apiClient.patch('/api/settings', { items: serverItems })
+        .then(function() {
+          if (typeof showToast === 'function') showToast('설정이 저장되었습니다', 'success');
+        })
+        .catch(function(err) {
+          // 서버 저장 실패 시에도 로컬엔 저장됨 — 경고만 표시
+          if (typeof showToast === 'function') showToast('로컬 저장 완료 (서버 동기화 실패: ' + (err && err.message || '오류') + ')', 'warning');
+        });
     } else {
-      if (typeof showToast === 'function') showToast('저장 실패: localStorage 사용 불가', 'error');
+      if (typeof showToast === 'function') showToast('설정이 저장되었습니다', 'success');
     }
   }
 

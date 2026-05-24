@@ -3727,12 +3727,12 @@ function renderRecentPayments() {
  }).join('');
 }
 
-// 수금 등록 commit (수기 입력란 → 최근 등록 내역에 prepend)
-function commitPayment() {
+// 수금 등록 commit — POST /api/payments 로 서버 전송 후 인메모리 반영
+async function commitPayment() {
  const tbody = document.getElementById('payment-register-body');
  if (!tbody) return;
  const rows = tbody.querySelectorAll('tr');
- let added = 0;
+ const payloads = [];
  rows.forEach(tr => {
  const inputs = tr.querySelectorAll('input, select');
  if (inputs.length < 5) return;
@@ -3742,19 +3742,42 @@ function commitPayment() {
  const dateVal = inputs[4]?.value || '';
  const note = inputs[5]?.value || '';
  if (clientId && amount > 0 && dateVal) {
- const now = new Date();
- const stamp = `${dateVal} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
- RECENT_PAYMENTS.unshift({ date: stamp, amount, clientId, note: note || '신규 등록' });
- added++;
+   payloads.push({ clientId, amount, paidAt: dateVal, note: note || '신규 등록' });
  }
  });
- // 최대 10건만 보존
- RECENT_PAYMENTS.splice(10);
- renderRecentPayments();
- if (added > 0) {
- showToast(`입금 ${added}건이 등록되었습니다`, 'success');
+
+ if (payloads.length === 0) {
+   showToast('등록할 입금 정보가 없습니다 (거래처/금액/일자 필수)', 'warning');
+   return;
+ }
+
+ // apiClient 사용 가능 시 서버에 전송, 아니면 로컬 mock fallback
+ if (window.apiClient && typeof window.apiClient.post === 'function') {
+   let added = 0;
+   for (const p of payloads) {
+     try {
+       const saved = await window.apiClient.post('/api/payments', p);
+       const now = new Date();
+       const stamp = `${p.paidAt} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+       RECENT_PAYMENTS.unshift({ date: stamp, amount: p.amount, clientId: p.clientId, note: p.note });
+       added++;
+     } catch (err) {
+       showToast((err && err.message) || '수금 등록 실패', 'error');
+     }
+   }
+   RECENT_PAYMENTS.splice(10);
+   renderRecentPayments();
+   if (added > 0) showToast(`입금 ${added}건이 등록되었습니다`, 'success');
  } else {
- showToast('등록할 입금 정보가 없습니다 (거래처/금액/일자 필수)', 'warning');
+   // mock fallback (apiClient 미로딩)
+   payloads.forEach(p => {
+     const now = new Date();
+     const stamp = `${p.paidAt} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+     RECENT_PAYMENTS.unshift({ date: stamp, amount: p.amount, clientId: p.clientId, note: p.note });
+   });
+   RECENT_PAYMENTS.splice(10);
+   renderRecentPayments();
+   showToast(`입금 ${payloads.length}건이 등록되었습니다`, 'success');
  }
 }
 
@@ -5188,38 +5211,66 @@ function renderUdiPage() {
     document.getElementById('udi-items-count').textContent = `${items.length}건`;
   }
 }
-function submitUdiReport(month) {
+// UDI 보고 전송 — POST /api/udi (draft 생성) → POST /api/udi/[id]/submit (전송)
+async function submitUdiReport(month) {
   month = month || document.getElementById('udi-month')?.value || '2026-04';
   if (!confirm(`${month} 분 UDI 공급내역 보고를 의료기기통합정보시스템에 전송하시겠습니까?`)) return;
-  let report = (window.UDI_REPORTS||[]).find(r => r.reportMonth === month);
-  const hospitalClients = (window.CLIENTS||[]).filter(c => c.type === '병원');
-  const monthOrders = (window.ORDERS||[]).filter(o => o.date && o.date.startsWith(month) && hospitalClients.some(c => c.id === o.clientId));
-  const totalItems = monthOrders.reduce((s,o) => s + (o.items||[]).length, 0);
-  const totalQty = monthOrders.reduce((s,o) => s + (o.items||[]).reduce((s2,i) => s2 + (i.qty||0), 0), 0);
-  const hospitalCount = new Set(monthOrders.map(o => o.clientId)).size;
-  const now = new Date();
-  const submittedAt = now.toISOString().slice(0,16).replace('T',' ');
-  const receiptNo = `UDI-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(Date.now()).slice(-4)}`;
-  if (report) {
-    report.status = 'SUBMITTED';
-    report.submittedAt = submittedAt;
-    report.submittedBy = '경영지원팀(김태은)';
-    report.totalItems = totalItems;
-    report.totalQty = totalQty;
-    report.hospitalCount = hospitalCount;
-    report.receiptNumber = receiptNo;
+
+  if (window.apiClient && typeof window.apiClient.post === 'function') {
+    try {
+      // 1. DRAFT 보고서 생성 (이미 존재하면 서버에서 P2002 or 기존 id 반환)
+      let reportId;
+      const existing = (window.UDI_REPORTS||[]).find(r => r.reportMonth === month);
+      if (existing && existing.id && !existing.id.startsWith('UDI-')) {
+        // 서버 id (cuid) 가 있으면 바로 submit
+        reportId = existing.id;
+      } else {
+        const created = await window.apiClient.post('/api/udi', { reportMonth: month });
+        reportId = created && created.id;
+      }
+      if (!reportId) throw new Error('보고서 생성 실패');
+      // 2. 전송
+      const submitted = await window.apiClient.post('/api/udi/' + reportId + '/submit', {});
+      // 인메모리 반영
+      const idx = (window.UDI_REPORTS||[]).findIndex(r => r.id === reportId || r.reportMonth === month);
+      const updated = submitted || { id: reportId, reportMonth: month, status: 'ACCEPTED' };
+      if (idx !== -1) Object.assign(window.UDI_REPORTS[idx], updated);
+      else (window.UDI_REPORTS = window.UDI_REPORTS || []).push(updated);
+      renderUdiPage();
+      if (typeof pushNotification === 'function') {
+        pushNotification({ type:'NOTICE', title:'UDI 보고 전송 완료',
+          message:`${month}분 UDI 전송 완료`, urgent:false });
+      }
+      showToast(`UDI 보고 전송 완료 — 접수번호 ${updated.receiptNo || reportId}`, 'success');
+    } catch (err) {
+      showToast((err && err.message) || 'UDI 전송 실패', 'error');
+    }
   } else {
-    (window.UDI_REPORTS = window.UDI_REPORTS || []).push({
-      id:'UDI-'+month, reportMonth: month, submittedAt, submittedBy:'경영지원팀(김태은)',
-      status:'SUBMITTED', totalItems, totalQty, hospitalCount, receiptNumber: receiptNo,
-    });
+    // mock fallback
+    const hospitalClients = (window.CLIENTS||[]).filter(c => c.type === '병원');
+    const monthOrders = (window.ORDERS||[]).filter(o => o.date && o.date.startsWith(month) && hospitalClients.some(c => c.id === o.clientId));
+    const totalItems = monthOrders.reduce((s,o) => s + (o.items||[]).length, 0);
+    const totalQty = monthOrders.reduce((s,o) => s + (o.items||[]).reduce((s2,i) => s2 + (i.qty||0), 0), 0);
+    const hospitalCount = new Set(monthOrders.map(o => o.clientId)).size;
+    const now = new Date();
+    const submittedAt = now.toISOString().slice(0,16).replace('T',' ');
+    const receiptNo = `UDI-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String(Date.now()).slice(-4)}`;
+    let report = (window.UDI_REPORTS||[]).find(r => r.reportMonth === month);
+    if (report) {
+      Object.assign(report, { status:'SUBMITTED', submittedAt, submittedBy:'경영지원팀(김태은)', totalItems, totalQty, hospitalCount, receiptNumber: receiptNo });
+    } else {
+      (window.UDI_REPORTS = window.UDI_REPORTS || []).push({
+        id:'UDI-'+month, reportMonth: month, submittedAt, submittedBy:'경영지원팀(김태은)',
+        status:'SUBMITTED', totalItems, totalQty, hospitalCount, receiptNumber: receiptNo,
+      });
+    }
+    renderUdiPage();
+    if (typeof pushNotification === 'function') {
+      pushNotification({ type:'NOTICE', title:'UDI 보고 전송 완료',
+        message:`${month}분 UDI ${hospitalCount}개 병원 / ${totalItems}건 전송 완료`, urgent:false });
+    }
+    showToast(`UDI 보고 전송 완료 — 접수번호 ${receiptNo}`, 'success');
   }
-  renderUdiPage();
-  if (typeof pushNotification === 'function') {
-    pushNotification({ type:'NOTICE', title:'UDI 보고 전송 완료',
-      message:`${month}분 UDI ${hospitalCount}개 병원 / ${totalItems}건 전송 완료`, urgent:false });
-  }
-  showToast(`UDI 보고 전송 완료 — 접수번호 ${receiptNo}`, 'success');
 }
 function showUdiReceipt(reportId) {
   const r = (window.UDI_REPORTS||[]).find(x => x.id === reportId);

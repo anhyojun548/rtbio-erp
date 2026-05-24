@@ -2174,27 +2174,41 @@ function moveToNextStage(orderId) {
  </select>
  </div>`;
 
- showModal(`${nextStage.icon} ${nextStage.name}으로 이동`, html, () => {
+ showModal(`${nextStage.icon} ${nextStage.name}으로 이동`, html, async () => {
  const sel = document.getElementById('transfer-staff-select');
  const newStaffId = sel ? sel.value : defaultId;
 
- // 다음 단계 담당자 기록
+ // 다음 단계 담당자 기록 (로컬 상태 업데이트)
  if (!orderAssignees[orderId]) orderAssignees[orderId] = [];
- // 기존 next stage 항목 제거 후 재추가
  orderAssignees[orderId] = orderAssignees[orderId].filter(a => a.stage !== nextStage.id);
  orderAssignees[orderId].push({ staffId: newStaffId, stage: nextStage.id });
 
- // 단계 이동
+ // 로컬 상태 먼저 반영
  order.stage = nextStage.id;
  if (nextStage.id === 'done') {
- order.status = '출고중';
- if (!orderTimestamps[orderId]) orderTimestamps[orderId] = { start: null, end: null };
- orderTimestamps[orderId].end = TODAY + ' ' + getTimeInfo().current;
+   order.status = '출고중';
+   if (!orderTimestamps[orderId]) orderTimestamps[orderId] = { start: null, end: null };
+   orderTimestamps[orderId].end = TODAY + ' ' + getTimeInfo().current;
  } else if (order.status === '확정') {
- order.status = '출고중';
+   order.status = '출고중';
  }
 
  const staffName = getStaffName(newStaffId);
+
+ // 서버 동기화 — shipment id 는 order.shipmentId 가 있으면 사용 (서버 연동 시)
+ if (window.apiClient && typeof window.apiClient.post === 'function' && order.shipmentId) {
+   try {
+     await window.apiClient.post('/api/shipments/' + order.shipmentId + '/transition', {
+       to: 'MOVE',
+       stageId: nextStage.id,
+       note: `담당: ${staffName}`,
+     });
+   } catch (err) {
+     // 서버 오류는 경고만 — 로컬 이동은 이미 반영됨
+     console.warn('[qc-portal] shipment transition failed:', err && err.message);
+   }
+ }
+
  showToast(`${nextStage.icon} ${nextStage.name} 이동 — 담당: ${staffName}`);
  renderKanban();
  });
