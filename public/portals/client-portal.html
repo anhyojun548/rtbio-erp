@@ -599,6 +599,28 @@
 <script src="js/notice.js"></script>
 <script src="js/ai-assistant.js"></script>
 <script>
+// ── FIX-B2: NextAuth 세션이 있으면 prototype 자체 login 화면을 건너뜀 ──
+(async function skipLoginIfAuthenticated() {
+  try {
+    const r = await fetch('/api/me');
+    if (r.ok) {
+      const me = await r.json();
+      window.CURRENT_USER = me;
+      const loginPage    = document.getElementById('page-login');
+      const dashboardPage = document.getElementById('page-dashboard');
+      const appHeader    = document.getElementById('app-header');
+      const appNav       = document.getElementById('app-nav');
+      if (loginPage)    loginPage.classList.remove('active');
+      if (dashboardPage) dashboardPage.classList.add('active');
+      if (appHeader)    appHeader.style.display = '';
+      if (appNav)       appNav.style.display = '';
+      console.info('[client-portal] session active — skipping login page', me.email || me.name);
+    }
+  } catch (e) {
+    // 인증 없으면 login 유지
+  }
+})();
+
 // ── State ──
 let currentClient = null;
 let quantities = {}; // { productId: qty }
