@@ -35,7 +35,7 @@ export default async function UdiPage({ searchParams }: { searchParams: SearchPa
     : defaultMonth();
 
   let reportsRaw: Awaited<ReturnType<typeof listUdiReports>> = [];
-  let preview = { hospitalCount: 0, itemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
+  let preview = { hospitalCount: 0, itemCount: 0, excludedItemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
   try {
     [reportsRaw, preview] = await Promise.all([
       listUdiReports(),
@@ -72,10 +72,11 @@ export default async function UdiPage({ searchParams }: { searchParams: SearchPa
       <UdiPageBoard
         month={month}
         preview={{
-          hospitalCount: preview.hospitalCount,
-          itemCount:     preview.itemCount,
-          totalQty:      preview.totalQty,
-          totalAmount:   preview.totalAmount,
+          hospitalCount:     preview.hospitalCount,
+          itemCount:         preview.itemCount,
+          excludedItemCount: preview.excludedItemCount,
+          totalQty:          preview.totalQty,
+          totalAmount:       preview.totalAmount,
           hasExistingReport: preview.hasExistingReport,
         }}
         reports={reports}

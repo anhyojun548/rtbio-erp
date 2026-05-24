@@ -34,6 +34,11 @@ export default async function EditProductPage({
           basePrice: product.basePrice.toString(),
           expiryMonths: product.expiryMonths ?? undefined,
           active: product.active,
+          udiCode: product.udiCode ?? undefined,
+          udiRegisteredAt: product.udiRegisteredAt
+            ? product.udiRegisteredAt.toISOString().slice(0, 10)
+            : undefined,
+          udiCertificateUrl: product.udiCertificateUrl ?? undefined,
         }}
       />
     </div>

@@ -15,6 +15,7 @@ type SearchParams = {
   q?: string;
   category?: string;
   active?: string;
+  udi?: string; // "missing" 면 UDI 미등록 제품만
 };
 
 type ProductRow = Awaited<ReturnType<typeof listProducts>>[number];
@@ -32,10 +33,15 @@ export default async function ProductListPage({
       : ("ALL" as const);
   const category = searchParams.category?.trim() || "ALL";
 
-  const [products, categories] = await Promise.all([
+  const udiFilter = searchParams.udi === "missing" ? "missing" : undefined;
+
+  const [allProducts, categories] = await Promise.all([
     listProducts({ q: searchParams.q, category, active }),
     listProductCategories(),
   ]);
+  const products = udiFilter === "missing"
+    ? allProducts.filter((p) => !p.udiCode)
+    : allProducts;
 
   const columns: ColumnDef<ProductRow>[] = [
     {
@@ -62,6 +68,20 @@ export default async function ProductListPage({
       label: "카테고리",
       width: "100px",
       render: (p) => p.category ?? "—",
+    },
+    {
+      key: "udiCode",
+      label: "UDI-DI",
+      width: "180px",
+      hideOnMobile: true,
+      render: (p) => p.udiCode ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center rounded-full bg-success-light text-success px-1.5 py-0.5 text-[10px] font-semibold">등록</span>
+          <span className="font-mono text-tiny text-ink-secondary">{p.udiCode}</span>
+        </span>
+      ) : (
+        <span className="inline-flex items-center rounded-full bg-warning-light text-warning px-2 py-0.5 text-tiny font-semibold">UDI 미등록</span>
+      ),
     },
     {
       key: "basePrice",
@@ -118,11 +138,22 @@ export default async function ProductListPage({
     <div className="space-y-6">
       <PageHeader
         title="제품 관리"
-        subtitle="제품 정보, 사이즈별 재고, 유통기한을 관리합니다."
+        subtitle="제품 정보, 사이즈별 재고, 유통기한, UDI 등록 상태를 관리합니다."
         actions={
           <Button href="/admin/products/new" variant="primary"> + 신규 제품
           </Button> }
       />
+
+      {udiFilter === "missing" && (
+        <div className="bg-warning-light border border-warning/40 text-warning rounded p-3 text-caption flex items-center justify-between">
+          <span>
+            <strong>UDI 미등록 제품만 표시 중</strong> ({products.length}건) — 식약처 의료기기통합정보시스템에 등록 후 UDI-DI 코드를 입력하세요.
+          </span>
+          <Link href="/admin/products" className="text-tiny underline hover:no-underline">
+            전체 보기 →
+          </Link>
+        </div>
+      )}
 
       <ProductListFilter
         defaultValues={{ q: searchParams.q ?? "", category, active }}

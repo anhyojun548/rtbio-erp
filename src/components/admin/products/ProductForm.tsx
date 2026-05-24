@@ -20,6 +20,9 @@ type FormState = {
   part: string;
   basePrice: string;
   expiryMonths: string;
+  udiCode: string;
+  udiRegisteredAt: string; // YYYY-MM-DD
+  udiCertificateUrl: string;
 };
 
 export function ProductForm({
@@ -44,6 +47,14 @@ export function ProductForm({
       initial?.expiryMonths !== undefined && initial.expiryMonths !== null
         ? String(initial.expiryMonths)
         : "",
+    udiCode: initial?.udiCode ?? "",
+    udiRegisteredAt: (() => {
+      const v = initial?.udiRegisteredAt;
+      if (!v) return "";
+      const d = v instanceof Date ? v : new Date(v as string);
+      return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+    })(),
+    udiCertificateUrl: initial?.udiCertificateUrl ?? "",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +77,9 @@ export function ProductForm({
       part: values.part || undefined,
       basePrice: values.basePrice,
       expiryMonths: values.expiryMonths || undefined,
+      udiCode: values.udiCode || undefined,
+      udiRegisteredAt: values.udiRegisteredAt || undefined,
+      udiCertificateUrl: values.udiCertificateUrl || undefined,
     };
 
     start(async () => {
@@ -153,6 +167,52 @@ export function ProductForm({
           error={fieldErrors.expiryMonths?.[0]}
           placeholder="예: 24"
         />
+      </div>
+
+      {/* ── UDI 등록 정보 (의료기기통합정보시스템) ── */}
+      <div className="rounded-md border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">UDI 등록 정보</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              식약처 의료기기통합정보시스템에 등록된 UDI-DI 코드. 등록된 제품만 매월 공급내역 보고 가능.
+            </p>
+          </div>
+          {values.udiCode ? (
+            <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs font-semibold">
+              등록 완료
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-semibold">
+              미등록
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field
+            label="UDI-DI (14자리)"
+            value={values.udiCode}
+            onChange={(v) => set("udiCode", v.replace(/\D/g, "").slice(0, 14))}
+            error={fieldErrors.udiCode?.[0]}
+            placeholder="예: 08800100000014"
+          />
+          <Field
+            label="등록 완료일"
+            type="date"
+            value={values.udiRegisteredAt}
+            onChange={(v) => set("udiRegisteredAt", v)}
+            error={fieldErrors.udiRegisteredAt?.[0]}
+          />
+          <div className="col-span-2">
+            <Field
+              label="등록증 PDF URL (선택)"
+              value={values.udiCertificateUrl}
+              onChange={(v) => set("udiCertificateUrl", v)}
+              error={fieldErrors.udiCertificateUrl?.[0]}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">

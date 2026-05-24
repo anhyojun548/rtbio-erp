@@ -48,19 +48,22 @@ export async function getUdiReport(id: string) {
 
 /**
  * 보고서를 생성하기 전에 해당 월에 어떤 데이터가 잡힐지 미리보기.
- * 병원수/품목수/총수량/총금액 + 미보고 invoice 라인 카운트.
+ *  - 병원수/품목수/총수량/총금액 (UDI 등록 제품만)
+ *  - excludedItemCount: UDI 미등록 제품으로 제외된 라인 수
+ *  - hasExistingReport: 동일 월 보고서가 이미 있는지
  */
 export async function getUdiMonthPreview(reportMonth: string): Promise<{
   reportMonth: string;
   hospitalCount: number;
-  itemCount: number;
+  itemCount: number;        // UDI 등록 제품만
+  excludedItemCount: number; // UDI 미등록 제품 (집계에서 빠진 수)
   totalQty: number;
   totalAmount: number;
   hasExistingReport: boolean;
 }> {
   await requireRole("TENANT_OWNER", "ADMIN", "EXEC", "QC");
   if (!MONTH_RE.test(reportMonth)) {
-    return { reportMonth, hospitalCount: 0, itemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
+    return { reportMonth, hospitalCount: 0, itemCount: 0, excludedItemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
   }
   const [y, m] = reportMonth.split("-").map(Number);
   const monthStart = new Date(y!, m! - 1, 1);
@@ -73,26 +76,44 @@ export async function getUdiMonthPreview(reportMonth: string): Promise<{
         issueDate: { gte: monthStart, lt: nextMonth },
         client:    { type: "HOSPITAL" },
       },
-      include: { items: true },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: { product: { select: { udiCode: true } } },
+            },
+          },
+        },
+      },
     }),
     prisma.udiReport.findUnique({ where: { reportMonth }, select: { id: true } }),
   ]);
 
-  const hospitalCount = new Set(invoices.map((i) => i.clientId)).size;
+  const hospitalSet = new Set<string>();
   let itemCount = 0;
+  let excludedItemCount = 0;
   let totalQty = 0;
   let totalAmount = 0;
+
   for (const inv of invoices) {
-    for (const it of inv.items) {
-      itemCount += 1;
-      totalQty += it.quantity;
-      totalAmount += Number(it.amount);
+    hospitalSet.add(inv.clientId);
+    if (!inv.order) continue;
+    for (const it of inv.order.items) {
+      if (it.product.udiCode) {
+        itemCount += 1;
+        totalQty += it.quantity;
+        totalAmount += Number(it.unitPrice) * it.quantity;
+      } else {
+        excludedItemCount += 1;
+      }
     }
   }
+
   return {
     reportMonth,
-    hospitalCount,
+    hospitalCount: hospitalSet.size,
     itemCount,
+    excludedItemCount,
     totalQty,
     totalAmount,
     hasExistingReport: !!existing,
@@ -113,12 +134,13 @@ export async function deleteUdiReport(id: string): Promise<ActionResult<{ id: st
 
 /**
  * 월별 병원 납품 자동 집계 → UDI 보고서 생성
- *  - ISSUED+SENT Invoice 의 HOSPITAL 거래처 라인 집계
+ *  - ISSUED+SENT Invoice 의 HOSPITAL 거래처 라인을 Order.items 로 역추적해 Product 정보 확보
+ *  - product.udiCode 가 있는 라인만 보고 (미등록 제품은 제외 + 메타에 카운트)
  *  - 이미 보고서 있으면 fail
  */
 export async function createUdiReportFromInvoices(
   input: z.input<typeof createUdiReportSchema>,
-): Promise<ActionResult<{ id: string; itemCount: number }>> {
+): Promise<ActionResult<{ id: string; itemCount: number; excludedCount: number }>> {
   const user = await requireRole("TENANT_OWNER", "ADMIN");
   const parsed = createUdiReportSchema.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "검증 실패");
@@ -126,7 +148,7 @@ export async function createUdiReportFromInvoices(
   const existing = await prisma.udiReport.findUnique({ where: { reportMonth: parsed.data.reportMonth } });
   if (existing) return fail(`${parsed.data.reportMonth} 보고서가 이미 존재합니다 (id: ${existing.id})`);
 
-  // 해당 월 ISSUED+SENT 거래명세서 (HOSPITAL 만)
+  // 해당 월 ISSUED+SENT 거래명세서 (HOSPITAL 만) — Order.items + Product 까지 함께 로드
   const [y, m] = parsed.data.reportMonth.split("-").map(Number);
   const monthStart = new Date(y!, m! - 1, 1);
   const nextMonth  = new Date(y!, m!,     1);
@@ -139,24 +161,55 @@ export async function createUdiReportFromInvoices(
     },
     include: {
       client: { select: { id: true, businessNumber: true } },
-      items:  true,
+      order:  {
+        include: {
+          items: {
+            include: {
+              product: { select: { id: true, udiCode: true, name: true } },
+              productSize: { select: { sizeCode: true } },
+            },
+          },
+        },
+      },
     },
   });
 
-  // UdiReportItem 데이터 빌드
-  const items = invoices.flatMap((inv) =>
-    inv.items.map((it) => ({
-      clientId:    inv.clientId,
-      bizNumber:   inv.client.businessNumber ?? "",
-      productId:   null as string | null,
-      udiCode:     it.id, // 실개발 시 productSize → UDI-DI 14자리 변환
-      productName: it.description,
-      spec:        null as string | null,
-      qty:         it.quantity,
-      unitPrice:   it.unitPrice,
-      totalAmount: it.amount,
-    })),
-  );
+  // UdiReportItem 데이터 빌드 — product.udiCode 가 있는 라인만 포함
+  type ItemDraft = {
+    clientId:    string;
+    bizNumber:   string;
+    productId:   string;
+    udiCode:     string;
+    productName: string;
+    spec:        string | null;
+    qty:         number;
+    unitPrice:   string;
+    totalAmount: string;
+  };
+  const items: ItemDraft[] = [];
+  let excludedCount = 0;
+
+  for (const inv of invoices) {
+    if (!inv.order) continue; // 직접 발행된 명세서 (Order 없음) → 보고 대상 외
+    for (const it of inv.order.items) {
+      if (!it.product.udiCode) {
+        excludedCount++;
+        continue; // UDI 미등록 제품 → 제외
+      }
+      const lineTotal = Number(it.unitPrice) * it.quantity;
+      items.push({
+        clientId:    inv.clientId,
+        bizNumber:   inv.client.businessNumber ?? "",
+        productId:   it.product.id,
+        udiCode:     it.product.udiCode,
+        productName: it.product.name,
+        spec:        it.productSize.sizeCode ?? null,
+        qty:         it.quantity,
+        unitPrice:   it.unitPrice.toString(),
+        totalAmount: lineTotal.toString(),
+      });
+    }
+  }
 
   const totalAmount = items.reduce((s, i) => s + Number(i.totalAmount), 0);
 
@@ -168,12 +221,16 @@ export async function createUdiReportFromInvoices(
       totalAmount: totalAmount.toString(),
       note:        parsed.data.note,
       createdBy:   user.id,
-      items: { create: items.map((i) => ({ ...i, unitPrice: i.unitPrice.toString(), totalAmount: i.totalAmount.toString() })) },
+      items: { create: items },
     },
   });
-  await logAudit({ action: "UDI_REPORT_CREATE", resource: `UdiReport:${report.id}`, metadata: { itemCount: items.length, reportMonth: parsed.data.reportMonth } });
+  await logAudit({
+    action:   "UDI_REPORT_CREATE",
+    resource: `UdiReport:${report.id}`,
+    metadata: { itemCount: items.length, excludedCount, reportMonth: parsed.data.reportMonth },
+  });
   revalidatePath("/admin/udi");
-  return ok({ id: report.id, itemCount: items.length });
+  return ok({ id: report.id, itemCount: items.length, excludedCount });
 }
 
 /** 식약처 전송 — receiptNo mock 생성 (실개발 시 외부 API 연동) */

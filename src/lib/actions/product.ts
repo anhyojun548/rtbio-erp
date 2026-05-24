@@ -97,6 +97,9 @@ export async function createProduct(
         part: data.part,
         basePrice: new Prisma.Decimal(data.basePrice),
         expiryMonths: data.expiryMonths,
+        udiCode: data.udiCode,
+        udiRegisteredAt: data.udiRegisteredAt,
+        udiCertificateUrl: data.udiCertificateUrl,
         createdBy: user.id,
       },
       select: { id: true, code: true },
@@ -114,6 +117,11 @@ export async function createProduct(
     return ok(created);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = (err.meta as { target?: string[] | string } | undefined)?.target;
+      const isUdi = Array.isArray(target) ? target.includes("udiCode") : target === "udiCode";
+      if (isUdi) {
+        return fail("이미 사용 중인 UDI-DI 코드입니다.", { fieldErrors: { udiCode: ["중복"] } });
+      }
       return fail("중복된 제품 코드입니다.", { fieldErrors: { code: ["중복"] } });
     }
     throw err;

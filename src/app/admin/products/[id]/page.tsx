@@ -97,6 +97,47 @@ export default async function ProductDetailPage({
             label="등록일"
             value={new Date(product.createdAt).toLocaleDateString("ko-KR")}
           />
+
+          {/* UDI 등록 정보 (구분선 + 강조) */}
+          <div className="border-t border-slate-200 pt-3 mt-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase">UDI 등록</h3>
+              {product.udiCode ? (
+                <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-[10px] font-semibold">
+                  등록 완료
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[10px] font-semibold">
+                  미등록 — 공급내역 보고 불가
+                </span>
+              )}
+            </div>
+            <InfoRow
+              label="UDI-DI"
+              value={product.udiCode ? product.udiCode : null}
+            />
+            <InfoRow
+              label="등록일"
+              value={
+                product.udiRegisteredAt
+                  ? new Date(product.udiRegisteredAt).toLocaleDateString("ko-KR")
+                  : null
+              }
+            />
+            {product.udiCertificateUrl && (
+              <div className="flex">
+                <span className="w-24 text-xs text-slate-500">등록증</span>
+                <a
+                  href={product.udiCertificateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-sm text-sky-600 hover:underline truncate"
+                >
+                  PDF 열기 →
+                </a>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* 사이즈 관리 */}

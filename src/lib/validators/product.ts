@@ -26,6 +26,36 @@ const decimalInput = z
   .refine((v) => /^-?\d+(\.\d{1,2})?$/.test(v), "금액 형식 오류 (소수점 2자리까지)")
   .refine((v) => Number(v) >= 0, "금액은 0 이상이어야 합니다");
 
+// UDI-DI 14자리 (GS1 표준) — 숫자만 14자
+const udiCodeInput = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? undefined : v))
+  .optional()
+  .refine(
+    (v) => v === undefined || /^\d{14}$/.test(v),
+    "UDI-DI 는 14자리 숫자여야 합니다 (예: 08801234567890)",
+  );
+
+/**
+ * UDI-DI 14자리 GS1 체크 디지트 검증.
+ * 마지막 자리는 앞 13자리로 계산한 mod-10 체크 디지트.
+ *  - 홀수 위치 ×3 + 짝수 위치 ×1 합계 → 10 보수
+ */
+export function isValidUdiCheckDigit(udiCode: string): boolean {
+  if (!/^\d{14}$/.test(udiCode)) return false;
+  const digits = udiCode.split("").map(Number);
+  const check = digits[13];
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    const d = digits[i]!;
+    // 0-indexed 기준 짝수 위치(i=0,2,...,12) ×3
+    sum += i % 2 === 0 ? d * 3 : d;
+  }
+  const expected = (10 - (sum % 10)) % 10;
+  return expected === check;
+}
+
 // ─── 제품 (Product) ───
 export const productCreateSchema = z.object({
   code: z
@@ -47,6 +77,17 @@ export const productCreateSchema = z.object({
       (v) => v === undefined || (Number.isInteger(v) && v > 0 && v <= 600),
       "유통기한은 1~600개월 정수",
     ),
+  // UDI 등록 정보 (선택, 등록된 제품만)
+  udiCode: udiCodeInput,
+  udiRegisteredAt: z
+    .union([z.string(), z.date()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return undefined;
+      const d = v instanceof Date ? v : new Date(v);
+      return Number.isNaN(d.getTime()) ? undefined : d;
+    }),
+  udiCertificateUrl: optionalString,
 });
 export type ProductCreateInput = z.input<typeof productCreateSchema>;
 export type ProductCreateParsed = z.output<typeof productCreateSchema>;

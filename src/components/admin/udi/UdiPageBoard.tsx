@@ -44,6 +44,7 @@ interface Props {
   preview: {
     hospitalCount: number;
     itemCount: number;
+    excludedItemCount: number;       // UDI 미등록 제품으로 빠진 라인 수
     totalQty: number;
     totalAmount: number;
     hasExistingReport: boolean;
@@ -84,7 +85,11 @@ export function UdiPageBoard({ month, preview, reports }: Props) {
     start(async () => {
       const res = await createUdiReportFromInvoices({ reportMonth: month });
       if (res.ok) {
-        toast.success(`${month} 보고서 생성 완료 (${res.data.itemCount}건)`);
+        const { itemCount, excludedCount } = res.data;
+        const msg = excludedCount > 0
+          ? `${month} 보고서 생성 완료 (${itemCount}건 · UDI 미등록 ${excludedCount}건 제외)`
+          : `${month} 보고서 생성 완료 (${itemCount}건)`;
+        toast.success(msg);
         router.refresh();
       } else {
         toast.error(res.error);
@@ -168,6 +173,17 @@ export function UdiPageBoard({ month, preview, reports }: Props) {
           </Button>
         </div>
       </section>
+
+      {/* ── UDI 미등록 제품 경고 (있으면) ── */}
+      {preview.excludedItemCount > 0 && (
+        <div className="bg-warning-light border border-warning/40 text-warning rounded p-3 text-caption">
+          <strong>UDI 미등록 제품 {preview.excludedItemCount}건이 보고에서 제외됩니다.</strong>
+          {" "}식약처 UDI 등록을 완료한 후 다시 시도하세요.
+          <Link href="/admin/products?udi=missing" className="ml-2 underline hover:no-underline">
+            미등록 제품 보기 →
+          </Link>
+        </div>
+      )}
 
       {/* ── 4 Stat ── */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">

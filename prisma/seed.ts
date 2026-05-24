@@ -107,23 +107,45 @@ async function main() {
 
   // ------ 3. 제품 마스터 (의료용품 가상) ------
   // 알티바이오 제품 카테고리 예시: 인공관절 보조재, 혈관 스텐트, 봉합사 등
+  //
+  // UDI-DI 14자리 = mock GS1 회사 코드(0880) + 8자리 제품 식별 + 체크 디지트(자동)
+  // 본 시드에서는 9종은 등록 완료(udiCode 채움) / 1종은 미등록(NULL — 가드 검증용)
+  function gs1CheckDigit(base13: string): string {
+    let sum = 0;
+    for (let i = 0; i < 13; i++) {
+      const d = parseInt(base13[i]!, 10);
+      sum += i % 2 === 0 ? d * 3 : d;
+    }
+    return String((10 - (sum % 10)) % 10);
+  }
+  function buildUdi(serial8: string): string {
+    // 5자리 mock GS1 회사 코드(08800) + 8자리 제품 식별 = 13자리 + 체크 1자리 = 14
+    const base = "08800" + serial8;
+    return base + gs1CheckDigit(base);
+  }
   const productsData = [
-    { code: "P-KNEE-01", name: "인공무릎 보조재 A", brand: "RTBIO", category: "관절", part: "무릎", basePrice: 450000, sizes: ["S", "M", "L", "XL"] },
-    { code: "P-KNEE-02", name: "인공무릎 보조재 B", brand: "RTBIO", category: "관절", part: "무릎", basePrice: 520000, sizes: ["S", "M", "L"] },
-    { code: "P-HIP-01",  name: "고관절 보조재",     brand: "RTBIO", category: "관절", part: "고관절", basePrice: 680000, sizes: ["M", "L", "XL"] },
-    { code: "P-STEN-01", name: "혈관 스텐트 표준",  brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 890000, sizes: ["3x15", "4x18", "5x22"] },
-    { code: "P-STEN-02", name: "혈관 스텐트 코팅",  brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 1120000, sizes: ["3x15", "4x18"] },
-    { code: "P-SUT-01",  name: "봉합사 3-0",        brand: "RTBIO", category: "봉합", part: "연부조직", basePrice: 28000, sizes: ["30cm", "45cm", "75cm"] },
-    { code: "P-SUT-02",  name: "봉합사 4-0",        brand: "RTBIO", category: "봉합", part: "연부조직", basePrice: 32000, sizes: ["30cm", "45cm"] },
-    { code: "P-MESH-01", name: "탈장 메쉬",         brand: "RTBIO", category: "메쉬", part: "복부", basePrice: 190000, sizes: ["10x15", "15x20", "20x30"] },
-    { code: "P-BONE-01", name: "골 이식재",         brand: "OrthoCo", category: "정형", part: "골조직", basePrice: 340000, sizes: ["1cc", "2.5cc", "5cc"] },
-    { code: "P-CATH-01", name: "카테터 표준",       brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 75000, sizes: ["Fr5", "Fr6", "Fr7"] },
+    { code: "P-KNEE-01", name: "인공무릎 보조재 A", brand: "RTBIO", category: "관절", part: "무릎", basePrice: 450000, sizes: ["S", "M", "L", "XL"], udiSerial: "10000001" },
+    { code: "P-KNEE-02", name: "인공무릎 보조재 B", brand: "RTBIO", category: "관절", part: "무릎", basePrice: 520000, sizes: ["S", "M", "L"], udiSerial: "10000002" },
+    { code: "P-HIP-01",  name: "고관절 보조재",     brand: "RTBIO", category: "관절", part: "고관절", basePrice: 680000, sizes: ["M", "L", "XL"], udiSerial: "10000003" },
+    { code: "P-STEN-01", name: "혈관 스텐트 표준",  brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 890000, sizes: ["3x15", "4x18", "5x22"], udiSerial: "20000001" },
+    { code: "P-STEN-02", name: "혈관 스텐트 코팅",  brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 1120000, sizes: ["3x15", "4x18"], udiSerial: "20000002" },
+    { code: "P-SUT-01",  name: "봉합사 3-0",        brand: "RTBIO", category: "봉합", part: "연부조직", basePrice: 28000, sizes: ["30cm", "45cm", "75cm"], udiSerial: "10000004" },
+    { code: "P-SUT-02",  name: "봉합사 4-0",        brand: "RTBIO", category: "봉합", part: "연부조직", basePrice: 32000, sizes: ["30cm", "45cm"], udiSerial: "10000005" },
+    { code: "P-MESH-01", name: "탈장 메쉬",         brand: "RTBIO", category: "메쉬", part: "복부", basePrice: 190000, sizes: ["10x15", "15x20", "20x30"], udiSerial: "10000006" },
+    { code: "P-BONE-01", name: "골 이식재",         brand: "OrthoCo", category: "정형", part: "골조직", basePrice: 340000, sizes: ["1cc", "2.5cc", "5cc"], udiSerial: "30000001" },
+    // 마지막 1종은 의도적으로 udiSerial 누락 → UDI 미등록 제품 (가드 검증용)
+    { code: "P-CATH-01", name: "카테터 표준",       brand: "VascuMed", category: "심혈관", part: "혈관", basePrice: 75000, sizes: ["Fr5", "Fr6", "Fr7"], udiSerial: null as string | null },
   ];
 
   for (const pd of productsData) {
-    const product = await prisma.product.upsert({
+    const udiCode = pd.udiSerial ? buildUdi(pd.udiSerial) : null;
+    await prisma.product.upsert({
       where: { code: pd.code },
-      update: {},
+      update: {
+        // 기존 시드 재실행 시 UDI 정보 보강 (다른 필드는 보존)
+        udiCode,
+        udiRegisteredAt: udiCode ? new Date("2025-01-15") : null,
+      },
       create: {
         code: pd.code,
         name: pd.name,
@@ -132,6 +154,8 @@ async function main() {
         part: pd.part,
         basePrice: pd.basePrice,
         expiryMonths: 36, // 기본 36개월
+        udiCode,
+        udiRegisteredAt: udiCode ? new Date("2025-01-15") : null,
         createdBy: "seed",
         sizes: {
           create: pd.sizes.map((sizeCode) => {
@@ -148,7 +172,8 @@ async function main() {
       },
     });
   }
-  console.log(`✓ Products: ${productsData.length}종 (사이즈 포함)`);
+  const udiRegistered = productsData.filter((p) => p.udiSerial).length;
+  console.log(`✓ Products: ${productsData.length}종 (UDI 등록 ${udiRegistered}종 / 미등록 ${productsData.length - udiRegistered}종)`);
 
   // ------ 4. 거래처 (대리점 + 병원 + 기타) ------
   const clientsData = [

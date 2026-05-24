@@ -33,7 +33,7 @@ export default async function QcUdiPage({ searchParams }: { searchParams: Search
     : defaultMonth();
 
   let reports: Awaited<ReturnType<typeof listUdiReports>> = [];
-  let preview = { hospitalCount: 0, itemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
+  let preview = { hospitalCount: 0, itemCount: 0, excludedItemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
   try {
     [reports, preview] = await Promise.all([
       listUdiReports(),
@@ -55,6 +55,12 @@ export default async function QcUdiPage({ searchParams }: { searchParams: Search
       <div className="bg-accent-light border border-accent/30 text-accent-dark rounded p-3 text-tiny">
         읽기 전용 모드 — 보고서 작성/전송은 경영지원팀(ADMIN/OWNER) 권한이 필요합니다.
       </div>
+
+      {preview.excludedItemCount > 0 && (
+        <div className="bg-warning-light border border-warning/40 text-warning rounded p-3 text-caption">
+          UDI 미등록 제품 {preview.excludedItemCount}건이 보고에서 제외될 예정 — 경영지원팀에 등록 요청 필요
+        </div>
+      )}
 
       {/* 월 선택 — 단순 form */}
       <form className="bg-surface border border-border rounded p-4 flex items-center gap-2">
