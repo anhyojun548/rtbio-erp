@@ -392,18 +392,18 @@ function calcOrderTotal(order) {
 
 // ── Helper: 거래처명 조회 ──
 function getClientName(clientId) {
-  const c = CLIENTS.find(x => x.id === clientId);
+  const c = (window.CLIENTS || CLIENTS).find(x => x.id === clientId);
   return c ? c.name : clientId;
 }
 
 // ── Helper: 거래처 객체 조회 ──
 function getClient(clientId) {
-  return CLIENTS.find(x => x.id === clientId);
+  return (window.CLIENTS || CLIENTS).find(x => x.id === clientId);
 }
 
 // ── Helper: 제품명 조회 ──
 function getProductName(productId) {
-  const p = PRODUCTS.find(x => x.id === productId);
+  const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === productId);
   return p ? p.name : productId;
 }
 

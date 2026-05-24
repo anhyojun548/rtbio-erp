@@ -41,11 +41,13 @@ function buildClientMgmtPageHTML() {
 
 // ── 거래처 리스트 렌더 ──────────────────────────────────────────────
 function renderClients(searchTerm) {
+  const _CLIENTS = window.CLIENTS || [];
+  const _customClientTypes = window.customClientTypes || [];
   const typeFilter = document.getElementById('client-type-filter')?.value || 'all';
-  let filtered = CLIENTS;
+  let filtered = _CLIENTS;
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
-    filtered = CLIENTS.filter(c => c.name.toLowerCase().includes(term));
+    filtered = _CLIENTS.filter(c => c.name.toLowerCase().includes(term));
   }
   if (typeFilter !== 'all') {
     filtered = filtered.filter(c => c.type === typeFilter);
@@ -54,7 +56,7 @@ function renderClients(searchTerm) {
   const typeCounts = {};
   filtered.forEach(c => { typeCounts[c.type] = (typeCounts[c.type] || 0) + 1; });
   const summaryParts = [`총 거래처 <strong>${filtered.length}개</strong>`];
-  for (const t of customClientTypes) {
+  for (const t of _customClientTypes) {
     if (typeCounts[t]) summaryParts.push(`${t} <strong>${typeCounts[t]}개</strong>`);
   }
   const sumEl = document.getElementById('clients-summary');
@@ -76,7 +78,7 @@ function renderClients(searchTerm) {
       : c.type === '병원'
       ? '<span class="badge badge-type-hospital">병원</span>'
       : `<span class="badge" style="background:var(--purple-light);color:var(--purple);">${c.type}</span>`;
-    const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[c.id])?.name || '-';
+    const repName = (window.SALES_REPS || []).find(r => r.id === (window.CLIENT_REP_MAP || {})[c.id])?.name || '-';
     const fixedPriceHTML = Object.keys(c.fixedPrices).length > 0
       ? Object.entries(c.fixedPrices).map(([pid, price]) =>
         `${getProductName(pid)}: ${formatCurrency(price)}`
@@ -127,16 +129,19 @@ function filterClients(term) {
 }
 
 function showAddClientTypeForm() {
+  const _cct = window.customClientTypes || [];
   showModal('거래처 유형 추가', `
     <div class="form-group">
       <label>새 유형명</label>
       <input type="text" class="form-input" id="new-client-type" placeholder="예: 약국, 재활센터...">
     </div>
-    <div class="text-sm text-muted">현재 유형: ${customClientTypes.join(', ')}</div>
+    <div class="text-sm text-muted">현재 유형: ${_cct.join(', ')}</div>
   `, function() {
     const newType = document.getElementById('new-client-type')?.value?.trim();
-    if (newType && !customClientTypes.includes(newType)) {
-      customClientTypes.push(newType);
+    const types = window.customClientTypes || [];
+    if (newType && !types.includes(newType)) {
+      types.push(newType);
+      window.customClientTypes = types;
       const sel = document.getElementById('client-type-filter');
       if (sel) {
         const opt = document.createElement('option');
@@ -155,7 +160,7 @@ function showClientDiscountDetail(clientId) {
   const catNames = { knee: '무릎', upper: '상지', lower: '하지', sprint: '스프린트' };
   let productsHTML = '';
   for (const [catId, catName] of Object.entries(catNames)) {
-    const catProducts = PRODUCTS.filter(p => p.cat === catId);
+    const catProducts = (window.PRODUCTS || []).filter(p => p.cat === catId);
     productsHTML += `<div style="font-size:13px;font-weight:700;margin:12px 0 6px;color:var(--primary);">${catName} (기본 ${c.discounts[catId]}%)</div>`;
     productsHTML += '<div class="product-discount-grid">';
     catProducts.forEach(p => {
@@ -363,9 +368,9 @@ function showClientDetail(clientId) {
         `<li>${getProductName(pid)}: ${formatCurrency(price)}</li>`
       ).join('') + '</ul>'
     : '없음';
-  const clientOrders = ORDERS.filter(o => o.clientId === clientId);
+  const clientOrders = (window.ORDERS || []).filter(o => o.clientId === clientId);
   const clientRevenue = clientOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
-  const rec = RECEIVABLES.find(r => r.clientId === clientId);
+  const rec = (window.RECEIVABLES || []).find(r => r.clientId === clientId);
   const bodyHTML = `
     <div style="margin-bottom:16px;">
       <div class="flex items-center gap-8 mb-8">
@@ -561,6 +566,7 @@ function buildClientFormHTML(client) {
   const c = client || { name:'', type:'대리점', manager:'', phone:'', email:'', address:'',
     paymentType:'당월말카드', closingPeriod:'1일~25일', invoiceType:'RTBIO',
     discounts:{ knee:0, upper:0, lower:0, sprint:0 }, loginId:'', pw:'' };
+  const _customClientTypes = window.customClientTypes || [];
   return `
     <div class="modal-form">
       <div class="form-row">
@@ -571,7 +577,7 @@ function buildClientFormHTML(client) {
         <div class="form-group">
           <label>유형</label>
           <select id="cf-type">
-            ${customClientTypes.map(t => '<option value="' + t + '"' + (c.type === t ? ' selected' : '') + '>' + t + '</option>').join('')}
+            ${_customClientTypes.map(t => '<option value="' + t + '"' + (c.type === t ? ' selected' : '') + '>' + t + '</option>').join('')}
           </select>
         </div>
       </div>
@@ -590,7 +596,7 @@ function buildClientFormHTML(client) {
           <label>담당 영업사원</label>
           <select id="cf-sales-rep">
             <option value="">선택안함</option>
-            ${SALES_REPS.map(r => '<option value="' + r.id + '"' + (CLIENT_REP_MAP[isEdit ? client.id : ''] === r.id ? ' selected' : '') + '>' + r.name + '</option>').join('')}
+            ${(window.SALES_REPS || []).map(r => '<option value="' + r.id + '"' + ((window.CLIENT_REP_MAP || {})[isEdit ? client.id : ''] === r.id ? ' selected' : '') + '>' + r.name + '</option>').join('')}
           </select>
         </div>
       </div>
