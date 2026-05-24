@@ -1824,6 +1824,7 @@
 </div><!-- /layout -->
 
 <script src="js/data.js"></script>
+<script src="js/api-adapter.js"></script>
 <script src="js/data-loader.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/shared-ui.js"></script>
@@ -2736,9 +2737,9 @@ function buildClientFormHTML(client) {
  </div>
  <div class="form-actions">
  <button class="btn btn-outline" onclick="document.querySelector('.modal-overlay').remove()">취소</button>
- <button class="btn btn-primary" onclick="${isEdit
- ? "showToast('거래처 정보가 수정되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
- : "showToast('거래처가 등록되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
+ <button class="btn btn-primary" id="cf-submit-btn" onclick="${isEdit
+ ? "_submitClientForm('" + (client ? client.id : '') + "', true)"
+ : "_submitClientForm(null, false)"
  }">${isEdit ? '저장' : '등록'}</button>
  </div>
  </div>

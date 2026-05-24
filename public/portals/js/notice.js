@@ -244,27 +244,41 @@
         if (typeof showToast === 'function') showToast('제목과 본문은 필수입니다', 'error');
         return;
       }
-      const newNotice = {
-        id: 'N' + String(Date.now()).slice(-6),
+      const noticePayload = {
         title, body,
         target: document.getElementById('notice-new-target').value,
-        targetIds: Array.from(document.getElementById('notice-new-targetIds')?.selectedOptions || []).map(o => o.value),
+        targetIds: Array.from(document.getElementById('notice-new-targetIds')?.selectedOptions || []).map(function(o) { return o.value; }),
         priority: document.getElementById('notice-new-priority').value,
         createdBy: _authorTeam,
-        createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
         expiresAt: document.getElementById('notice-new-expires').value || null,
         pinned: document.getElementById('notice-new-pinned').checked,
-        readBy: [],
       };
-      (global.NOTICES = global.NOTICES || []).unshift(newNotice);
-      render();
-      if (typeof pushNotification === 'function') {
-        pushNotification({
-          type: 'NOTICE', title: '새 공지사항', message: title,
-          targetTeam: 'ALL', relatedId: newNotice.id,
-        });
-      }
-      if (typeof showToast === 'function') showToast('공지사항이 발송되었습니다', 'success');
+
+      // ── API 호출 (서버 저장) → 성공 시 인메모리 반영 ──────────
+      var _doSave = function() {
+        if (global.apiClient && typeof global.apiClient.post === 'function') {
+          return global.apiClient.post('/api/notices', noticePayload)
+            .then(function(saved) {
+              var newNotice = saved || Object.assign({ id: 'N' + String(Date.now()).slice(-6), createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '), readBy: [] }, noticePayload);
+              (global.NOTICES = global.NOTICES || []).unshift(newNotice);
+              render();
+              if (typeof pushNotification === 'function') {
+                pushNotification({ type: 'NOTICE', title: '새 공지사항', message: title, targetTeam: 'ALL', relatedId: newNotice.id });
+              }
+              if (typeof showToast === 'function') showToast('공지사항이 발송되었습니다', 'success');
+            })
+            .catch(function(err) {
+              if (typeof showToast === 'function') showToast(err.message || '발송 실패', 'error');
+            });
+        } else {
+          // apiClient 미로딩 시 mock fallback
+          var newNotice = Object.assign({ id: 'N' + String(Date.now()).slice(-6), createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '), readBy: [] }, noticePayload);
+          (global.NOTICES = global.NOTICES || []).unshift(newNotice);
+          render();
+          if (typeof showToast === 'function') showToast('공지사항이 발송되었습니다', 'success');
+        }
+      };
+      _doSave();
     });
   }
 
@@ -305,11 +319,53 @@
     }
   }
 
-  // ── 편집 (다음 단계) ──────────────────────────────────────────────
+  // ── 편집 / 삭제 ──────────────────────────────────────────────────
   function edit(noticeId) {
-    if (typeof showToast === 'function') {
-      showToast('공지 편집 기능은 다음 단계에서 구현 예정입니다', 'info');
+    var n = (global.NOTICES || []).find(function(x) { return x.id === noticeId; });
+    if (!n) return;
+    if (typeof showModal !== 'function') {
+      if (typeof showToast === 'function') showToast('공지 편집은 모달 기능이 필요합니다', 'info');
+      return;
     }
+    showModal('공지 관리 — ' + escapeHtml(n.title), `
+      <div style="font-size:14px; line-height:1.6; margin-bottom:16px;">
+        <strong>${escapeHtml(n.title)}</strong><br>
+        <span style="color:var(--text-secondary); font-size:12px;">${n.createdBy} · ${n.createdAt}</span>
+      </div>
+      <div style="background:var(--bg-soft); border-radius:6px; padding:12px; font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
+        ${escapeHtml(n.body)}
+      </div>
+      <div style="color:var(--danger); font-size:13px;">
+        이 공지를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.
+      </div>
+    `, function() {
+      _deleteNotice(noticeId);
+    }, { confirmLabel: '삭제', confirmClass: 'btn-danger' });
+  }
+
+  /**
+   * 공지 삭제 — DELETE /api/notices/:id + window.NOTICES 에서 제거.
+   */
+  function _deleteNotice(noticeId) {
+    var _doDelete = function() {
+      if (global.apiClient && typeof global.apiClient.delete === 'function') {
+        return global.apiClient.delete('/api/notices/' + noticeId)
+          .then(function() {
+            global.NOTICES = (global.NOTICES || []).filter(function(x) { return x.id !== noticeId; });
+            render();
+            if (typeof showToast === 'function') showToast('공지사항이 삭제되었습니다', 'success');
+          })
+          .catch(function(err) {
+            if (typeof showToast === 'function') showToast(err.message || '삭제 실패', 'error');
+          });
+      } else {
+        // apiClient 미로딩 시 mock fallback
+        global.NOTICES = (global.NOTICES || []).filter(function(x) { return x.id !== noticeId; });
+        render();
+        if (typeof showToast === 'function') showToast('공지사항이 삭제되었습니다', 'success');
+      }
+    };
+    _doDelete();
   }
 
   // ── 공개 API ──────────────────────────────────────────────────────
@@ -319,6 +375,7 @@
     compose,
     preview,
     edit,
+    deleteNotice: _deleteNotice,
     toggleSpecific,
     pageTemplate,
     AUTHOR_META,

@@ -664,9 +664,9 @@ function buildClientFormHTML(client) {
       </div>
       <div class="form-actions">
         <button class="btn btn-outline" onclick="document.querySelector('.modal-overlay').remove()">취소</button>
-        <button class="btn btn-primary" onclick="${isEdit
-          ? "showToast('거래처 정보가 수정되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
-          : "showToast('거래처가 등록되었습니다', 'success'); document.querySelector('.modal-overlay').remove();"
+        <button class="btn btn-primary" id="cf-submit-btn" onclick="${isEdit
+          ? "_submitClientForm('" + (client ? client.id : '') + "', true)"
+          : "_submitClientForm(null, false)"
         }">${isEdit ? '저장' : '등록'}</button>
       </div>
     </div>
@@ -691,6 +691,89 @@ function showEditClientForm(clientId) {
   if (footer) footer.style.display = 'none';
 }
 
+// ── 거래처 저장/삭제 API 연동 ──────────────────────────────────────
+/**
+ * 신규 등록(isEdit=false) 또는 수정(isEdit=true) 을 서버에 반영.
+ * buildClientFormHTML() 내 저장 버튼에서 직접 호출.
+ */
+async function _submitClientForm(clientId, isEdit) {
+  const btn = document.getElementById('cf-submit-btn');
+
+  // 폼 값 수집
+  const payload = {
+    name:          document.getElementById('cf-name')?.value.trim(),
+    type:          document.getElementById('cf-type')?.value,
+    manager:       document.getElementById('cf-manager')?.value.trim(),
+    phone:         document.getElementById('cf-phone')?.value.trim(),
+    email:         document.getElementById('cf-email')?.value.trim(),
+    address:       document.getElementById('cf-address')?.value.trim(),
+    paymentType:   document.getElementById('cf-payment')?.value,
+    closingPeriod: document.getElementById('cf-closing')?.value,
+    invoiceType:   document.getElementById('cf-invoice-type')?.value,
+    discounts: {
+      knee:   parseFloat(document.getElementById('cf-disc-knee')?.value)   || 0,
+      upper:  parseFloat(document.getElementById('cf-disc-upper')?.value)  || 0,
+      lower:  parseFloat(document.getElementById('cf-disc-lower')?.value)  || 0,
+      sprint: parseFloat(document.getElementById('cf-disc-sprint')?.value) || 0,
+    },
+    salesRepId: document.getElementById('cf-sales-rep')?.value || null,
+  };
+
+  if (!payload.name) {
+    if (typeof showToast === 'function') showToast('업체명은 필수입니다', 'error');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+
+  try {
+    if (isEdit && clientId) {
+      // PATCH /api/clients/:id
+      const updated = await window.apiClient.patch('/api/clients/' + clientId, payload);
+      // window.CLIENTS 인메모리 반영
+      const idx = (window.CLIENTS || []).findIndex(function(c) { return c.id === clientId; });
+      if (idx !== -1) Object.assign(window.CLIENTS[idx], updated || payload);
+    } else {
+      // POST /api/clients
+      const created = await window.apiClient.post('/api/clients', payload);
+      (window.CLIENTS = window.CLIENTS || []).push(created || payload);
+    }
+
+    document.querySelector('.modal-overlay')?.remove();
+    if (typeof renderClients === 'function') {
+      renderClients(document.getElementById('client-search')?.value || '');
+    }
+    if (typeof showToast === 'function') {
+      showToast(isEdit ? '거래처 정보가 수정되었습니다' : '거래처가 등록되었습니다', 'success');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast(err.message || '저장 실패', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = isEdit ? '저장' : '등록'; }
+  }
+}
+
+/**
+ * 거래처 삭제 — DELETE /api/clients/:id + window.CLIENTS 에서 제거.
+ * @param {string} clientId
+ */
+async function deleteClient(clientId) {
+  const c = getClient(clientId);
+  if (!c) return;
+  if (!confirm(c.name + ' 거래처를 삭제하시겠습니까?\n(관련 주문/명세서 이력도 영향을 받을 수 있습니다)')) return;
+
+  try {
+    await window.apiClient.delete('/api/clients/' + clientId);
+    window.CLIENTS = (window.CLIENTS || []).filter(function(x) { return x.id !== clientId; });
+    document.querySelector('.modal-overlay')?.remove();
+    if (typeof renderClients === 'function') {
+      renderClients(document.getElementById('client-search')?.value || '');
+    }
+    if (typeof showToast === 'function') showToast(c.name + ' 거래처가 삭제되었습니다', 'success');
+  } catch (err) {
+    if (typeof showToast === 'function') showToast(err.message || '삭제 실패', 'error');
+  }
+}
+
 // ── window 노출 ────────────────────────────────────────────────────
 if (typeof window !== 'undefined') {
   window.buildClientMgmtPageHTML = buildClientMgmtPageHTML;
@@ -708,4 +791,6 @@ if (typeof window !== 'undefined') {
   window.buildClientFormHTML = buildClientFormHTML;
   window.showNewClientForm = showNewClientForm;
   window.showEditClientForm = showEditClientForm;
+  window._submitClientForm = _submitClientForm;
+  window.deleteClient = deleteClient;
 }
