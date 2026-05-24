@@ -12,8 +12,78 @@
  *
  * 이렇게 하면 prototype 의 renderXxx() 가 항상 API 데이터를 보게 됨.
  */
+
+/* ─────────────────────────────────────────────────────────────
+ * API enum → prototype mock 형식 어댑터 (FIX-B5)
+ *
+ * DB/API 는 영문 enum 을 반환하지만, prototype JS 는 한글 값으로 분기함.
+ * 이 매핑 + normalize 함수가 그 간극을 해소한다.
+ *
+ * 주의:
+ *   - INVOICE_HISTORY (SENT/ISSUED/CANCELLED) 와 UDI_REPORTS (SUBMITTED/PENDING) 는
+ *     prototype mock 도 영문 enum 을 그대로 사용하므로 변환하지 않는다.
+ *   - _typeEnum / _statusEnum 에 원본 영문 값을 보존해 두어
+ *     API 쓰기 호출 시 다시 영문으로 변환할 수 있게 한다.
+ * ───────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
+
+  /* ───────────────────────────────────────────
+   * [FIX-B5] 매핑 테이블
+   * ─────────────────────────────────────────── */
+
+  /** Client.type: DB enum → prototype 한글 */
+  var CLIENT_TYPE_MAP = {
+    HOSPITAL: '병원',
+    AGENCY:   '대리점',
+    OTHER:    '기타',
+  };
+
+  /**
+   * Order.status: DB enum → prototype 한글
+   *
+   * admin-portal.html 의 일부 오래된 분기는 이미
+   *   o.status === '접수' || o.status === 'SUBMITTED'
+   * 처럼 두 값을 모두 허용하므로 변환 후에도 안전하다.
+   */
+  var ORDER_STATUS_MAP = {
+    DRAFT:     '임시저장',
+    SUBMITTED: '접수',
+    CONFIRMED: '확정',
+    SHIPPING:  '출고중',
+    COMPLETED: '완료',
+    CANCELLED: '취소',
+    HELD:      '보류',
+    REJECTED:  '반려',
+  };
+
+  /* INVOICE_HISTORY.status 는 prototype mock 이 영문(SENT/ISSUED/CANCELLED)을
+   * 그대로 사용하고 admin-portal.html 도 영문으로 분기하므로 변환 불필요. */
+
+  /* UDI_REPORTS.status 도 prototype/admin 양쪽이 영문(SUBMITTED/PENDING)으로 비교하므로
+   * 변환 불필요. */
+
+  /**
+   * normalize 함수들
+   * - 원본 영문 enum 을 _typeEnum / _statusEnum 에 보존해 두어
+   *   API POST/PATCH 시 원래 값으로 다시 변환 가능하게 한다.
+   */
+
+  function normalizeClient(c) {
+    if (!c || typeof c !== 'object') return c;
+    var mapped = CLIENT_TYPE_MAP[c.type];
+    return mapped
+      ? Object.assign({}, c, { type: mapped, _typeEnum: c.type })
+      : c;
+  }
+
+  function normalizeOrder(o) {
+    if (!o || typeof o !== 'object') return o;
+    var mapped = ORDER_STATUS_MAP[o.status];
+    return mapped
+      ? Object.assign({}, o, { status: mapped, _statusEnum: o.status })
+      : o;
+  }
 
   /* ───────────────────────────────────────────
    * Step 1: DOMContentLoaded 인터셉트 설정
@@ -67,11 +137,23 @@
         txns, conferences, expiry,
       ] = await Promise.all(responses.map(r => (r.ok ? r.json() : null)));
 
-      /* window.X 덮어쓰기 — data.js 의 mock 을 API 결과로 교체 */
+      /* window.X 덮어쓰기 — data.js 의 mock 을 API 결과로 교체
+       *
+       * [FIX-B5] normalizeClient / normalizeOrder 를 통해
+       * DB 영문 enum → prototype 한글 값으로 정규화.
+       *
+       * normalizeClient : Client.type  HOSPITAL→병원, AGENCY→대리점, OTHER→기타
+       * normalizeOrder  : Order.status DRAFT→임시저장, SUBMITTED→접수, CONFIRMED→확정,
+       *                               SHIPPING→출고중, COMPLETED→완료, CANCELLED→취소,
+       *                               HELD→보류, REJECTED→반려
+       *
+       * INVOICE_HISTORY / UDI_REPORTS 는 prototype 과 API 양쪽이 영문 enum 을
+       * 그대로 사용하므로 변환하지 않는다.
+       */
       if (me)           window.CURRENT_USER       = me;
-      if (clients)      window.CLIENTS             = Array.isArray(clients)    ? clients    : (clients.data    ?? []);
+      if (clients)      window.CLIENTS             = (Array.isArray(clients)    ? clients    : (clients.data    ?? [])).map(normalizeClient);
       if (products)     window.PRODUCTS            = Array.isArray(products)   ? products   : (products.data   ?? []);
-      if (orders)       window.ORDERS              = Array.isArray(orders)     ? orders     : (orders.data     ?? []);
+      if (orders)       window.ORDERS              = (Array.isArray(orders)     ? orders     : (orders.data     ?? [])).map(normalizeOrder);
       if (invoices)     window.INVOICE_HISTORY     = Array.isArray(invoices)   ? invoices   : (invoices.data   ?? []);
       if (payments)     window.RECEIVABLES         = Array.isArray(payments)   ? payments   : (payments.data   ?? []);
       if (ledger)       window.LEDGERS             = Array.isArray(ledger)     ? ledger     : (ledger.data     ?? []);
