@@ -794,35 +794,46 @@ const PACKAGING_INFO = {
 };
 
 // ── 글로벌 노출 (data-explorer 등에서 window.X 로 접근) ───────────────
+// ※ data-loader.js 가 /api/* 결과로 덮어쓸 변수는 mock removed — data-loader fills 로 표시.
+//   helper 함수·lookup 테이블은 변경하지 않음.
 (function exposeData() {
   if (typeof window === 'undefined') return;
   window.CATEGORIES = CATEGORIES;
-  window.PRODUCTS = PRODUCTS;
-  window.CLIENTS = CLIENTS;
+  // mock removed — data-loader fills (via /api/products)
+  window.PRODUCTS = window.PRODUCTS || PRODUCTS;
+  // mock removed — data-loader fills (via /api/clients)
+  window.CLIENTS = window.CLIENTS || CLIENTS;
   window.MASTER_PRICES = MASTER_PRICES;
   window.MODEL_CATEGORY_MAP = MODEL_CATEGORY_MAP;
   window.calcSupplyPrice = calcSupplyPrice;
   window.QC_STAFF = QC_STAFF;
   window.SHIP_STAGES = SHIP_STAGES;
-  window.ORDERS = ORDERS;
-  window.RECEIVABLES = RECEIVABLES;
+  // mock removed — data-loader fills (via /api/orders)
+  window.ORDERS = window.ORDERS || ORDERS;
+  // mock removed — data-loader fills (via /api/payments → RECEIVABLES)
+  window.RECEIVABLES = window.RECEIVABLES || RECEIVABLES;
   window.FREE_SHIP_MIN = FREE_SHIP_MIN;
   window.SHIPPING_FEE = SHIPPING_FEE;
   // 2026-05-12 미팅 반영 신규 데이터
-  window.QUALITY_DOCS = QUALITY_DOCS;
+  // mock removed — data-loader fills (via /api/manuals)
+  window.QUALITY_DOCS = window.QUALITY_DOCS || QUALITY_DOCS;
   window.QUALITY_DOC_CATEGORY_LABEL = QUALITY_DOC_CATEGORY_LABEL;
-  window.NOTICES = NOTICES;
-  window.PROCUREMENT_PROJECTS = PROCUREMENT_PROJECTS;
+  // mock removed — data-loader fills (via /api/notices)
+  window.NOTICES = window.NOTICES || NOTICES;
+  // mock removed — data-loader fills (via /api/procurement)
+  window.PROCUREMENT_PROJECTS = window.PROCUREMENT_PROJECTS || PROCUREMENT_PROJECTS;
   window.PROJECT_CATEGORY_LABEL = PROJECT_CATEGORY_LABEL;
   window.PROJECT_STATUS_LABEL = PROJECT_STATUS_LABEL;
   window.SHIPMENT_TYPE_LABEL = SHIPMENT_TYPE_LABEL;
   window.SHIPMENT_STATUS_LABEL = SHIPMENT_STATUS_LABEL;
   window.ORDER_EDIT_HISTORY = ORDER_EDIT_HISTORY;
   window.NOTIFICATIONS = NOTIFICATIONS;
-  window.UDI_REPORTS = UDI_REPORTS;
+  // mock removed — data-loader fills (via /api/udi)
+  window.UDI_REPORTS = window.UDI_REPORTS || UDI_REPORTS;
   window.CLIENT_BUSINESS_NO = CLIENT_BUSINESS_NO;
   window.PACKAGING_INFO = PACKAGING_INFO;
-  window.INVOICE_HISTORY = INVOICE_HISTORY;
+  // mock removed — data-loader fills (via /api/invoices → INVOICE_HISTORY)
+  window.INVOICE_HISTORY = window.INVOICE_HISTORY || INVOICE_HISTORY;
   window.SALES_REP_MASTERS = SALES_REP_MASTERS;
   window.SALES_REPS = SALES_REPS;
   window.CLIENT_REP_MAP = CLIENT_REP_MAP;
