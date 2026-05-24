@@ -1,62 +1,85 @@
 /**
  * UDI 공급내역 보고 — 경영지원 포털
+ *
+ * Phase 5 보강 (2026-05-24):
+ *   - QuickMonthSelector + 4 stat 카드 (대상 병원/품목/수량/공급가)
+ *   - 보고서 생성/전송/삭제 버튼 + 접수증 모달
+ *   - 보고 이력 테이블 (상세 페이지 링크)
  */
-import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 import { requireRole } from "@/lib/session";
-import { listUdiReports } from "@/lib/actions/udi";
-import { UDI_STATUS_LABEL } from "@/lib/validators/udi";
+import { listUdiReports, getUdiMonthPreview } from "@/lib/actions/udi";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
+import { UdiPageBoard, type SerializedReport } from "@/components/admin/udi/UdiPageBoard";
 
-type Row = Awaited<ReturnType<typeof listUdiReports>>[number];
+type SearchParams = {
+  month?: string;
+};
 
-export default async function UdiPage() {
-  await requireRole("TENANT_OWNER", "ADMIN", "EXEC");
-  let reports: Awaited<ReturnType<typeof listUdiReports>> = [];
+function defaultMonth(): string {
+  const now = new Date();
+  // 보고기한 = 익월 말일. 기본은 "지난 달" (예: 5월 → 4월 보고)
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0~11 — getMonth() 자체가 "이전 달" 인덱스가 됨
+  const ny = m === 0 ? y - 1 : y;
+  const nm = m === 0 ? 12 : m;
+  return `${ny}-${String(nm).padStart(2, "0")}`;
+}
+
+export default async function UdiPage({ searchParams }: { searchParams: SearchParams }) {
+  await requireRole("TENANT_OWNER", "ADMIN");
+
+  const month = (searchParams.month && /^\d{4}-(0[1-9]|1[0-2])$/.test(searchParams.month))
+    ? searchParams.month
+    : defaultMonth();
+
+  let reportsRaw: Awaited<ReturnType<typeof listUdiReports>> = [];
+  let preview = { hospitalCount: 0, itemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
   try {
-    reports = await listUdiReports();
+    [reportsRaw, preview] = await Promise.all([
+      listUdiReports(),
+      getUdiMonthPreview(month),
+    ]);
   } catch (e) {
-    console.warn("[UdiPage] DB 접근 실패 — 마이그레이션 필요:", (e as Error).message);
+    console.warn("[UdiPage] DB 접근 실패:", (e as Error).message);
   }
 
-  const columns: ColumnDef<Row>[] = [
-    { key: "reportMonth", label: "보고월", width: "110px", cellClassName: "font-mono font-semibold" },
-    {
-      key: "status",
-      label: "상태",
-      width: "100px",
-      render: (r) => (
-        <span className={`px-2 py-0.5 rounded-full text-tiny font-semibold ${
-          r.status === "ACCEPTED"  ? "bg-success-light text-success" :
-          r.status === "SUBMITTED" ? "bg-accent-light text-accent-dark" :
-                                     "bg-canvas text-ink-muted"
-        }`}> {UDI_STATUS_LABEL[r.status]}
-        </span> ),
-    },
-    { key: "receiptNo", label: "접수번호", cellClassName: "font-mono text-tiny", render: (r) => r.receiptNo ?? "—" },
-    { key: "itemCount", label: "품목수", align: "right", width: "80px", cellClassName: "tabular-nums", render: (r) => r._count.items.toLocaleString() },
-    { key: "totalAmount", label: "합계", align: "right", width: "140px", cellClassName: "tabular-nums font-semibold", render: (r) => `₩${Number(r.totalAmount).toLocaleString()}` },
-    { key: "submittedAt", label: "전송일시", width: "150px", cellClassName: "tabular-nums text-tiny", render: (r) => r.submittedAt?.toISOString().slice(0, 16).replace("T", " ") ?? "—" },
-  ];
+  // Decimal/Date → 직렬화
+  const reports: SerializedReport[] = reportsRaw.map((r) => ({
+    id:          r.id,
+    reportMonth: r.reportMonth,
+    status:      r.status,
+    receiptNo:   r.receiptNo,
+    submittedAt: r.submittedAt?.toISOString() ?? null,
+    totalItems:  r.totalItems,
+    totalAmount: r.totalAmount.toString(),
+    itemCount:   r._count.items,
+    createdAt:   r.createdAt.toISOString(),
+  }));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="UDI 공급내역 보고"
-        subtitle="월별 병원 납품 거래를 식약처에 보고합니다. 거래명세서(ISSUED+SENT)에서 자동 집계."
+        subtitle="월별 병원 납품 거래를 식약처 의료기기통합정보시스템(udiportal.mfds.go.kr)에 보고. 거래명세서(ISSUED+SENT)에서 자동 집계."
       />
 
-      <DataTable
-        columns={columns}
-        rows={reports}
-        keyField="id"
-        emptyMessage="작성된 UDI 보고서가 없습니다."
-      />
-
-      <div className="bg-primary-lighter border border-primary/10 rounded p-4 text-caption text-ink-secondary"> 신규 보고서는 <strong className="text-primary">서버 액션 createUdiReportFromInvoices</strong> 호출로 생성됩니다.
-        해당 월 ISSUED+SENT 거래명세서의 HOSPITAL 거래처 라인이 자동 집계됩니다.
+      <div className="bg-primary text-white rounded p-4 text-caption">
+        <strong>UDI 보고 안내</strong> · 보고기한: 공급한 달의 익월 말일 · 대상: 의료기관(병원) 공급분만 · 인증: OAuth2 (실서비스 단계 연동 예정)
       </div>
-    </div> );
+
+      <UdiPageBoard
+        month={month}
+        preview={{
+          hospitalCount: preview.hospitalCount,
+          itemCount:     preview.itemCount,
+          totalQty:      preview.totalQty,
+          totalAmount:   preview.totalAmount,
+          hasExistingReport: preview.hasExistingReport,
+        }}
+        reports={reports}
+      />
+    </div>
+  );
 }

@@ -25,7 +25,8 @@ const createUdiReportSchema = z.object({
 });
 
 export async function listUdiReports() {
-  await requireRole("TENANT_OWNER", "ADMIN", "EXEC");
+  // QC 도 조회 허용 (R03 — 품질팀 모니터링)
+  await requireRole("TENANT_OWNER", "ADMIN", "EXEC", "QC");
   return prisma.udiReport.findMany({
     include: { items: { take: 1 }, _count: { select: { items: true } } },
     orderBy: { reportMonth: "desc" },
@@ -33,7 +34,7 @@ export async function listUdiReports() {
 }
 
 export async function getUdiReport(id: string) {
-  await requireRole("TENANT_OWNER", "ADMIN", "EXEC");
+  await requireRole("TENANT_OWNER", "ADMIN", "EXEC", "QC");
   return prisma.udiReport.findUnique({
     where: { id },
     include: {
@@ -43,6 +44,71 @@ export async function getUdiReport(id: string) {
       },
     },
   });
+}
+
+/**
+ * 보고서를 생성하기 전에 해당 월에 어떤 데이터가 잡힐지 미리보기.
+ * 병원수/품목수/총수량/총금액 + 미보고 invoice 라인 카운트.
+ */
+export async function getUdiMonthPreview(reportMonth: string): Promise<{
+  reportMonth: string;
+  hospitalCount: number;
+  itemCount: number;
+  totalQty: number;
+  totalAmount: number;
+  hasExistingReport: boolean;
+}> {
+  await requireRole("TENANT_OWNER", "ADMIN", "EXEC", "QC");
+  if (!MONTH_RE.test(reportMonth)) {
+    return { reportMonth, hospitalCount: 0, itemCount: 0, totalQty: 0, totalAmount: 0, hasExistingReport: false };
+  }
+  const [y, m] = reportMonth.split("-").map(Number);
+  const monthStart = new Date(y!, m! - 1, 1);
+  const nextMonth  = new Date(y!, m!, 1);
+
+  const [invoices, existing] = await Promise.all([
+    prisma.invoice.findMany({
+      where: {
+        status:    { in: ["ISSUED", "SENT"] },
+        issueDate: { gte: monthStart, lt: nextMonth },
+        client:    { type: "HOSPITAL" },
+      },
+      include: { items: true },
+    }),
+    prisma.udiReport.findUnique({ where: { reportMonth }, select: { id: true } }),
+  ]);
+
+  const hospitalCount = new Set(invoices.map((i) => i.clientId)).size;
+  let itemCount = 0;
+  let totalQty = 0;
+  let totalAmount = 0;
+  for (const inv of invoices) {
+    for (const it of inv.items) {
+      itemCount += 1;
+      totalQty += it.quantity;
+      totalAmount += Number(it.amount);
+    }
+  }
+  return {
+    reportMonth,
+    hospitalCount,
+    itemCount,
+    totalQty,
+    totalAmount,
+    hasExistingReport: !!existing,
+  };
+}
+
+/** DRAFT 상태 보고서 삭제 (실수 정정용) */
+export async function deleteUdiReport(id: string): Promise<ActionResult<{ id: string }>> {
+  await requireRole("TENANT_OWNER", "ADMIN");
+  const r = await prisma.udiReport.findUnique({ where: { id }, select: { id: true, status: true, reportMonth: true } });
+  if (!r) return fail("보고서를 찾을 수 없습니다");
+  if (r.status !== "DRAFT") return fail(`${r.status} 상태 보고서는 삭제할 수 없습니다 (DRAFT 만 가능)`);
+  await prisma.udiReport.delete({ where: { id } });
+  await logAudit({ action: "UDI_REPORT_DELETE", resource: `UdiReport:${id}`, metadata: { reportMonth: r.reportMonth } });
+  revalidatePath("/admin/udi");
+  return ok({ id });
 }
 
 /**
