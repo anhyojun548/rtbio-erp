@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTBIO 위젯 대시보드 프로토타입</title>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/ai-assistant.css">
+<link rel="stylesheet" href="css/widget-dashboard.css">
+<link href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
+</head>
+<body>
+
+<!-- ═══ Layout ═══ -->
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo-white.png" alt="RTBIO" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <div style="display:none; font-size:20px; font-weight:800;">RTBIO</div>
+      <div class="logo-text">Medical Device Platform</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">김</div>
+      <div>
+        <div class="sidebar-user-name">김대표</div>
+        <div class="sidebar-user-role">대표이사</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item active" data-page="dashboard">📊 대시보드</a>
+      <a class="sidebar-nav-item" data-page="sales">💰 매출 관리</a>
+      <a class="sidebar-nav-item" data-page="orders">📋 주문 관리</a>
+      <a class="sidebar-nav-item" data-page="inventory">📦 재고 관리</a>
+      <a class="sidebar-nav-item" data-page="clients">🏢 거래처 관리</a>
+      <a class="sidebar-nav-item" data-page="reports">📈 보고서</a>
+      <a class="sidebar-nav-item" data-page="settings">⚙️ 설정</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content" style="margin-left:250px; padding:20px 28px;">
+
+    <!-- Toolbar -->
+    <div class="dashboard-toolbar">
+      <div class="toolbar-left">
+        <h1>📊 내 대시보드</h1>
+        <div class="kebab-wrapper">
+          <button class="kebab-btn" id="kebabBtn" title="더보기">⋮</button>
+          <div class="kebab-menu" id="kebabMenu">
+            <button class="kebab-item" id="btnExport">📤 대시보드 내보내기</button>
+            <button class="kebab-item" id="btnImport">📥 대시보드 가져오기</button>
+            <div class="kebab-divider"></div>
+            <button class="kebab-item" id="btnReset">🔄 기본 레이아웃으로 초기화</button>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="tb-btn primary" id="btnAddWidget">➕ 위젯 추가</button>
+      </div>
+    </div>
+
+    <div class="edit-mode-bar" id="editModeBar">
+      ✏️ <strong>편집 모드</strong> — 위젯을 드래그해서 이동하거나, 모서리를 잡아 크기를 조절하세요. 위젯 메뉴(⋮)로 삭제할 수 있습니다.
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-stack" id="gridStack"></div>
+
+  </div>
+</div>
+
+<!-- Widget Picker Modal -->
+<div class="picker-overlay" id="pickerOverlay">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <h2>➕ 위젯 추가</h2>
+      <button class="picker-close" id="pickerClose">✕</button>
+    </div>
+
+    <!-- Tab: Presets -->
+    <div class="picker-section">
+      <h3>📌 프리셋 위젯 (바로 추가)</h3>
+      <div class="preset-list" id="presetList"></div>
+    </div>
+
+    <!-- Tab: Widget Types -->
+    <div class="picker-section">
+      <h3>🎨 빈 위젯으로 추가 (데이터 직접 설정)</h3>
+      <div class="picker-grid" id="widgetTypeGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Widget Context Menu (right-click) -->
+<div class="widget-ctx" id="widgetCtx">
+  <button class="widget-ctx-item" data-action="edit">✏️ 위젯 수정</button>
+  <button class="widget-ctx-item" data-action="duplicate">📋 복제</button>
+  <div class="widget-ctx-divider"></div>
+  <button class="widget-ctx-item" data-action="refresh">🔄 새로고침</button>
+  <div class="widget-ctx-divider"></div>
+  <button class="widget-ctx-item danger" data-action="delete">🗑️ 삭제</button>
+</div>
+
+<!-- Widget Edit Modal -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h2>✏️ 위젯 수정</h2>
+      <button class="edit-modal-close" id="editClose">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-field">
+        <label>위젯 제목</label>
+        <input type="text" id="editTitle" placeholder="위젯 제목을 입력하세요">
+      </div>
+      <div class="edit-field">
+        <label>위젯 타입</label>
+        <select id="editType"></select>
+      </div>
+      <div class="edit-field">
+        <label>데이터 소스</label>
+        <select id="editPreset">
+          <option value="">✏️ 직접 설정 (커스텀)</option>
+        </select>
+      </div>
+
+      <!-- Custom Filter Section -->
+      <div class="custom-section" id="customSection">
+        <div class="edit-field">
+          <label>데이터 테이블</label>
+          <select id="customTable">
+            <option value="orders">📋 주문 (Orders)</option>
+            <option value="products">📦 제품 (Products)</option>
+            <option value="inventory">🏭 재고 (Inventory)</option>
+            <option value="clients">🏢 거래처 (Clients)</option>
+            <option value="payments">💳 입금 (Payments)</option>
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label>표시 컬럼</label>
+          <div class="col-chips" id="colChips"></div>
+        </div>
+
+        <div class="edit-field">
+          <label>필터 조건</label>
+          <div id="filterRows"></div>
+          <button class="add-condition-btn" id="addFilterBtn">+ 조건 추가</button>
+        </div>
+
+        <div class="agg-row">
+          <div class="agg-field">
+            <label>그룹핑</label>
+            <select id="customGroup">
+              <option value="">없음</option>
+              <option value="client">거래처별</option>
+              <option value="product">제품별</option>
+              <option value="status">상태별</option>
+              <option value="date">날짜별</option>
+              <option value="month">월별</option>
+            </select>
+          </div>
+          <div class="agg-field">
+            <label>집계</label>
+            <select id="customAgg">
+              <option value="">없음</option>
+              <option value="sum">합계</option>
+              <option value="avg">평균</option>
+              <option value="count">건수</option>
+              <option value="min">최솟값</option>
+              <option value="max">최댓값</option>
+            </select>
+          </div>
+          <div class="agg-field">
+            <label>정렬</label>
+            <select id="customSort">
+              <option value="desc">내림차순 ↓</option>
+              <option value="asc">오름차순 ↑</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-section">
+          <h4>📋 미리보기</h4>
+          <div class="preview-table-wrap" id="previewWrap"></div>
+          <div class="preview-count" id="previewCount"></div>
+        </div>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="tb-btn" id="editCancel">취소</button>
+      <button class="tb-btn primary" id="editSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden file input for import -->
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<!-- ═══ Scripts ═══ -->
+<script src="js/data.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/ai-assistant.js"></script>
+<script src="js/widget-dashboard.js"></script>
+
+</body>
+</html>

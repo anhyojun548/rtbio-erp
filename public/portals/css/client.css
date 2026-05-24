@@ -1,0 +1,243 @@
+/* ═══════════════════════════════════════
+   Client Portal Layout — Mobile First
+   For: 거래처 (대리점/병원) 발주 시스템
+   ═══════════════════════════════════════ */
+
+/* ── Mobile Header ── */
+.client-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.client-header .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--primary);
+  letter-spacing: 1px;
+}
+.client-header .logo img { height: 22px; width: auto; }
+.client-header .user-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--primary); color: white;
+  border: none; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Bottom Navigation ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 6px 0;
+  padding-bottom: calc(6px + var(--safe-bottom));
+  z-index: 20;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+.bottom-nav a {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; text-decoration: none;
+  color: var(--text-muted); font-size: 11px; font-weight: 500;
+  padding: 6px 4px; cursor: pointer;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav a.active { color: var(--primary); font-weight: 600; }
+.bottom-nav a svg { width: 22px; height: 22px; }
+.bottom-nav a .nav-dot {
+  position: absolute; top: 2px; right: calc(50% - 18px);
+  width: 8px; height: 8px; background: var(--accent);
+  border-radius: 50%; border: 2px solid var(--surface);
+}
+
+/* ── Page Content ── */
+.client-content {
+  padding: 16px;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+/* ── Login Page ── */
+.login-page {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(160deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent) 100%);
+  padding: 0 20px;
+  padding-top: max(60px, 12vh);
+}
+.login-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 36px 24px;
+  width: 100%; max-width: 400px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-lg);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-logo .logo-banner {
+  background: linear-gradient(135deg, var(--primary) 0%, #2a5a8c 100%);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  margin-bottom: 16px;
+}
+.login-logo .logo-banner img { height: 36px; width: auto; margin: 0 auto; }
+.login-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+.login-btn {
+  width: 100%; padding: 14px; border: none; border-radius: var(--radius-xs);
+  background: var(--primary); color: #fff; font-size: 16px; font-weight: 700;
+  font-family: inherit; cursor: pointer; transition: background 0.15s;
+}
+.login-btn:hover { background: var(--primary-light); }
+
+.login-footer {
+  text-align: center; margin-top: auto;
+  padding: 32px 0 24px; color: rgba(255,255,255,0.5);
+  font-size: 12px;
+}
+
+/* ── Order Form Specific ── */
+.order-summary-bar {
+  position: fixed;
+  bottom: 68px; left: 0; right: 0;
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 16px;
+  padding-bottom: calc(14px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 25;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
+  transform: translateY(200%);
+  transition: transform 0.25s ease;
+}
+.order-summary-bar.show { transform: translateY(0); }
+.order-summary-bar .summary-text {
+  font-size: 14px; font-weight: 600;
+}
+.order-summary-bar .summary-amount {
+  font-size: 18px; font-weight: 700;
+}
+.order-summary-bar .summary-btn {
+  background: var(--accent); color: #fff;
+  border: none; padding: 10px 20px; border-radius: var(--radius-xs);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+}
+
+/* ── Product Row ── */
+.product-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.product-row.has-qty {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+}
+.product-info { flex: 1; min-width: 0; }
+.product-name { font-size: 14px; font-weight: 600; }
+.product-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.product-price { font-size: 14px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.product-price .original {
+  text-decoration: line-through; color: var(--text-muted);
+  font-weight: 400; font-size: 12px; margin-right: 4px;
+}
+.product-price .discount-tag {
+  font-size: 11px; color: var(--danger); font-weight: 600;
+}
+
+/* ── Quantity Input ── */
+.qty-input {
+  display: flex; align-items: center; gap: 0;
+  border: 1.5px solid var(--border); border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.qty-btn {
+  width: 32px; height: 32px; border: none;
+  background: var(--bg); color: var(--text);
+  font-size: 18px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+}
+.qty-btn:hover { background: var(--primary-lighter); }
+.qty-val {
+  width: 40px; height: 32px; border: none;
+  text-align: center; font-size: 14px; font-weight: 700;
+  font-family: inherit; color: var(--text); background: var(--surface);
+}
+.qty-val::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* ── Free Shipping Banner ── */
+.free-ship-banner {
+  padding: 10px 16px; border-radius: var(--radius-xs);
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.free-ship-banner.met { background: var(--success-light); color: var(--success); }
+.free-ship-banner.not-met { background: #E3F2FD; color: #1565C0; }
+
+/* ── Desktop Layout ── */
+@media (min-width: 1024px) {
+  .bottom-nav { display: none; }
+  .order-summary-bar { display: none; }
+
+  .client-header {
+    padding: 12px 32px;
+  }
+  .client-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  /* Desktop top nav instead of bottom nav */
+  .desktop-nav {
+    display: flex !important;
+    gap: 24px;
+  }
+  .desktop-nav a {
+    font-size: 14px; font-weight: 500;
+    color: var(--text-secondary); text-decoration: none;
+    padding: 8px 0;
+  }
+  .desktop-nav a.active {
+    color: var(--primary); font-weight: 700;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  /* Two-column order form */
+  .order-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .order-sidebar {
+    position: sticky;
+    top: 80px;
+    display: block !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .desktop-nav { display: none !important; }
+  .order-sidebar { display: none; }
+}
