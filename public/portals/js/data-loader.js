@@ -95,10 +95,43 @@
         conferences:  (window.CONFERENCES   || []).length,
         expiry:       (window.EXPIRY_LOTS   || []).length,
       });
+
+      /* FIX-B4: 사이드바 사용자명 / 역할 / 아바타 → window.CURRENT_USER 반영 */
+      _updateSidebarUser();
     } catch (err) {
       console.error('[data-loader] fetch failed — prototype mock data 유지됨', err);
     }
   })();
+
+  /* ───────────────────────────────────────────
+   * 사이드바 사용자 정보 업데이트
+   * ─────────────────────────────────────────── */
+  function _updateSidebarUser() {
+    const u = window.CURRENT_USER;
+    if (!u) return;
+    const displayName = u.name || u.email || '';
+    const roleLabelMap = {
+      TENANT_OWNER: '대표이사',
+      ADMIN:        '경영지원팀',
+      EXEC:         '영업팀',
+      QC:           '품질관리팀',
+      CLIENT:       '거래처',
+      SUPER_ADMIN:  '시스템관리자',
+    };
+    const roleLabel = roleLabelMap[u.role] || u.role || '';
+    const avatarChar = displayName.charAt(0) || '?';
+
+    document.querySelectorAll('.sidebar-user-name').forEach(el => {
+      el.textContent = displayName;
+    });
+    document.querySelectorAll('.sidebar-user-role').forEach(el => {
+      el.textContent = roleLabel;
+    });
+    document.querySelectorAll('.sidebar-user-avatar').forEach(el => {
+      el.textContent = avatarChar;
+    });
+    console.info('[data-loader] sidebar user updated:', displayName, roleLabel);
+  }
 
   /* ───────────────────────────────────────────
    * Step 3: DOMContentLoaded 복원 및 큐 실행
