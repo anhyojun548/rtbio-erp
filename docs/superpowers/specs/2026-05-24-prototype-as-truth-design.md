@@ -176,12 +176,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 | `/api/ledger` | GET / POST | `listLedgers` / `recomputeLedger` | |
 | `/api/notices` | GET / POST / DELETE | `listNotices` / `createNotice` / `deleteNotice` | |
 | `/api/udi` | GET / POST | `listUdiReports` / `createUdiReportFromInvoices` | |
-| `/api/data-explorer` | GET | `listTransactions` | 41K 매입매출장 |
+| `/api/data-explorer` | GET / POST | `listTransactions` / `bulkInsertTransactions` | 41K 매입매출장 — 조회·입력 |
+| `/api/data-explorer/[id]` | PATCH / DELETE | `updateTransaction` / `deleteTransaction` | 단건 수정·삭제 |
+| `/api/data-explorer/bulk` | POST / DELETE | `bulkInsertTransactions` / `deleteTransactionsByImportSource` | 엑셀/CSV 업로드, 일괄 삭제 |
+| `/api/data-explorer/export` | GET | (route handler) | CSV/Excel 다운로드 |
 | `/api/manuals` | GET | `listQualityDocs` | |
 | `/api/procurement` | GET | `listProcurementProjects` | |
 | `/api/settings` | GET / PATCH | `listSettings` / `updateSetting` | |
 
-→ **약 20개 API 라우트**. 각각 5~10줄 thin wrapper (기존 actions 호출 + JSON 응답).
+→ **약 24개 API 라우트**. 각각 5~10줄 thin wrapper (기존 actions 호출 + JSON 응답).
+
+### 3-4. AI 친화 설계
+
+데이터 탐색기 + 모든 주요 API 가 **AI 도구로 직접 호출 가능**하도록 설계:
+
+- **RESTful 일관성**: `GET /api/{resource}` 조회 · `POST` 생성 · `PATCH /:id` 수정 · `DELETE /:id` 삭제
+- **JSON 응답 표준**: `{ ok: true, data: ... }` / `{ ok: false, error: "...", fieldErrors: {...} }` (기존 ActionResult 형식)
+- **OpenAPI 스펙 자동 생성** (선택): `/api/openapi.json` 라우트로 모든 endpoint 노출 → ChatGPT/Claude function calling 으로 바로 사용 가능
+- **인증**: 세션 쿠키 외에 **API 토큰** 도 허용 (헤더 `Authorization: Bearer <token>`) — AI 가 비대화형으로 호출 가능
+- **TransactionLedger 의 모든 컬럼**(20+개) 을 PATCH 로 부분 업데이트 허용 — AI 가 자연어로 "5월 거래 중 거래처 X 라인의 단가를 10% 인상" 같은 요청 처리 가능
+
+### 3-5. 새로 추가할 actions (현재 listTransactions, aggregateTransactions, bulkInsertTransactions 만 있음)
+
+| Action | 책임 |
+|---|---|
+| `getTransaction(id)` | 단건 조회 (현재 없음) |
+| `updateTransaction(id, patch)` | 부분 수정 + 감사 로그 (현재 없음) |
+| `deleteTransaction(id)` | 단건 삭제 + 감사 로그 (현재 없음) |
+| `bulkUpdateTransactions(filter, patch)` | 필터링된 일괄 수정 (AI 친화) |
+
+검증: 기존 `transactionLedgerSchema` 확장 (부분 PATCH 용 `updateTransactionSchema` 추가).
 
 ---
 
