@@ -25,11 +25,11 @@ export type NoticePriorityType = (typeof NOTICE_PRIORITIES)[number];
 export const NOTICE_AUTHOR_TEAMS = ["경영지원팀", "영업팀", "품질관리팀", "임원진"] as const;
 export type NoticeAuthorTeam = (typeof NOTICE_AUTHOR_TEAMS)[number];
 
-export const NOTICE_AUTHOR_META: Record<NoticeAuthorTeam, { color: string; bg: string; icon: string }> = {
-  "경영지원팀": { color: "#1B3A5C", bg: "#E3F2FD", icon: "🔵" },
-  "영업팀":     { color: "#B45309", bg: "#FFF3E0", icon: "🟡" },
-  "품질관리팀": { color: "#166534", bg: "#E8F5E9", icon: "🟢" },
-  "임원진":     { color: "#7C3AED", bg: "#F3E8FD", icon: "🔴" },
+export const NOTICE_AUTHOR_META: Record<NoticeAuthorTeam, { color: string; bg: string }> = {
+  "경영지원팀": { color: "#1B3A5C", bg: "#E3F2FD" },
+  "영업팀":     { color: "#B45309", bg: "#FFF3E0" },
+  "품질관리팀": { color: "#166534", bg: "#E8F5E9" },
+  "임원진":     { color: "#7C3AED", bg: "#F3E8FD" },
 };
 
 // ── 스키마 ───────────────────────────────────────────

@@ -19,6 +19,7 @@ import { FilterBar, FilterField } from "@/components/shared/FilterBar";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { StatCard } from "@/components/shared/StatCard";
 import { toast } from "@/components/shared/Toast";
+import { formatKRW, formatKRWShort } from "@/lib/format";
 
 export interface TxnRow {
   id: string;
@@ -222,21 +223,21 @@ export function DataExplorerBoard({
         <StatCard label="조회된 행수" value={total} desc={`${aggregates.count.toLocaleString()}건`} variant="primary" icon="" />
         <StatCard
           label="공급가 합"
-          value={`₩${(aggregates.totalSupply / 10000).toFixed(0)}만`}
-          desc={`₩${aggregates.totalSupply.toLocaleString()}`}
+          value={formatKRWShort(aggregates.totalSupply)}
+          desc={formatKRW(aggregates.totalSupply)}
           variant="accent"
           icon=""
         />
         <StatCard
           label="부가세 합"
-          value={`₩${(aggregates.totalVat / 10000).toFixed(0)}만`}
-          desc={`₩${aggregates.totalVat.toLocaleString()}`}
+          value={formatKRWShort(aggregates.totalVat)}
+          desc={formatKRW(aggregates.totalVat)}
           variant="warning"
           icon=""
         />
         <StatCard
           label="합계금액"
-          value={`₩${(aggregates.totalAmount / 10000).toFixed(0)}만`}
+          value={formatKRWShort(aggregates.totalAmount)}
           desc={`매출 ${aggregates.byKind.find((b) => b.kind === "SALE")?.count ?? 0} · 매입 ${aggregates.byKind.find((b) => b.kind === "PURCHASE")?.count ?? 0}`}
           variant="success"
           icon=""

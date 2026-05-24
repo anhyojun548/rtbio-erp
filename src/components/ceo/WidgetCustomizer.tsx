@@ -140,7 +140,6 @@ export function WidgetCustomizer({
                 </div>
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-lg">{w.meta?.icon ?? ""}</span>
                     <span className="text-sm font-semibold text-slate-900"> {w.meta?.label ?? w.preset}
                     </span>
                     <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px]"> {w.meta?.kind === "list" ? "표" : "KPI"}
@@ -201,7 +200,6 @@ export function WidgetCustomizer({
                 disabled={pending}
                 className="flex items-start gap-3 text-left rounded-md border border-slate-200 p-3 hover:border-sky-400 hover:bg-sky-50 disabled:opacity-50"
               >
-                <span className="text-xl mt-0.5">{p.icon}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-slate-900"> {p.label}

@@ -15,7 +15,8 @@ export const ADMIN_MENU: NavSection[] = [
     title: "주요 업무",
     items: [
       { label: "대시보드",   href: "/admin" },
-      { label: "매입매출장", href: "/admin/journal" },
+      // 매입매출장 — /admin/journal 은 /admin/data-explorer 로 리다이렉트, /admin/orders 도 같은 카테고리
+      { label: "매입매출장", href: "/admin/data-explorer", matchExtra: ["/admin/journal", "/admin/orders"] },
       { label: "거래처원장", href: "/admin/ledger" },
       { label: "마감원장",   href: "/admin/closing" },
       { label: "월간 보고서", href: "/admin/reports/monthly" },
@@ -115,6 +116,7 @@ export const QC_MENU: NavSection[] = [
     title: "보고서",
     items: [
       { label: "ISO 13485 보고서", href: "/qc/reports" },
+      { label: "UDI 보고",          href: "/qc/udi" },
       { label: "데이터 탐색기",     href: "/qc/data-explorer" },
     ],
   },

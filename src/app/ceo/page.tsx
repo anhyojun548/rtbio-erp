@@ -47,7 +47,6 @@ export default async function CeoHome() {
                 <WidgetCard
                   value={v}
                   fallbackLabel={w.meta?.label ?? w.preset}
-                  fallbackIcon={w.meta?.icon}
                 />
               </div> );
           })}

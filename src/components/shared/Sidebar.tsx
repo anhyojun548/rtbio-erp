@@ -28,6 +28,8 @@ export interface NavItem {
   icon?: string;
   /** 비활성화 처리 */
   disabled?: boolean;
+  /** 추가 매칭 prefix — 이 경로로 이동했을 때도 이 메뉴가 active 로 표시됨 */
+  matchExtra?: string[];
 }
 
 export interface NavSection {
@@ -70,13 +72,21 @@ export function Sidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // longest-prefix match — 가장 긴 prefix 가 매칭되도록 (3D-4b 패턴)
+  // + matchExtra 보조 매칭: 예) 매입매출장(/admin/journal) 메뉴가 /admin/orders 진입 시에도 active
   const activeHref = (() => {
     let best: string | null = null;
+    let bestLen = 0;
     for (const sec of menu) {
       for (const item of sec.items) {
         if (!item.href) continue;
-        if (pathname === item.href || pathname.startsWith(item.href + "/")) {
-          if (!best || item.href.length > best.length) best = item.href;
+        const candidates = [item.href, ...(item.matchExtra ?? [])];
+        for (const c of candidates) {
+          if (pathname === c || pathname.startsWith(c + "/")) {
+            if (!best || c.length > bestLen) {
+              best = item.href;
+              bestLen = c.length;
+            }
+          }
         }
       }
     }

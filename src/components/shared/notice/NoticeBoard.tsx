@@ -77,7 +77,7 @@ export function NoticeBoard({ authorTeam, initialNotices, clients, totalClients 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={` 공지사항 — ${am.icon} ${authorTeam}`}
+        title={`공지사항 — ${authorTeam}`}
         subtitle="거래처에 발송하는 공지사항을 작성·관리합니다. 발송 즉시 거래처 포털에 표시됩니다."
         actions={
           <Button onClick={() => setComposing(true)} variant="primary"> + 공지 작성
@@ -105,7 +105,7 @@ export function NoticeBoard({ authorTeam, initialNotices, clients, totalClients 
                       <span className="px-2 py-0.5 rounded-full text-tiny font-semibold bg-danger-light text-danger">긴급</span> )}
                     <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}> {NOTICE_TARGET_LABEL[n.target]}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: meta.bg, color: meta.color }}> {meta.icon} {n.createdByTeam}
+                    <span className="px-2 py-0.5 rounded-full text-tiny font-semibold" style={{ background: meta.bg, color: meta.color }}> {n.createdByTeam}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -191,7 +191,7 @@ function ComposeModal({
   return (
     <Modal
       open
-      title={`공지사항 작성 — ${am.icon} ${authorTeam}`}
+      title={`공지사항 작성 — ${authorTeam}`}
       onClose={onClose}
       onConfirm={onSubmit}
       confirmText={pending ? "발송 중..." : "발송"}
@@ -248,7 +248,6 @@ function ComposeModal({
         </div>
 
         <div className="rounded-xs px-3 py-2 text-caption flex items-center gap-2" style={{ background: am.bg, color: am.color }}>
-          <span className="text-lg">{am.icon}</span>
           <span>작성자: <strong>{authorTeam}</strong> (자동 설정)</span>
         </div>
       </div>

@@ -19,7 +19,6 @@ export type WidgetPreset = {
   kind: WidgetKind;
   defaultWidth: number; // 12-col grid
   defaultHeight: number;
-  icon: string;
 };
 
 // ─── 프리셋 카탈로그 ──────────────────────────────────
@@ -32,7 +31,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "💰",
   },
   {
     key: "kpi_total_ar",
@@ -41,7 +39,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "📒",
   },
   {
     key: "kpi_open_orders",
@@ -50,7 +47,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "📝",
   },
   {
     key: "kpi_active_clients",
@@ -59,7 +55,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "🏢",
   },
   {
     key: "kpi_low_stock",
@@ -68,7 +63,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "🚨",
   },
   {
     key: "kpi_expiring_contracts",
@@ -77,7 +71,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "kpi",
     defaultWidth: 3,
     defaultHeight: 2,
-    icon: "📝",
   },
   // LIST (4종)
   {
@@ -87,7 +80,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "list",
     defaultWidth: 6,
     defaultHeight: 4,
-    icon: "🏆",
   },
   {
     key: "list_low_stock",
@@ -96,7 +88,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "list",
     defaultWidth: 6,
     defaultHeight: 4,
-    icon: "📦",
   },
   {
     key: "list_ending_contracts",
@@ -105,7 +96,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "list",
     defaultWidth: 6,
     defaultHeight: 4,
-    icon: "🗓️",
   },
   {
     key: "list_recent_orders",
@@ -114,7 +104,6 @@ export const DASHBOARD_WIDGET_PRESETS: WidgetPreset[] = [
     kind: "list",
     defaultWidth: 6,
     defaultHeight: 4,
-    icon: "📋",
   },
 ];
 

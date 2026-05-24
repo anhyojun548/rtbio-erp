@@ -89,7 +89,7 @@ export default async function AdminHome() {
           <Link href="/admin/alerts/stock" className="text-tiny text-primary hover:underline"> 전체 보기 →
           </Link>
         </div> {topAlerts.length === 0 ? (
-          <div className="p-8 text-center text-caption text-success bg-success-light/30"> ✨ 모든 활성 사이즈가 정상 재고입니다.
+          <div className="p-8 text-center text-caption text-success bg-success-light/30"> 모든 활성 사이즈가 정상 재고입니다.
           </div> ) : (
           <table className="w-full text-caption">
             <thead className="bg-canvas">
@@ -139,7 +139,7 @@ export default async function AdminHome() {
           <Link href="/admin/contracts?status=ENDING_SOON" className="text-tiny text-primary hover:underline"> 전체 보기 →
           </Link>
         </div> {expiringContracts.length === 0 ? (
-          <div className="p-8 text-center text-caption text-success bg-success-light/30"> ✨ 30일 이내 만료 예정인 계약이 없습니다.
+          <div className="p-8 text-center text-caption text-success bg-success-light/30"> 30일 이내 만료 예정인 계약이 없습니다.
           </div> ) : (
           <table className="w-full text-caption">
             <thead className="bg-canvas">
@@ -172,10 +172,10 @@ export default async function AdminHome() {
       <section className="bg-primary-lighter rounded p-5 border border-primary/10">
         <h2 className="text-h3 m-0 mb-3 text-primary">Phase 진행 상황</h2>
         <ul className="text-caption text-ink-secondary space-y-1.5">
-          <li>✅ Phase 1·2 — 스키마·인증·RBAC·감사로그</li>
-          <li>✅ Phase 3A~H — 거래처/제품/재고/주문/출고/명세서/수금/원장/유통기한/QC·거래처 포털</li>
-          <li> Phase 4 (진행 중) — prototype UI 이식 (사이드바·디자인 토큰 적용 완료)</li>
-          <li>⏳ Phase 5 — 신규 모듈 (공지/베트남발주/UDI/매뉴얼/데이터탐색기)</li>
+          <li>[완료] Phase 1·2 — 스키마·인증·RBAC·감사로그</li>
+          <li>[완료] Phase 3A~H — 거래처/제품/재고/주문/출고/명세서/수금/원장/유통기한/QC·거래처 포털</li>
+          <li>[진행] Phase 4 — prototype UI 이식 (사이드바·디자인 토큰 적용 완료)</li>
+          <li>[예정] Phase 5 — 신규 모듈 (공지/베트남발주/UDI/매뉴얼/데이터탐색기)</li>
         </ul>
       </section>
     </div> );

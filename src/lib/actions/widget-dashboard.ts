@@ -228,7 +228,6 @@ export type KpiValue = {
   kind: "kpi";
   preset: string;
   label: string;
-  icon: string;
   value: string; // 이미 포맷된 문자열
   amount?: number; // 원래 수치
   description?: string;
@@ -239,7 +238,6 @@ export type ListRow = {
   kind: "list";
   preset: string;
   label: string;
-  icon: string;
   headers: string[];
   rows: Array<Array<string | number>>;
   href?: string;
@@ -325,7 +323,6 @@ async function computeKpiMonthlySales(
     kind: "kpi",
     preset: "kpi_monthly_sales",
     label: meta.label,
-    icon: meta.icon,
     value: fmtKRW(sum),
     amount: sum,
     description: `${rows.length}건 발행`,
@@ -347,7 +344,6 @@ async function computeKpiTotalAr(
     kind: "kpi",
     preset: "kpi_total_ar",
     label: meta.label,
-    icon: meta.icon,
     value: fmtKRW(sum),
     amount: sum,
     description: `${rows.length}개 거래처 원장`,
@@ -365,7 +361,6 @@ async function computeKpiOpenOrders(meta: WidgetPreset): Promise<KpiValue> {
     kind: "kpi",
     preset: "kpi_open_orders",
     label: meta.label,
-    icon: meta.icon,
     value: `${count.toLocaleString("ko-KR")}건`,
     amount: count,
     description: "DRAFT/SUBMITTED/CONFIRMED/SHIPPING",
@@ -379,7 +374,6 @@ async function computeKpiActiveClients(meta: WidgetPreset): Promise<KpiValue> {
     kind: "kpi",
     preset: "kpi_active_clients",
     label: meta.label,
-    icon: meta.icon,
     value: `${count.toLocaleString("ko-KR")}개`,
     amount: count,
     href: "/admin/clients",
@@ -411,7 +405,6 @@ async function computeKpiLowStock(meta: WidgetPreset): Promise<KpiValue> {
     kind: "kpi",
     preset: "kpi_low_stock",
     label: meta.label,
-    icon: meta.icon,
     value: `${alerts.toLocaleString("ko-KR")}건`,
     amount: alerts,
     description: `활성 사이즈 ${sizes.length}개 중`,
@@ -434,7 +427,6 @@ async function computeKpiExpiringContracts(
     kind: "kpi",
     preset: "kpi_expiring_contracts",
     label: meta.label,
-    icon: meta.icon,
     value: `${count.toLocaleString("ko-KR")}건`,
     amount: count,
     description: "향후 30일 이내 종료",
@@ -478,7 +470,6 @@ async function computeListTopClients(
     kind: "list",
     preset: "list_top_clients",
     label: meta.label,
-    icon: meta.icon,
     headers: ["#", "거래처", "코드", "이달 매출"],
     rows: sorted.map((r, i) => [i + 1, r.name, r.code, fmtKRW(r.amount)]),
     href: "/admin/reports/monthly",
@@ -514,7 +505,6 @@ async function computeListLowStock(meta: WidgetPreset): Promise<ListRow> {
     kind: "list",
     preset: "list_low_stock",
     label: meta.label,
-    icon: meta.icon,
     headers: ["제품", "사이즈", "현재고", "안전재고", "부족"],
     rows: rows.map((e) => [
       `${e.s.product.code} · ${e.s.product.name}`,
@@ -547,7 +537,6 @@ async function computeListEndingContracts(
     kind: "list",
     preset: "list_ending_contracts",
     label: meta.label,
-    icon: meta.icon,
     headers: ["거래처", "계약", "종료일", "남은 일"],
     rows: rows.map((r) => {
       const end = r.endDate!;
@@ -580,7 +569,6 @@ async function computeListRecentOrders(meta: WidgetPreset): Promise<ListRow> {
     kind: "list",
     preset: "list_recent_orders",
     label: meta.label,
-    icon: meta.icon,
     headers: ["주문번호", "거래처", "상태", "금액"],
     rows: orders.map((o) => {
       const total = o.items.reduce(

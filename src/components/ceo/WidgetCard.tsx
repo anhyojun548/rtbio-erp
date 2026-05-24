@@ -4,17 +4,14 @@ import type { WidgetValue } from "@/lib/actions/widget-dashboard";
 export function WidgetCard({
   value,
   fallbackLabel,
-  fallbackIcon = "",
 }: {
   value: WidgetValue | undefined;
   fallbackLabel: string;
-  fallbackIcon?: string;
 }) {
   if (!value) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-5 h-full">
-        <div className="text-xs font-medium text-slate-500 flex items-center gap-1">
-          <span>{fallbackIcon}</span>
+        <div className="text-xs font-medium text-slate-500">
           <span>{fallbackLabel}</span>
         </div>
         <div className="mt-4 text-sm text-slate-400">데이터 없음</div>
@@ -24,8 +21,7 @@ export function WidgetCard({
   if (value.kind === "kpi") {
     const inner = (
       <div className="rounded-lg border border-slate-200 bg-white p-5 h-full hover:border-sky-300 hover:shadow-sm transition">
-        <div className="text-xs font-medium text-slate-500 flex items-center gap-1">
-          <span>{value.icon}</span>
+        <div className="text-xs font-medium text-slate-500">
           <span>{value.label}</span>
         </div>
         <div className="mt-2 text-3xl font-bold text-slate-900 tabular-nums"> {value.value}
@@ -42,8 +38,7 @@ export function WidgetCard({
   // LIST
   const inner = (
     <div className="rounded-lg border border-slate-200 bg-white h-full overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
-        <span className="text-lg">{value.icon}</span>
+      <div className="px-4 py-3 border-b border-slate-200">
         <span className="text-sm font-semibold text-slate-900">{value.label}</span>
       </div> {value.rows.length === 0 ? (
         <div className="p-6 text-center text-xs text-slate-400"> 데이터가 없습니다.
