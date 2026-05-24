@@ -16,14 +16,16 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { ok, fail, zodFail, type ActionResult } from "@/lib/action-result";
 import {
   transactionFilterSchema,
   transactionRowSchema,
+  updateTransactionSchema,
   type TransactionFilter,
   type TransactionRow,
+  type UpdateTransactionInput,
 } from "@/lib/validators/transaction-ledger";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 /**
  * 필터 + 페이지네이션 조회 (기본 100건)
@@ -236,4 +238,114 @@ export async function deleteTransactionsByImportSource(importSource: string): Pr
   });
   revalidatePath("/admin/data-explorer");
   return ok({ deleted: res.count });
+}
+
+/**
+ * 단건 조회
+ */
+export async function getTransaction(id: string) {
+  await requireRole("TENANT_OWNER", "ADMIN", "EXEC", "QC");
+  return prisma.transactionLedger.findUnique({ where: { id } });
+}
+
+/**
+ * 단건 수정 (부분 패치) + 감사
+ */
+export async function updateTransaction(
+  id: string,
+  input: UpdateTransactionInput,
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  const parsed = updateTransactionSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  try {
+    const updated = await prisma.transactionLedger.update({
+      where: { id },
+      data: parsed.data,
+      select: { id: true },
+    });
+    logAudit({
+      userId:   user.id,
+      tenantId: user.tenantId,
+      action:   "TXN_LEDGER_UPDATE",
+      resource: `TransactionLedger:${id}`,
+      metadata: { patch: parsed.data as Prisma.InputJsonValue },
+    });
+    revalidatePath("/admin/data-explorer");
+    return ok(updated);
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2025"
+    ) {
+      return fail("거래를 찾을 수 없습니다");
+    }
+    throw err;
+  }
+}
+
+/**
+ * 단건 삭제 + 감사
+ */
+export async function deleteTransaction(id: string): Promise<ActionResult<{ id: string }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  try {
+    await prisma.transactionLedger.delete({ where: { id } });
+    logAudit({
+      userId:   user.id,
+      tenantId: user.tenantId,
+      action:   "TXN_LEDGER_DELETE",
+      resource: `TransactionLedger:${id}`,
+    });
+    revalidatePath("/admin/data-explorer");
+    return ok({ id });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2025"
+    ) {
+      return fail("거래를 찾을 수 없습니다");
+    }
+    throw err;
+  }
+}
+
+/**
+ * AI 친화 일괄 수정 — ids / clientCode / 날짜 범위로 필터링 후 patch 적용
+ */
+export async function bulkUpdateTransactions(
+  filter: {
+    ids?:        string[];
+    clientCode?: string;
+    from?:       Date;
+    to?:         Date;
+  },
+  patch: UpdateTransactionInput,
+): Promise<ActionResult<{ updatedCount: number }>> {
+  const user = await requireRole("TENANT_OWNER", "ADMIN");
+  const parsed = updateTransactionSchema.safeParse(patch);
+  if (!parsed.success) return zodFail(parsed.error);
+
+  const where: Prisma.TransactionLedgerWhereInput = {};
+  if (filter.ids?.length) where.id = { in: filter.ids };
+  if (filter.clientCode) where.clientCode = filter.clientCode;
+  if (filter.from || filter.to) {
+    where.txnDate = {};
+    if (filter.from) (where.txnDate as Prisma.DateTimeFilter).gte = filter.from;
+    if (filter.to)   (where.txnDate as Prisma.DateTimeFilter).lte = filter.to;
+  }
+
+  const res = await prisma.transactionLedger.updateMany({
+    where,
+    data: parsed.data,
+  });
+  logAudit({
+    userId:   user.id,
+    tenantId: user.tenantId,
+    action:   "TXN_LEDGER_BULK_UPDATE",
+    resource: "TransactionLedger",
+    metadata: { filter: filter as Prisma.InputJsonValue, count: res.count },
+  });
+  revalidatePath("/admin/data-explorer");
+  return ok({ updatedCount: res.count });
 }

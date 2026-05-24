@@ -70,3 +70,29 @@ export const transactionFilterSchema = z.object({
 });
 
 export type TransactionFilter = z.infer<typeof transactionFilterSchema>;
+
+/** 단건 패치 스키마 — 모든 필드 optional */
+export const updateTransactionSchema = z.object({
+  txnDate:      z.coerce.date().optional(),
+  kind:         z.enum(TXN_KINDS).optional(),
+  taxType:      z.string().nullable().optional(),
+  clientCode:   z.string().nullable().optional(),
+  clientName:   z.string().nullable().optional(),
+  productCode:  z.string().nullable().optional(),
+  productName:  z.string().optional(),
+  spec:         z.string().nullable().optional(),
+  unit:         z.string().nullable().optional(),
+  qty:          z.coerce.number().int().min(0).optional(),
+  unitPrice:    z.coerce.number().min(0).optional(),
+  supplyAmount: z.coerce.number().min(0).optional(),
+  vat:          z.coerce.number().min(0).optional(),
+  totalAmount:  z.coerce.number().min(0).optional(),
+  itemMemo:     z.string().nullable().optional(),
+  voucherNo:    z.string().nullable().optional(),
+  hasInvoice:   z.boolean().optional(),
+  evidence:     z.string().nullable().optional(),
+  category:     z.string().nullable().optional(),
+  memo:         z.string().nullable().optional(),
+});
+
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
