@@ -4295,8 +4295,8 @@ document.addEventListener('DOMContentLoaded', () => {
  renderReceiving();
  renderAdjustment();
  // 알티바이오 ISO 13485 품질양식 보고서 작성기 초기화 (QC 권한)
- try { initReportBuilder({ team: 'qc', userName: '박진수', userRole: '품질관리팀' }); } catch(e) { console.warn('initReportBuilder failed', e); }
- try { initDataExplorer({ team: 'qc', userName: '박진수' }); } catch(e) { console.warn('initDataExplorer failed', e); }
+ try { initReportBuilder({ team: 'qc', userName: (window.CURRENT_USER?.name || '박진수'), userRole: (window.CURRENT_USER?.role || '품질관리팀') }); } catch(e) { console.warn('initReportBuilder failed', e); }
+ try { initDataExplorer({ team: 'qc', userName: (window.CURRENT_USER?.name || '박진수') }); } catch(e) { console.warn('initDataExplorer failed', e); }
  // 2026-05-18: 거래처 관리 페이지 (3개 포털 공통 폼)
  try {
    const cmHost = document.getElementById('page-clients');

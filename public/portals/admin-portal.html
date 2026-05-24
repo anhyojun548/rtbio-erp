@@ -1856,34 +1856,43 @@ const BRAND_MAP = {
 // ── P06: Dashboard ──
 function renderDashboard() {
  // Date display
- document.getElementById('dashboard-date').textContent = formatDateFull(TODAY);
+ const todayStr = new Date().toISOString().slice(0, 10);
+ document.getElementById('dashboard-date').textContent = formatDateFull(todayStr);
+
+ // KPI — 실데이터 (window.* 우선, fallback data.js mock)
+ const _orders = window.ORDERS || ORDERS;
+ const _receivables = window.RECEIVABLES || RECEIVABLES;
+ const _todayOrders = _orders.filter(o => (o.date || o.createdAt || '').slice(0, 10) === todayStr);
+ const _todayRevenue = _todayOrders.reduce((sum, o) => sum + calcOrderTotal(o), 0);
+ const _pendingOrders = _orders.filter(o => o.status === '접수' || o.status === 'SUBMITTED').length;
+ const _totalReceivables = _receivables.reduce((s, r) => s + (r.amount || r.balance || 0), 0);
 
  // Stats
  document.getElementById('dashboard-stats').innerHTML = `
  <div class="stat-card stat-primary">
  <div class="stat-label">오늘 발주</div>
- <div class="stat-value">${todayOrders.length}건</div>
+ <div class="stat-value">${_todayOrders.length}건</div>
  <div class="stat-sub">금일 접수된 발주</div>
  </div>
  <div class="stat-card stat-accent">
  <div class="stat-label">오늘 매출</div>
- <div class="stat-value">${formatCurrency(todayRevenue)}</div>
+ <div class="stat-value">${formatCurrency(_todayRevenue)}</div>
  <div class="stat-sub">확정 + 접수 합계</div>
  </div>
  <div class="stat-card stat-warning">
  <div class="stat-label">미확정 발주</div>
- <div class="stat-value">${pendingOrders}건</div>
+ <div class="stat-value">${_pendingOrders}건</div>
  <div class="stat-sub">확정 대기 중</div>
  </div>
  <div class="stat-card stat-danger">
  <div class="stat-label">총 미수금</div>
- <div class="stat-value">${formatCurrency(totalReceivables)}</div>
- <div class="stat-sub">${RECEIVABLES.length}개 거래처</div>
+ <div class="stat-value">${formatCurrency(_totalReceivables)}</div>
+ <div class="stat-sub">${_receivables.length}개 거래처</div>
  </div>
  `;
 
  // Pending badge in nav
- document.getElementById('nav-pending-badge').textContent = pendingOrders;
+ document.getElementById('nav-pending-badge').textContent = _pendingOrders;
 
  // Time bar
  const ti = getTimeInfo();
@@ -1894,29 +1903,29 @@ function renderDashboard() {
  `;
 
  // Today's orders table
- document.getElementById('today-order-count').textContent = todayOrders.length + '건';
+ document.getElementById('today-order-count').textContent = _todayOrders.length + '건';
  const tbody1 = document.querySelector('#dashboard-orders-table tbody');
- tbody1.innerHTML = todayOrders.map(o => `
+ tbody1.innerHTML = _todayOrders.map(o => `
  <tr>
  <td class="mono">${o.id}</td>
  <td>${getClientName(o.clientId)}</td>
  <td class="text-right">${formatCurrency(calcOrderTotal(o))}</td>
  <td>${statusBadge(o.status)}</td>
- <td class="text-muted">${o.time}</td>
+ <td class="text-muted">${o.time || ''}</td>
  </tr>
  `).join('');
 
  // Receivables table
- document.getElementById('receivable-total-badge').textContent = formatCurrency(totalReceivables);
+ document.getElementById('receivable-total-badge').textContent = formatCurrency(_totalReceivables);
  const tbody2 = document.querySelector('#dashboard-receivables-table tbody');
- tbody2.innerHTML = RECEIVABLES.map(r => {
+ tbody2.innerHTML = _receivables.map(r => {
  let cls = '';
  if (r.overdueDays > 14) cls = 'text-danger fw-600';
  else if (r.overdueDays > 7) cls = 'text-muted'; // warning tone
  return `
  <tr>
- <td>${getClientName(r.clientId)}</td>
- <td class="text-right fw-600">${formatCurrency(r.amount)}</td>
+ <td>${getClientName(r.clientId || r.client?.id)}</td>
+ <td class="text-right fw-600">${formatCurrency(r.amount || r.balance || 0)}</td>
  <td class="text-right ${cls}">${r.overdueDays > 0 ? r.overdueDays + '일' : '-'}</td>
  </tr>
  `;
@@ -5551,8 +5560,8 @@ document.addEventListener('DOMContentLoaded', () => {
    }
  } catch(e) { console.warn('SettingsModule init failed', e); }
  // 알티바이오 ISO 13485 품질양식 보고서 작성기 초기화
- try { initReportBuilder({ team: 'admin', userName: '김소영', userRole: '경영지원팀 팀장' }); } catch(e) { console.warn('initReportBuilder failed', e); }
- try { initDataExplorer({ team: 'admin', userName: '김소영' }); } catch(e) { console.warn('initDataExplorer failed', e); }
+ try { initReportBuilder({ team: 'admin', userName: (window.CURRENT_USER?.name || '김소영'), userRole: (window.CURRENT_USER?.role || '경영지원팀 팀장') }); } catch(e) { console.warn('initReportBuilder failed', e); }
+ try { initDataExplorer({ team: 'admin', userName: (window.CURRENT_USER?.name || '김소영') }); } catch(e) { console.warn('initDataExplorer failed', e); }
  // 2026-05-12 미팅: 알림 종 + 첫 페이지 로드 시 미읽음 공지 팝업
  try {
    const bellHost = document.getElementById('topbar-notify-bell');

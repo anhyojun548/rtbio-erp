@@ -2202,8 +2202,8 @@ document.addEventListener('DOMContentLoaded', function() {
  renderUsageInput('C002');
  renderClientStatus('all', 'name');
  // 알티바이오 ISO 13485 품질양식 보고서 작성기 초기화 (영업팀 권한)
- try { initReportBuilder({ team: 'sales', userName: '박진우', userRole: '영업팀 팀장' }); } catch(e) { console.warn('initReportBuilder failed', e); }
- try { initDataExplorer({ team: 'sales', userName: '박진우' }); } catch(e) { console.warn('initDataExplorer failed', e); }
+ try { initReportBuilder({ team: 'sales', userName: (window.CURRENT_USER?.name || '박진우'), userRole: (window.CURRENT_USER?.role || '영업팀 팀장') }); } catch(e) { console.warn('initReportBuilder failed', e); }
+ try { initDataExplorer({ team: 'sales', userName: (window.CURRENT_USER?.name || '박진우') }); } catch(e) { console.warn('initDataExplorer failed', e); }
  // 2026-05-12 미팅: 영업사원 마스터 + 알림 종
  try { renderRepMaster && renderRepMaster(); } catch(e) {}
  try {
