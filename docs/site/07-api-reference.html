@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>07. API (Server Actions) 레퍼런스 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="index.html">허브</a> <span class="sep">/</span> 레퍼런스 <span class="sep">/</span> 07. API
+  </div>
+
+  <h1 class="page-title">API · Server Actions 레퍼런스</h1>
+  <p class="page-subtitle">
+    RTBIO ERP 는 REST 가 아닌 <strong>Next.js Server Actions</strong> 를 채택했습니다. 모든 변경/조회는
+    <code>"use server"</code> 함수로 정의되며 <code>requireRole()</code> / <code>requireClient()</code> 게이트를
+    통과해야 합니다. 24개 모듈 · 약 150여 개 액션을 정리했습니다.
+  </p>
+
+  <!-- 요약 -->
+  <div class="grid grid-4">
+    <div class="stat brand"><p class="stat-label">액션 모듈</p><p class="stat-value">24</p><p class="stat-sub">src/lib/actions/*.ts</p></div>
+    <div class="stat"><p class="stat-label">평균 액션 수</p><p class="stat-value">6.3</p><p class="stat-sub">모듈당</p></div>
+    <div class="stat ok"><p class="stat-label">감사 로깅</p><p class="stat-value">All</p><p class="stat-sub">모든 변경 logAudit</p></div>
+    <div class="stat warn"><p class="stat-label">Zod 검증</p><p class="stat-value">All</p><p class="stat-sub">src/lib/validators/*</p></div>
+  </div>
+
+  <!-- 사용 규약 -->
+  <h2>사용 규약</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 class="card-title mt-0">1. 파일 구조</h3>
+      <pre><code>src/lib/
+  ├── actions/          // "use server" 함수
+  │   ├── order.ts
+  │   ├── invoice.ts
+  │   └── ...
+  ├── validators/       // Zod 스키마
+  ├── session.ts        // requireRole, requireClient
+  ├── audit.ts          // logAudit
+  └── prisma.ts         // PrismaClient</code></pre>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0">2. 표준 패턴</h3>
+      <pre><code>"use server";
+import { z } from "zod";
+import { requireRole } from "@/lib/session";
+import { logAudit } from "@/lib/audit";
+
+export async function createThing(input) {
+  const user = await requireRole("ADMIN");
+  const parsed = createThingSchema.parse(input);
+  const thing = await prisma.thing.create({...});
+  await logAudit({
+    action: "THING_CREATE",
+    resource: `Thing:${thing.id}`,
+    metadata: {...}
+  });
+  return thing;
+}</code></pre>
+    </div>
+  </div>
+
+  <!-- 모듈 맵 -->
+  <h2>모듈 맵</h2>
+  <p>도메인별 그룹화. 각 모듈의 주요 액션과 RBAC 요구사항을 정리했습니다.</p>
+
+  <!-- 도메인: 마스터 -->
+  <h3>🏢 마스터 데이터 (4)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>감사 액션 접두어</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">client.ts</td>
+          <td>
+            <code>listClients</code> · <code>getClient</code> · <code>createClient</code> ·
+            <code>updateClient</code> · <code>toggleActive</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td class="mono">CLIENT_*</td>
+        </tr>
+        <tr>
+          <td class="mono">client-address.ts</td>
+          <td>
+            <code>listAddresses</code> · <code>addAddress</code> · <code>updateAddress</code> ·
+            <code>deleteAddress</code> · <code>setDefaultAddress</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td class="mono">CLIENT_ADDRESS_*</td>
+        </tr>
+        <tr>
+          <td class="mono">product.ts</td>
+          <td>
+            <code>listProducts</code> · <code>getProduct</code> · <code>createProduct</code> ·
+            <code>updateProduct</code> · <code>toggleActive</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td class="mono">PRODUCT_*</td>
+        </tr>
+        <tr>
+          <td class="mono">product-size.ts</td>
+          <td>
+            <code>listSizes</code> · <code>addSize</code> · <code>updateSize</code> ·
+            <code>deleteSize</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td class="mono">PRODUCT_SIZE_*</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 주문 -->
+  <h3>📦 주문 · 출고 (3)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">order.ts</td>
+          <td>
+            <code>listOrders</code> · <code>getOrder</code> · <code>createOrder</code> ·
+            <code>updateOrderHeader</code> · <code>upsertOrderItem</code> · <code>deleteOrderItem</code> ·
+            <code>submitOrder</code> · <code>rejectOrder</code> · <code>holdOrder</code> ·
+            <code>resumeOrder</code> · <code>confirmOrder</code> · <code>cancelOrder</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>Advisory lock · Snapshot 재계산</td>
+        </tr>
+        <tr>
+          <td class="mono">shipment.ts</td>
+          <td>
+            <code>listShipments</code> · <code>startShipment</code> · <code>moveShipmentStage</code> ·
+            <code>holdShipment</code> · <code>resumeShipment</code> ·
+            <code>listShipmentHistory</code>
+          </td>
+          <td>
+            <span class="badge badge-brand">ADMIN</span>
+            <span class="badge badge-purple">QC</span>
+          </td>
+          <td>Terminal 진입 시 physicalStock 차감</td>
+        </tr>
+        <tr>
+          <td class="mono">kanban.ts</td>
+          <td>
+            <code>listKanbanColumns</code> · <code>listKanbanColumnsWithUsage</code> ·
+            <code>createKanbanColumn</code> · <code>updateKanbanColumn</code> ·
+            <code>deleteKanbanColumn</code> · <code>reorderKanbanColumns</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>_count.shipments 기반 삭제 가드</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 재고 -->
+  <h3>📊 재고 · 유통기한 (3)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">inventory.ts</td>
+          <td>
+            <code>listSizeStocks</code> · <code>listInventoryLogs</code> ·
+            <code>createInventoryReceipt</code> · <code>createInventoryAdjustment</code>
+          </td>
+          <td>
+            <span class="badge badge-brand">ADMIN</span>
+            <span class="badge badge-purple">QC</span>
+          </td>
+          <td>SELECT FOR UPDATE · 이중재고 불변식</td>
+        </tr>
+        <tr>
+          <td class="mono">expiry.ts</td>
+          <td>
+            <code>listExpiryLots</code> · <code>listExpiringSoon</code> · <code>getLotsForSize</code> ·
+            <code>createExpiryLot</code> · <code>updateExpiryLot</code> · <code>deleteExpiryLot</code>
+          </td>
+          <td>
+            <span class="badge badge-brand">ADMIN</span>
+            <span class="badge badge-purple">QC</span>
+          </td>
+          <td>classifyExpiry(EXPIRED/URGENT/SOON/SAFE)</td>
+        </tr>
+        <tr>
+          <td class="mono">stock-alert.ts</td>
+          <td>
+            <code>listLowStockAlerts</code> · <code>countStockAlerts</code>
+          </td>
+          <td>
+            <span class="badge badge-brand">ADMIN</span>
+            <span class="badge badge-purple">QC</span>
+          </td>
+          <td>classifyStock(OUT/LOW/OK) + deficit desc</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 재무 -->
+  <h3>💰 재무 (4)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">invoice.ts</td>
+          <td>
+            <code>listInvoices</code> · <code>getInvoice</code> ·
+            <code>createInvoiceFromOrder</code> · <code>issueInvoice</code> ·
+            <code>markInvoiceSent</code> · <code>cancelInvoice</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>INV-YYYYMMDD-NNN · VAT 설정 참조</td>
+        </tr>
+        <tr>
+          <td class="mono">payment.ts</td>
+          <td>
+            <code>listPayments</code> · <code>recordPayment</code> · <code>updatePayment</code> ·
+            <code>cancelPayment</code> · <code>createBankTxn</code> · <code>updateBankTxn</code> ·
+            <code>deleteBankTxn</code> · <code>matchBankTxn</code> · <code>unmatchBankTxn</code> ·
+            <code>sumPaymentsByClient</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>소프트 취소 · BankTxn 매칭</td>
+        </tr>
+        <tr>
+          <td class="mono">ledger.ts</td>
+          <td>
+            <code>listLedgers</code> · <code>recomputeLedger</code> ·
+            <code>recomputeLedgerMonth</code> · <code>closeMonth</code> · <code>reopenMonth</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>(clientId, closingMonth) unique upsert</td>
+        </tr>
+        <tr>
+          <td class="mono">client-pricing.ts</td>
+          <td>
+            <code>listDiscounts</code> · <code>upsertDiscount</code> · <code>deleteDiscount</code> ·
+            <code>listFixedPrices</code> · <code>upsertFixedPrice</code> · <code>deleteFixedPrice</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>ClientFixedPrice &gt; ClientDiscount</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 영업 -->
+  <h3>🎯 영업 · 계약 (5)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">exec.ts</td>
+          <td>
+            <code>listMyClients</code> · <code>listMyOrders</code> · <code>getMyOrderSummary</code> ·
+            <code>getMyTopClientsByMonth</code>
+          </td>
+          <td>
+            <span class="badge badge-purple">EXEC</span>
+            <span class="badge badge-brand">ADMIN</span>
+          </td>
+          <td>salesRepId 직접 ∪ SalesAssignment</td>
+        </tr>
+        <tr>
+          <td class="mono">sales-performance.ts</td>
+          <td>
+            <code>listSalesPerformanceByMonth</code> · <code>getSalesRepClientBreakdown</code> ·
+            <code>getSalesRepProductBreakdown</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>sales desc · breakdown</td>
+        </tr>
+        <tr>
+          <td class="mono">sales-history.ts</td>
+          <td>
+            <code>getSalesHistory</code> · <code>listAssignableSalesReps</code>
+          </td>
+          <td>
+            <span class="badge badge-purple">EXEC</span>
+            <span class="badge badge-brand">ADMIN</span>
+          </td>
+          <td>4종 이벤트 타임라인</td>
+        </tr>
+        <tr>
+          <td class="mono">conference.ts</td>
+          <td>
+            <code>listConferences</code> · <code>getConference</code> · <code>createConference</code> ·
+            <code>updateConference</code> · <code>deleteConference</code> ·
+            <code>createVisitor</code> · <code>updateVisitor</code> · <code>deleteVisitor</code>
+          </td>
+          <td>
+            <span class="badge badge-purple">EXEC</span>
+            <span class="badge badge-brand">ADMIN</span>
+          </td>
+          <td>CASCADE: Visitor</td>
+        </tr>
+        <tr>
+          <td class="mono">sales-contract.ts</td>
+          <td>
+            <code>listContracts</code> · <code>getContract</code> · <code>createContract</code> ·
+            <code>updateContract</code> · <code>deleteContract</code> · <code>listExpiringSoon</code> ·
+            <code>countContractStatuses</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>classifyContract 5단계</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 리포트 -->
+  <h3>📈 리포트 · 대시보드 (3)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">report.ts</td>
+          <td>
+            <code>computeMonthlyReport</code> · <code>getMonthlyReport</code> ·
+            <code>getMonthlyReportWithPrev</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>전월 대비 델타</td>
+        </tr>
+        <tr>
+          <td class="mono">data-usage.ts</td>
+          <td>
+            <code>listDataUsage</code> · <code>listAvailableMonths</code> ·
+            <code>getMonthSummary</code> · <code>getMonthWithPrev</code> ·
+            <code>createDataUsage</code> · <code>upsertDataUsage</code> ·
+            <code>updateDataUsage</code> · <code>deleteDataUsage</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>(month, category) unique</td>
+        </tr>
+        <tr>
+          <td class="mono">widget-dashboard.ts</td>
+          <td>
+            <code>getMyDashboard</code> · <code>listMyWidgets</code> · <code>addWidget</code> ·
+            <code>updateWidget</code> · <code>removeWidget</code> · <code>reorderWidgets</code> ·
+            <code>resetLayout</code> · <code>getAllPresets</code>
+          </td>
+          <td>
+            <span class="badge badge-danger">CEO</span>
+            <span class="badge badge-brand">ADMIN</span>
+          </td>
+          <td>10 프리셋 · 소유권 검증</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 도메인: 시스템/포털 -->
+  <h3>⚙️ 시스템 · 포털 (2)</h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>모듈</th><th>주요 액션</th><th>RBAC</th><th>특이사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">tenant-setting.ts</td>
+          <td>
+            <code>listSettings</code> · <code>getSettingValue</code> · <code>getSettings</code> ·
+            <code>updateSetting</code> · <code>bulkUpdateSettings</code>
+          </td>
+          <td><span class="badge badge-brand">ADMIN</span></td>
+          <td>5키 리터럴 · 키별 value 스키마</td>
+        </tr>
+        <tr>
+          <td class="mono">client-portal.ts</td>
+          <td>
+            <code>getMyClient</code> · <code>getMyDashboard</code> · <code>listMyOrders</code> ·
+            <code>getMyOrder</code> · <code>listMyInvoices</code> · <code>getMyInvoice</code> ·
+            <code>listMyPayments</code> · <code>listMyLedgers</code> · <code>listMyContracts</code> ·
+            <code>getMyContract</code>
+          </td>
+          <td><span class="badge badge-ok">CLIENT</span></td>
+          <td>clientId 행-레벨 필터 강제 · 읽기전용</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 세션 게이트 -->
+  <h2>세션 게이트 (<code>lib/session.ts</code>)</h2>
+  <p>모든 액션은 아래 두 헬퍼 중 하나로 진입을 제한합니다.</p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 class="card-title mt-0"><code>requireRole(...roles)</code></h3>
+      <pre><code>// 하나 이상의 역할을 허용
+const user = await requireRole(
+  "TENANT_OWNER", "ADMIN", "EXEC"
+);
+if (!user) redirect("/403");</code></pre>
+      <p style="font-size:13px; color:var(--c-text-muted);">
+        내부/운영자 포털용. 실패 시 <code>/403</code> 리다이렉트.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0"><code>requireClient()</code></h3>
+      <pre><code>// role=CLIENT AND clientId 필수
+const user = await requireClient();
+// 모든 쿼리에 clientId 필터 강제
+const orders = await prisma.order.findMany({
+  where: { clientId: user.clientId },
+});</code></pre>
+      <p style="font-size:13px; color:var(--c-text-muted);">
+        거래처 포털 전용. clientId 로 행-레벨 격리.
+      </p>
+    </div>
+  </div>
+
+  <!-- 표준 에러 포맷 -->
+  <h2>에러 처리</h2>
+  <div class="note">
+    <strong>원칙</strong> — 모든 액션은 성공 시 데이터를 반환하고, 실패 시 <em>한글 메시지를
+    포함한 Error</em> 를 throw. 클라이언트는 <code>try/catch</code> 로 받아 에러 배너 표시.
+    Prisma 코드(P2002/P2003/P2025)는 반드시 한글 메시지로 폴백.
+  </div>
+
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Prisma 코드</th><th>의미</th><th>표준 한글 메시지 예</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">P2002</td><td>고유 제약 위반</td><td>이미 등록된 코드입니다.</td></tr>
+        <tr><td class="mono">P2003</td><td>외래키 제약 위반</td><td>참조되는 데이터가 없습니다.</td></tr>
+        <tr><td class="mono">P2025</td><td>레코드 없음</td><td>대상을 찾을 수 없습니다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 동시성 패턴 -->
+  <h2>동시성 패턴</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 class="card-title mt-0">1. Advisory Lock (번호 채번)</h3>
+      <pre><code>// order.ts · invoice.ts
+await prisma.$executeRaw`
+  SELECT pg_advisory_xact_lock(${lockKey})
+`;
+const seq = await prisma.counter.update(...);</code></pre>
+      <p style="font-size:13px; color:var(--c-text-muted);">
+        <strong>사용처</strong>: <code>ORD-YYYYMMDD-NNN</code> · <code>INV-YYYYMMDD-NNN</code> 채번.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0">2. SELECT FOR UPDATE (재고)</h3>
+      <pre><code>// inventory.ts · order.ts (CONFIRM)
+await prisma.$queryRaw`
+  SELECT physical_stock, available_stock
+  FROM product_size
+  WHERE id = ${sizeId}
+  FOR UPDATE
+`;
+// 이후 UPDATE ...</code></pre>
+      <p style="font-size:13px; color:var(--c-text-muted);">
+        <strong>사용처</strong>: 재고 입고/조정/예약/차감. 트랜잭션 필수.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0">3. Transaction (복합 연산)</h3>
+      <pre><code>await prisma.$transaction(async (tx) => {
+  await tx.order.update({...});
+  for (const item of items) {
+    await tx.productSize.update({
+      data: { availableStock: { decrement: qty }}
+    });
+    await tx.inventoryLog.create({...});
+  }
+});</code></pre>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0">4. Upsert (동시 재계산)</h3>
+      <pre><code>// ClosingLedger.recomputeLedger
+await prisma.closingLedger.upsert({
+  where: { clientId_closingMonth: {...} },
+  create: {...},
+  update: {...}
+});</code></pre>
+      <p style="font-size:13px; color:var(--c-text-muted);">
+        (clientId, closingMonth) unique 로 동시성 직렬화.
+      </p>
+    </div>
+  </div>
+
+  <!-- revalidatePath -->
+  <h2>캐시 무효화</h2>
+  <p>모든 쓰기 액션은 <code>revalidatePath()</code> 로 영향 경로를 갱신합니다.</p>
+
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>액션</th><th>revalidate 대상</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">createClient</td><td><code>/admin/clients</code></td></tr>
+        <tr><td class="mono">submitOrder · confirmOrder</td><td><code>/admin/orders</code> · <code>/admin/orders/{id}</code></td></tr>
+        <tr><td class="mono">moveShipmentStage</td><td><code>/admin/shipments</code> · <code>/qc/shipments</code></td></tr>
+        <tr><td class="mono">issueInvoice</td><td><code>/admin/invoices</code> · <code>/admin/invoices/{id}</code></td></tr>
+        <tr><td class="mono">updateContract</td><td><code>/admin/contracts</code> · <code>/admin/clients/{id}</code></td></tr>
+        <tr><td class="mono">addWidget · updateWidget</td><td><code>/ceo</code> · <code>/ceo/customize</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <strong>다음 단계</strong> — 실제 호출 예시와 컴포넌트 연결은
+    <a href="08-component-inventory.html">08. 컴포넌트 인벤토리</a> 참조.
+    감사 로그 action 코드 카탈로그는 <a href="09-audit-log-catalog.html">09. 감사 로그</a>.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

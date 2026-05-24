@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>03. 비즈니스 플로우 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'neutral', securityLevel:'loose', fontFamily:'Pretendard, Noto Sans KR, sans-serif'});</script>
+<script src="assets/diagram-zoom.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html" class="active">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb"><a href="index.html">허브</a> <span class="sep">/</span> 설계 문서 <span class="sep">/</span> 03. 비즈니스 플로우</div>
+  <h1 class="page-title">03. 비즈니스 플로우</h1>
+  <p class="page-subtitle">핵심 도메인 프로세스 5종. 각 플로우는 실제 코드에 대응 — 상태머신 · 시퀀스 · 파이프라인.</p>
+
+  <div class="toc">
+    <p class="toc-title">이 문서에서</p>
+    <ol>
+      <li>발주 주문 수명주기 (R03·R04)</li>
+      <li>Shipment 칸반 + 출고 (R05·R17)</li>
+      <li>이중 재고 차감 시퀀스 (R04·R08)</li>
+      <li>가격 계산 우선순위 (R02)</li>
+      <li>명세서 · 수금 · 원장 파이프라인 (R07·R09·R10·R12)</li>
+      <li>유통기한 분류 (R19)</li>
+      <li>재고 임계치 알럼 (R14)</li>
+    </ol>
+  </div>
+
+  <!-- 1. 주문 수명주기 --------------- -->
+  <h2>1. 발주 주문 수명주기</h2>
+  <p>주문은 7개 상태로 움직이며, 각 전환마다 라인별 재고 동시성 제어 · 스냅샷 재기록 · 감사 로그가 실행됩니다.</p>
+
+  <div class="diagram">
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> DRAFT : 생성 (orderNumber=DRAFT-xxx)
+    DRAFT --> DRAFT : 라인 CRUD · 배송지 변경
+    DRAFT --> SUBMITTED : SUBMIT<br/>orderNumber=ORD-YYYYMMDD-NNN<br/>가격 재스냅샷 · billingMonth 세팅
+    DRAFT --> CANCELLED : CANCEL (재고 미영향)
+    SUBMITTED --> CONFIRMED : CONFIRM<br/>⚡ availableStock 차감 (RESERVE)
+    SUBMITTED --> REJECTED : REJECT + 사유
+    SUBMITTED --> HELD : HOLD + 사유
+    HELD --> SUBMITTED : RESUME
+    SUBMITTED --> CANCELLED : CANCEL (재고 미영향)
+    CONFIRMED --> SHIPPING : startShipment<br/>첫 KanbanColumn 진입
+    CONFIRMED --> CANCELLED : CANCEL<br/>⚡ availableStock 복원 (RELEASE)
+    SHIPPING --> SHIPPING : moveShipmentStage<br/>(단계 이동 · 이력 기록)
+    SHIPPING --> COMPLETED : terminal 단계 도달<br/>⚡ physicalStock 차감 (SHIP)
+    COMPLETED --> [*] : 명세서 발급 가능
+    REJECTED --> [*]
+    CANCELLED --> [*]
+    </div>
+  </div>
+
+  <div class="grid grid-3 mt-2">
+    <div class="card">
+      <h4 class="mt-0">📋 SUBMIT 전환</h4>
+      <ul style="margin:0; padding-left:18px; font-size:13.5px;">
+        <li>Postgres advisory lock 기반 채번</li>
+        <li>라인 가격 재스냅샷</li>
+        <li><code>billingMonth = YYYY-MM</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">✅ CONFIRM 전환</h4>
+      <ul style="margin:0; padding-left:18px; font-size:13.5px;">
+        <li>라인별 <code>SELECT FOR UPDATE</code></li>
+        <li><code>availableStock -= qty</code></li>
+        <li><code>InventoryLog.RESERVE</code> 기록</li>
+        <li>재고 부족 시 전체 롤백</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🚚 SHIP 전환 (terminal)</h4>
+      <ul style="margin:0; padding-left:18px; font-size:13.5px;">
+        <li>라인별 <code>SELECT FOR UPDATE</code></li>
+        <li><code>physicalStock -= qty</code></li>
+        <li><code>InventoryLog.SHIP</code> 기록</li>
+        <li><code>Order.status=COMPLETED</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 2. Shipment 칸반 --------------- -->
+  <h2>2. Shipment 칸반 + 출고 (R05·R17)</h2>
+  <p>CONFIRMED 주문은 Shipment 카드로 생성되어 칸반 보드에 진입. 관리자가 커스터마이즈한 KanbanColumn 순서대로 이동.</p>
+
+  <div class="diagram">
+    <div class="mermaid">
+flowchart LR
+    O[CONFIRMED<br/>Order] -->|startShipment| C1
+    subgraph Board["칸반 보드 — KanbanColumn 순서"]
+      direction LR
+      C1[대기<br/>WAITING]
+      C2[피킹<br/>PICKING]
+      C3[포장<br/>PACKING]
+      C4[출고완료<br/>COMPLETED<br/>★ isTerminal]
+    end
+    C1 -->|moveShipmentStage| C2
+    C2 --> C3
+    C3 --> C4
+    C4 -->|자동| SHIP[(physicalStock -= qty<br/>InventoryLog.SHIP<br/>Order=COMPLETED)]
+
+    C1 -.hold/resume.-> HELD[보류]
+    HELD -.-> C1
+
+    style C4 fill:#d1fae5,stroke:#059669
+    style SHIP fill:#fef3c7,stroke:#d97706
+    style HELD fill:#fee2e2,stroke:#dc2626
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>칸반 커스터마이징</strong> — <code>/admin/shipments/columns</code> 에서 단계 추가·편집·재정렬·삭제.
+    연결된 Shipment 가 있는 단계는 삭제 금지 (앱 가드). <code>isTerminal=true</code> 인 단계 도달 시 자동 SHIP.
+  </div>
+
+  <!-- 3. 이중 재고 --------------- -->
+  <h2>3. 이중 재고 차감 시퀀스</h2>
+  <p>창고 실수량(<code>physicalStock</code>)과 예약분 제외 판매가능수량(<code>availableStock</code>)의 2단계 관리.
+    <strong>동시성</strong>은 라인별 <code>SELECT FOR UPDATE</code> 로 격리.</p>
+
+  <div class="diagram">
+    <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant U as 유저
+    participant API as Server Action
+    participant TX as Prisma Tx
+    participant DB as Postgres
+    participant LOG as InventoryLog
+
+    Note over U,LOG: 1. CONFIRM — availableStock 예약
+    U->>API: confirmOrder(orderId)
+    API->>TX: begin
+    TX->>DB: SELECT ProductSize<br/>WHERE id IN (...)<br/>FOR UPDATE
+    DB-->>TX: 행 잠금 획득
+    TX->>DB: UPDATE availableStock -= qty
+    DB-->>TX: OK
+    TX->>LOG: INSERT InventoryLog(RESERVE)
+    API-->>U: Order.status = CONFIRMED
+
+    Note over U,LOG: 2. SHIP — physicalStock 차감 (terminal 도달 시)
+    U->>API: moveShipmentStage → terminal
+    API->>TX: begin
+    TX->>DB: SELECT ProductSize FOR UPDATE
+    TX->>DB: UPDATE physicalStock -= qty
+    TX->>LOG: INSERT InventoryLog(SHIP)
+    TX->>DB: UPDATE Order.status = COMPLETED
+    API-->>U: 출고 완료
+
+    Note over U,LOG: 3. 주문 취소 (CONFIRMED → CANCELLED) — 복원
+    U->>API: cancelOrder(orderId)
+    API->>TX: begin
+    TX->>DB: SELECT ProductSize FOR UPDATE
+    TX->>DB: UPDATE availableStock += qty
+    TX->>LOG: INSERT InventoryLog(RELEASE)
+    API-->>U: CANCELLED
+    </div>
+  </div>
+
+  <div class="note warn">
+    <strong>불변식</strong> — <code>availableStock ≤ physicalStock</code> 은 항상 유지. 반품(<code>InventoryAdjustment.reason=반품</code>)
+    은 physicalStock 만 조정. 샘플출고(QC 포털)는 음수 qty 로 차감.
+  </div>
+
+  <!-- 4. 가격 계산 --------------- -->
+  <h2>4. 가격 계산 우선순위</h2>
+  <p>주문 라인 추가 시 <code>pricing.ts</code> 가 계산. 결과는 주문 테이블에 <strong>스냅샷</strong> — 이후 가격 변경에 무관.</p>
+
+  <div class="diagram">
+    <div class="mermaid">
+flowchart TD
+    START([라인 추가<br/>productId · sizeId · qty]) --> Q1{ClientFixedPrice<br/>있나?}
+    Q1 -->|Yes| FP[🎯 ClientFixedPrice.price<br/>거래처×사이즈 고정가]
+    Q1 -->|No| Q2{ClientDiscount<br/>카테고리 할인율?}
+    Q2 -->|Yes| DR[basePrice × 1 - rate<br/>예: 15% 할인 → × 0.85]
+    Q2 -->|No| BP[ProductSize.basePrice]
+    FP --> SNAP[📸 Order.unitPrice<br/>Order.basePriceAtOrder<br/>스냅샷 저장]
+    DR --> SNAP
+    BP --> SNAP
+    SNAP --> DONE([주문 확정 후<br/>제품 가격 변경돼도<br/>기존 주문 불변])
+
+    style FP fill:#d1fae5,stroke:#059669
+    style DR fill:#fef3c7,stroke:#d97706
+    style BP fill:#e0f2fe,stroke:#0284c7
+    style SNAP fill:#ede9fe,stroke:#7c3aed
+    </div>
+  </div>
+
+  <div class="grid grid-3 mt-2">
+    <div class="card">
+      <h4 class="mt-0">1순위 · ClientFixedPrice</h4>
+      <p style="font-size:13.5px;">거래처마다 특정 제품+사이즈에 대한 개별 계약가. 카테고리 할인율을 무시하고 우선.</p>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">2순위 · ClientDiscount</h4>
+      <p style="font-size:13.5px;">거래처×카테고리 할인율 (0~1). 예: "스테이플러" 카테고리 15% 할인.</p>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">3순위 · basePrice</h4>
+      <p style="font-size:13.5px;">ProductSize 의 기본가. 거래처 할인 규칙이 없을 때 적용.</p>
+    </div>
+  </div>
+
+  <!-- 5. 재무 파이프라인 --------------- -->
+  <h2>5. 명세서 · 수금 · 원장 파이프라인</h2>
+
+  <div class="diagram">
+    <div class="mermaid">
+flowchart TB
+    O[Order<br/>COMPLETED] -->|createInvoiceFromOrder| INV[Invoice<br/>DRAFT]
+    INV -->|issueInvoice<br/>INV-YYYYMMDD-NNN| ISSUED[Invoice<br/>ISSUED]
+    ISSUED -->|markInvoiceSent| SENT[Invoice<br/>SENT + sentAt]
+    ISSUED -.cancelInvoice.-> CANCEL[Invoice<br/>CANCELLED]
+
+    BANK[BankTransaction<br/>은행 입금 수기 등록] -.matchBankTxn.-> PAY
+    PAY[Payment<br/>PARTIAL/PAID] -->|월 합산| LED[ClosingLedger<br/>월별 원장]
+    ISSUED & SENT -->|월 합산| LED
+
+    LED -->|carryOver = 전월 balance<br/>sales = 이달 명세서 합<br/>received = 이달 수금 합<br/>balance = carry + sales - received| BAL[미수금 잔액]
+
+    BAL -.closeMonth.-> CLOSED[마감 원장<br/>수정 불가]
+    CLOSED -.reopenMonth + 사유.-> LED
+
+    style O fill:#e0f2fe,stroke:#0284c7
+    style INV fill:#fef3c7,stroke:#d97706
+    style SENT fill:#d1fae5,stroke:#059669
+    style LED fill:#ede9fe,stroke:#7c3aed
+    style BAL fill:#fee2e2,stroke:#dc2626
+    style CLOSED fill:#f1f5f9,stroke:#475569
+    </div>
+  </div>
+
+  <h3>5.1 VAT 계산</h3>
+  <div class="note">
+    <code>calcVatTotal(supply, rate)</code> — rate 는 <code>TenantSetting.vat_rate</code> 에서 읽음 (기본 0.10).
+    <code>supplyAmount = Σ(lineTotal)</code>, <code>vatAmount = supplyAmount × rate</code>,
+    <code>totalAmount = supplyAmount + vatAmount</code>.
+  </div>
+
+  <h3>5.2 Payment 소프트 취소</h3>
+  <div class="note warn">
+    수금 취소는 hard delete 가 아닌 <code>status=PENDING</code> + note 에 <code>[취소]</code> 태그 덧붙이기.
+    <code>BankTransaction.matched</code> 는 별도 <code>unmatchBankTxn</code> 으로 해제. 집계에서는 PENDING 제외.
+  </div>
+
+  <h3>5.3 원장 동시성</h3>
+  <div class="note">
+    <code>(clientId, closingMonth)</code> unique + <code>upsert</code> 로 여러 재계산이 동시에 실행돼도 직렬화.
+    <code>recomputeLedgerMonth</code> 는 per-client 트랜잭션을 격리 — 1곳 실패가 다른 거래처 집계를 막지 않음.
+  </div>
+
+  <!-- 6. 유통기한 --------------- -->
+  <h2>6. 유통기한 분류 (R19)</h2>
+  <div class="diagram">
+    <div class="mermaid">
+flowchart LR
+    T[오늘 날짜] --> CALC[daysLeft = expiryDate - today]
+    CALC --> Q1{daysLeft < 0?}
+    Q1 -->|Yes| EX[🔴 EXPIRED<br/>만료]
+    Q1 -->|No| Q2{daysLeft ≤ 30?}
+    Q2 -->|Yes| UR[🟠 URGENT<br/>긴급]
+    Q2 -->|No| Q3{daysLeft ≤ 90?}
+    Q3 -->|Yes| SO[🟡 SOON<br/>임박]
+    Q3 -->|No| SA[🟢 SAFE<br/>안전]
+
+    style EX fill:#fee2e2,stroke:#dc2626
+    style UR fill:#fef3c7,stroke:#d97706
+    style SO fill:#fef3c7,stroke:#ca8a04
+    style SA fill:#d1fae5,stroke:#059669
+    </div>
+  </div>
+
+  <!-- 7. 재고 임계치 --------------- -->
+  <h2>7. 재고 임계치 알럼 (R14)</h2>
+  <div class="diagram">
+    <div class="mermaid">
+flowchart LR
+    PS[ProductSize<br/>physicalStock, availableStock,<br/>reorderPoint] --> Q1{physicalStock ≤ 0?}
+    Q1 -->|Yes| OUT[🔴 OUT<br/>품절<br/>deficit = reorderPoint]
+    Q1 -->|No| Q2{reorderPoint<br/>null 또는 ≤ 0?}
+    Q2 -->|Yes| OK[🟢 OK<br/>정상]
+    Q2 -->|No| Q3{stock ≤<br/>reorderPoint?}
+    Q3 -->|Yes| LOW[🟡 LOW<br/>부족<br/>deficit = reorderPoint - stock]
+    Q3 -->|No| OK
+
+    OUT --> SORT[OUT → LOW → OK<br/>같은 level 은 deficit desc]
+    LOW --> SORT
+    OK --> SORT
+
+    style OUT fill:#fee2e2,stroke:#dc2626
+    style LOW fill:#fef3c7,stroke:#d97706
+    style OK fill:#d1fae5,stroke:#059669
+    </div>
+  </div>
+
+  <!-- 8. 참고 --------------- -->
+  <h2>8. 참고 문서</h2>
+  <ul>
+    <li>데이터 모델 상세 → <a href="02-database-erd.html">02. 데이터베이스 ERD</a></li>
+    <li>포털별 접근 가능 기능 → <a href="04-portal-matrix.html">04. 포털 매트릭스</a></li>
+    <li>서버 액션 구현 파일 → <a href="07-api-reference.html">07. API 레퍼런스</a></li>
+  </ul>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

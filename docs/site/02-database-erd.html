@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>02. 데이터베이스 ERD · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'neutral', securityLevel:'loose', fontFamily:'Pretendard, Noto Sans KR, sans-serif'});</script>
+<script src="assets/diagram-zoom.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html" class="active">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb"><a href="index.html">허브</a> <span class="sep">/</span> 설계 문서 <span class="sep">/</span> 02. 데이터베이스 ERD</div>
+  <h1 class="page-title">02. 데이터베이스 ERD</h1>
+  <p class="page-subtitle">33개 모델 · 8개 enum. <code>public</code> / <code>tenant_altibio</code> 2개 스키마로 분리.</p>
+
+  <div class="toc">
+    <p class="toc-title">이 문서에서</p>
+    <ol>
+      <li>스키마 개요 — public vs tenant</li>
+      <li>마스터 데이터 (거래처 · 제품)</li>
+      <li>주문 · 출고 (Order · Shipment · 칸반)</li>
+      <li>재고 · 유통기한</li>
+      <li>재무 (명세서 · 수금 · 원장)</li>
+      <li>영업 · 계약 · 보고 (Conference · SalesContract · DataUsage · Widget)</li>
+      <li>시스템 (감사 · 알림 · 이메일 · 설정)</li>
+      <li>CASCADE 정책 요약</li>
+    </ol>
+  </div>
+
+  <!-- 1. 스키마 개요 --------------- -->
+  <h2>1. 스키마 개요</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <h4 class="mt-0">📁 public (공용)</h4>
+      <ul style="margin:0; padding-left:20px;">
+        <li><strong>User</strong> — 유저 (포털 전체 공용 · role 별 분기)</li>
+        <li><strong>Tenant</strong> — 테넌트 메타</li>
+        <li><strong>AuditLog</strong> — 모든 변경 감사 로그</li>
+        <li><strong>SystemSetting</strong> — 시스템 전역 설정</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">📁 tenant_altibio (도메인)</h4>
+      <ul style="margin:0; padding-left:20px;">
+        <li>Product · ProductSize · ExpiryLot</li>
+        <li>Client · ClientAddress · ClientDiscount · ClientFixedPrice</li>
+        <li>Order · OrderItem · Shipment · KanbanColumn ...</li>
+        <li>Invoice · Payment · ClosingLedger · BankTransaction</li>
+        <li>Conference · SalesContract · DataUsage · DashboardWidget</li>
+        <li>Inventory · InventoryLog · InventoryAdjustment</li>
+        <li>Notification · EmailQueue · TenantSetting · SalesAssignment</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>설계 의도</strong> — 멀티테넌트 확장 시 <code>tenant_{id}</code> 스키마를 복제. 공용 유저는 public 에,
+    도메인 데이터는 테넌트별 격리. <code>User.clientId</code> 는 크로스 스키마 FK 를 피하기 위해 앱-레벨 참조.
+  </div>
+
+  <!-- 2. 마스터 데이터 ----- -->
+  <h2>2. 마스터 데이터 — 거래처 · 제품</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    Client ||--o{ ClientAddress : "1:N (배송지)"
+    Client ||--o{ ClientDiscount : "카테고리 할인율"
+    Client ||--o{ ClientFixedPrice : "제품 고정가"
+    Client ||--o{ SalesAssignment : "복수 담당자"
+    Client ||--o{ SalesContract : "판매 계약서"
+    Client }o--|| User : "salesRepId (직접 담당)"
+
+    Product ||--o{ ProductSize : "사이즈별 재고"
+    ProductSize ||--o{ ExpiryLot : "로트 단위 유통기한"
+    ProductSize ||--o{ ClientFixedPrice : "거래처×사이즈 고정가"
+
+    Client {
+        string id PK
+        string code UK "C-XXXX"
+        string name
+        ClientType type "AGENCY·HOSPITAL·PHARMACY·OTHER"
+        boolean active
+        string salesRepId FK
+        string paymentTerms
+        datetime createdAt
+    }
+    ClientAddress {
+        string id PK
+        string clientId FK
+        string label
+        string address
+        boolean isDefault "앱-레벨 유일성"
+    }
+    ClientDiscount {
+        string clientId FK
+        string category
+        decimal rate "0~1"
+    }
+    ClientFixedPrice {
+        string clientId FK
+        string productId FK
+        string sizeId FK
+        decimal price
+    }
+    Product {
+        string id PK
+        string code UK
+        string category
+        string brand
+        boolean active
+    }
+    ProductSize {
+        string id PK
+        string productId FK
+        string label "XS·S·M·L·XL"
+        decimal basePrice
+        int physicalStock
+        int availableStock
+        int reorderPoint
+    }
+    ExpiryLot {
+        string id PK
+        string sizeId FK
+        string lotNumber
+        date expiryDate
+        int quantity
+        int remainingQty
+    }
+    </div>
+  </div>
+
+  <div class="note ok">
+    <strong>가격 우선순위</strong> — ClientFixedPrice → ClientDiscount(카테고리) → ProductSize.basePrice.
+    상세는 <a href="03-business-flow.html">03. 비즈니스 플로우</a>.
+  </div>
+
+  <!-- 3. 주문 출고 ----- -->
+  <h2>3. 주문 · 출고</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    Order ||--o{ OrderItem : "1:N 라인"
+    Order ||--o| Shipment : "1:1 (CONFIRMED 이후)"
+    Shipment ||--o{ ShipmentStageLog : "단계 변경 이력"
+    Shipment ||--o{ ShipmentAssignee : "단계별 담당자"
+    Shipment }o--|| KanbanColumn : "currentStage"
+    KanbanColumn ||--o{ Shipment : "컬럼 내 카드"
+    Order }o--|| Client : "clientId"
+    Order }o--o| ClientAddress : "shipToAddressId (SetNull)"
+    OrderItem }o--|| ProductSize : "sizeId"
+    Order ||--o{ Invoice : "1:N (재발급 포함)"
+
+    Order {
+        string id PK
+        string orderNumber UK "ORD-YYYYMMDD-NNN<br/>또는 DRAFT-xxx"
+        OrderStatus status "DRAFT·SUBMITTED·CONFIRMED·<br/>SHIPPING·COMPLETED·CANCELLED·REJECTED"
+        string clientId FK
+        string shipToAddressId FK "nullable"
+        string shipToLabel "📸 스냅샷"
+        string shipToRecipient "📸"
+        string shipToPhone "📸"
+        string shipToAddress "📸"
+        decimal supplyAmount
+        decimal vatAmount
+        decimal totalAmount
+        string billingMonth "YYYY-MM"
+        datetime heldAt
+        string heldReason
+        datetime rejectedAt
+        string rejectedReason
+    }
+    OrderItem {
+        string id PK
+        string orderId FK
+        string productId FK
+        string sizeId FK
+        int quantity
+        decimal unitPrice "📸 스냅샷"
+        decimal basePriceAtOrder "📸"
+        decimal lineTotal
+    }
+    KanbanColumn {
+        string id PK
+        string key UK
+        string label
+        int sortOrder
+        boolean isTerminal "도달 시 출고 완료"
+        string color
+    }
+    Shipment {
+        string id PK
+        string orderId FK UK
+        string currentStageId FK
+        datetime startedAt
+        datetime completedAt
+        datetime heldAt
+        string heldReason
+    }
+    </div>
+  </div>
+
+  <!-- 4. 재고 유통기한 ----- -->
+  <h2>4. 재고 · 유통기한</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    ProductSize ||--o{ InventoryLog : "변동 이력"
+    ProductSize ||--o{ InventoryAdjustment : "입고·반품·폐기·조정"
+    Order ||--o{ InventoryLog : "orderId 참조"
+
+    InventoryLog {
+        string id PK
+        string sizeId FK
+        InventoryLogType type "RECEIVE·ADJUST·RESERVE·<br/>RELEASE·SHIP"
+        int qtyDelta "음수 가능"
+        int physicalAfter
+        int availableAfter
+        string orderId "nullable FK"
+        string note
+        datetime createdAt
+    }
+    InventoryAdjustment {
+        string id PK
+        string sizeId FK
+        string reason "반품·폐기·실사조정·입고보정·샘플출고"
+        int qty "음수 = 차감"
+        string note
+        string createdBy
+    }
+    </div>
+  </div>
+
+  <div class="note warn">
+    <strong>반품은 별도 테이블 없음</strong> — <code>InventoryAdjustment.reason = "반품"</code> + note 로 처리.
+    입고/출고와 동일한 상태머신·감사 경로 사용.
+  </div>
+
+  <!-- 5. 재무 ----- -->
+  <h2>5. 재무 — 명세서 · 수금 · 원장</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    Order ||--o{ Invoice : "명세서 발급"
+    Invoice ||--o{ InvoiceItem : "라인"
+    Client ||--o{ Invoice : "clientId"
+    Client ||--o{ Payment : "수금"
+    Client ||--o{ ClosingLedger : "월별 원장"
+    Payment }o--o| BankTransaction : "bankTxnId (매칭)"
+    BankTransaction ||--o| Payment : "matched=true 면 1:1"
+
+    Invoice {
+        string id PK
+        string invoiceNumber UK "INV-YYYYMMDD-NNN"
+        string orderId FK
+        string clientId FK
+        InvoiceStatus status "DRAFT·ISSUED·SENT·CANCELLED"
+        date issueDate
+        date dueDate
+        datetime sentAt
+        decimal supplyAmount
+        decimal vatAmount
+        decimal totalAmount
+        string cancelReason
+    }
+    Payment {
+        string id PK
+        string clientId FK
+        PaymentStatus status "PENDING·PARTIAL·PAID·OVERDUE"
+        decimal amount
+        date paidAt
+        string method "이체·현금·카드"
+        string bankTxnId FK
+        string note
+    }
+    BankTransaction {
+        string id PK
+        date txnDate
+        string depositor
+        decimal amount
+        boolean matched
+        string bankName
+        string referenceNo
+    }
+    ClosingLedger {
+        string id PK
+        string clientId FK
+        string closingMonth "YYYY-MM"
+        decimal carryOver "전월 이월"
+        decimal monthlySales "ISSUED+SENT 합"
+        decimal received "PARTIAL+PAID 합"
+        decimal balance "미수금"
+        datetime closedAt
+        string closeReason
+    }
+    </div>
+  </div>
+
+  <div class="grid grid-2 mt-2">
+    <div class="note">
+      <strong>원장 집계 공식</strong><br />
+      <code>balance = carryOver + monthlySales - received</code><br />
+      매달 <code>(clientId, closingMonth)</code> 유니크 upsert.
+    </div>
+    <div class="note warn">
+      <strong>Payment 취소</strong> — 하드 delete 가 아닌 <code>status=PENDING</code> + <code>[취소]</code> note 태그로 소프트 처리.
+      BankTransaction FK 를 보존하기 위함.
+    </div>
+  </div>
+
+  <!-- 6. 영업 계약 보고 ----- -->
+  <h2>6. 영업 · 계약 · 보고</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    Conference ||--o{ ConferenceVisitor : "방명록"
+    Client ||--o{ SalesContract : "판매 계약"
+    User ||--o{ ConferenceVisitor : "assignedRepId"
+    User ||--o{ SalesAssignment : "복수 담당자 배정"
+    Client ||--o{ SalesAssignment : ""
+    User ||--o{ DashboardWidget : "CEO 개인화"
+
+    Conference {
+        string id PK
+        string name
+        string location
+        date startDate
+        date endDate
+        string note
+    }
+    ConferenceVisitor {
+        string id PK
+        string conferenceId FK "CASCADE"
+        string name
+        string phone
+        string company
+        string assignedRepId FK
+        VisitorContactStatus contactStatus
+        string note
+    }
+    SalesContract {
+        string id PK
+        string clientId FK "CASCADE"
+        string title
+        date startDate
+        date endDate "nullable = 무기한"
+        boolean signed
+        string pdfUrl
+        string note
+    }
+    DataUsage {
+        string id PK
+        string month "YYYY-MM"
+        string category
+        decimal amount
+        string unit
+    }
+    DashboardWidget {
+        string id PK
+        string userId FK
+        string preset "widget key"
+        int position
+        int width "1-12"
+        int height
+        string overrideDateRange
+        json config
+    }
+    SalesAssignment {
+        string id PK
+        string clientId FK
+        string userId FK
+        boolean active
+    }
+    </div>
+  </div>
+
+  <!-- 7. 시스템 ----- -->
+  <h2>7. 시스템 — 감사 · 알림 · 이메일 · 설정</h2>
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    User ||--o{ AuditLog : "actor"
+    User ||--o{ Notification : "수신자"
+
+    AuditLog {
+        string id PK
+        string actorId FK
+        string action "CREATE·UPDATE·DELETE 등"
+        string resource "Model name"
+        string resourceId
+        json metadata
+        datetime createdAt
+    }
+    Notification {
+        string id PK
+        string userId FK
+        NotificationChannel channel "INAPP·EMAIL"
+        string title
+        string body
+        string link
+        datetime readAt
+    }
+    EmailQueue {
+        string id PK
+        string toAddress
+        string subject
+        string body
+        string template
+        EmailStatus status "QUEUED·SENDING·SENT·FAILED"
+        int retryCount
+        string errorMsg
+    }
+    TenantSetting {
+        string key PK "business_hour_start 등"
+        string value
+        string description
+        datetime updatedAt
+        string updatedBy
+    }
+    SystemSetting {
+        string key PK
+        string value
+    }
+    </div>
+  </div>
+
+  <div class="note warn">
+    <strong>구현 상태</strong> — <code>Notification</code> 과 <code>EmailQueue</code> 모델은 스키마만 선언되어 있고
+    발송 · 처리 로직은 미구현. Phase 4 에서 착수 예정. 상세는 <a href="06-roadmap-remaining.html">06. 잔여 로드맵</a>.
+  </div>
+
+  <!-- 8. CASCADE ----- -->
+  <h2>8. CASCADE 정책 요약</h2>
+  <div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>부모</th><th>자식</th><th>정책</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>Client</td><td>ClientAddress · ClientDiscount · ClientFixedPrice</td><td><span class="badge badge-danger">CASCADE</span></td><td>거래처 삭제 시 부속 데이터 함께 제거</td></tr>
+      <tr><td>Client</td><td>SalesContract</td><td><span class="badge badge-danger">CASCADE</span></td><td>계약은 거래처에 종속</td></tr>
+      <tr><td>Client</td><td>Order</td><td><span class="badge badge-warn">RESTRICT</span></td><td>과거 주문 보존 — 거래처 삭제 불가</td></tr>
+      <tr><td>Order</td><td>OrderItem</td><td><span class="badge badge-danger">CASCADE</span></td><td>주문 = 라인 묶음</td></tr>
+      <tr><td>Order</td><td>Shipment</td><td><span class="badge badge-danger">CASCADE</span></td><td>주문 삭제 시 출고 카드 정리</td></tr>
+      <tr><td>ClientAddress</td><td>Order.shipToAddressId</td><td><span class="badge badge-gray">SET NULL</span></td><td>주소 삭제돼도 스냅샷은 유지</td></tr>
+      <tr><td>Product</td><td>ProductSize</td><td><span class="badge badge-danger">CASCADE</span></td><td>제품 삭제 = 사이즈 전부 제거</td></tr>
+      <tr><td>ProductSize</td><td>ExpiryLot</td><td><span class="badge badge-danger">CASCADE</span></td><td>로트는 사이즈 종속</td></tr>
+      <tr><td>Conference</td><td>ConferenceVisitor</td><td><span class="badge badge-danger">CASCADE</span></td><td>학회 삭제 시 방문자 정리</td></tr>
+      <tr><td>KanbanColumn</td><td>Shipment.currentStage</td><td><span class="badge badge-warn">RESTRICT</span></td><td>사용 중인 단계는 삭제 금지 (앱 가드)</td></tr>
+      <tr><td>User</td><td>AuditLog · DashboardWidget</td><td><span class="badge badge-gray">SET NULL / 개별</span></td><td>감사 · 위젯은 유저 참조만</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>9. 마이그레이션 이력</h2>
+  <div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>파일</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">20260418000000_init</td><td>초기 스키마 — 28개 모델 · 멀티스키마 설정</td></tr>
+      <tr><td class="mono">20260418120000_client_addresses</td><td>ClientAddress 1:N · Order 스냅샷 컬럼</td></tr>
+      <tr><td class="mono">20260418210000_client_type_pharmacy</td><td>ClientType enum 에 PHARMACY 추가</td></tr>
+      <tr><td class="mono">20260419000000_order_transition_columns</td><td>Order.heldAt/Reason · rejectedAt/Reason</td></tr>
+      <tr><td class="mono">20260419032834_sales_contract_relation</td><td>SalesContract ↔ Client 양방향 + CASCADE</td></tr>
+      <tr><td class="mono">20260419053654_user_client_link</td><td>User.clientId (앱-레벨 참조) + index</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

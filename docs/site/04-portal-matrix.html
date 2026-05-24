@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>04. 포털 매트릭스 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html" class="active">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb"><a href="index.html">허브</a> <span class="sep">/</span> 설계 문서 <span class="sep">/</span> 04. 포털 매트릭스</div>
+  <h1 class="page-title">04. 포털 × 기능 · RBAC 매트릭스</h1>
+  <p class="page-subtitle">5개 포털이 R01~R24 중 어떤 기능을 다루는지, Role 별로 어떤 액션에 접근 가능한지 한눈에 매칭.</p>
+
+  <!-- 포털 요약 -------------- -->
+  <h2>1. 포털 개요</h2>
+  <div class="grid grid-3">
+    <div class="card">
+      <h4 class="mt-0">📊 /admin (경영지원)</h4>
+      <p>거래처·제품·재고·주문·명세서·수금·원장·보고서 — 전체 관리자 기능.</p>
+      <div><span class="badge badge-brand">TENANT_OWNER</span> <span class="badge badge-brand">ADMIN</span></div>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">💼 /exec (영업)</h4>
+      <p>내 거래처, 내 주문, 담당자 매출, 학회 방명록 — 담당자 관점 데이터.</p>
+      <div><span class="badge badge-brand">EXEC</span> <span class="badge badge-gray">+ ADMIN/OWNER 대리</span></div>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🏭 /qc (QC)</h4>
+      <p>출고 칸반, 재고 현황·알럼, 유통기한, 샘플 출고, 설정 — 창고/출고 작업.</p>
+      <div><span class="badge badge-brand">QC</span> <span class="badge badge-gray">+ ADMIN/OWNER</span></div>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">👔 /ceo (임원)</h4>
+      <p>12-col grid 위젯 대시보드 — KPI/리스트 프리셋 10종 커스터마이징.</p>
+      <div><span class="badge badge-brand">TENANT_OWNER</span> <span class="badge badge-brand">ADMIN</span></div>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🤝 /client (거래처)</h4>
+      <p>내 발주 · 명세서 · 수금 · 계약서 · 프로필 — 읽기 전용.</p>
+      <div><span class="badge badge-brand">CLIENT</span></div>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">🌐 공용 라우트</h4>
+      <p><code>/login</code> · <code>/403</code> · <code>/api/auth/*</code> — 인증 흐름 전용.</p>
+    </div>
+  </div>
+
+  <!-- 포털 × R 매트릭스 -------------- -->
+  <h2>2. 포털 × R01~R24 매트릭스</h2>
+  <p>● = 주 담당 포털, ○ = 보조/읽기, − = 해당 없음.</p>
+
+  <div class="table-wrap">
+    <table class="data matrix">
+      <thead>
+        <tr>
+          <th>코드</th><th style="text-align:left">기능</th>
+          <th>/admin</th><th>/exec</th><th>/qc</th><th>/ceo</th><th>/client</th>
+          <th>구현</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">R01</td><td style="text-align:left">거래처 관리 + 복수 배송지</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R02</td><td style="text-align:left">거래처 할인율 · 고정가</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R03</td><td style="text-align:left">발주 + 배송지 스냅샷</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R04</td><td style="text-align:left">발주 확정 (예약/출고)</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R05</td><td style="text-align:left">출고 상태 (칸반 커스터마이징)</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R06</td><td style="text-align:left">거래처별 출고 조회</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R07</td><td style="text-align:left">거래명세서 발행 + PDF</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R08</td><td style="text-align:left">제품 · 재고 관리</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R09</td><td style="text-align:left">거래처별 원장 조회</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R10</td><td style="text-align:left">마감 원장</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R11</td><td style="text-align:left">부서별 권한 관리</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R12</td><td style="text-align:left">수금 관리 + BankTxn 매칭</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R13</td><td style="text-align:left">테넌트 설정 (업무시간 등)</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R14</td><td style="text-align:left">재고 임계치 알럼</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R15</td><td style="text-align:left">담당자별 매출 집계</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R16</td><td style="text-align:left">월간 보고서</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R17</td><td style="text-align:left">출고내역 전용 조회 + CSV</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R18</td><td style="text-align:left">VAT 자동 계산</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R19</td><td style="text-align:left">유통기한 로트 관리</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R20</td><td style="text-align:left">판매 계약서</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-partial">○</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R21</td><td style="text-align:left">기간별 영업 이력서</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R22</td><td style="text-align:left">데이터 사용량 입력</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R23</td><td style="text-align:left">학회 방명록</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+        <tr><td class="mono">R24</td><td style="text-align:left">임원 대시보드 (위젯 커스터마이징)</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td><td><span class="badge badge-ok">완료</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 포털별 메뉴 상세 -------------- -->
+  <h2>3. 포털별 메뉴 구조</h2>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h4 class="mt-0">📊 /admin — 경영지원 (20+ 메뉴)</h4>
+      <ol style="font-size:13.5px; padding-left:20px;">
+        <li>대시보드 (재고 알럼 + 만료 계약)</li>
+        <li>거래처 · 거래처 상세 (할인/고정가 패널)</li>
+        <li>제품 · 제품 상세 (로트 패널)</li>
+        <li>재고 현황 · 재고 이력</li>
+        <li>재고 알럼 (OUT/LOW)</li>
+        <li>유통기한 대시보드</li>
+        <li>주문 목록 · 신규 · 상세 (상태머신)</li>
+        <li>출고 칸반 · 단계 관리</li>
+        <li>출고 내역 + CSV</li>
+        <li>거래명세서 목록 · 상세 · PDF</li>
+        <li>수금 (Payment + BankTxn)</li>
+        <li>원장 (월별 마감)</li>
+        <li>월간 보고서</li>
+        <li>담당자별 매출</li>
+        <li>영업 이력서</li>
+        <li>판매 계약서</li>
+        <li>데이터 사용량</li>
+        <li>테넌트 설정</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">💼 /exec — 영업 (5 메뉴)</h4>
+      <ol style="font-size:13.5px; padding-left:20px;">
+        <li>대시보드 (내 거래처/주문/매출)</li>
+        <li>내 거래처 (정렬·필터)</li>
+        <li>내 주문</li>
+        <li>학회 방명록 (+ 방문자 상세)</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🏭 /qc — QC (8 메뉴)</h4>
+      <ol style="font-size:13.5px; padding-left:20px;">
+        <li>대시보드 (재고 Top 5 + 유통기한 위험)</li>
+        <li>출고 칸반</li>
+        <li>출고 내역</li>
+        <li>샘플 출고 (InventoryAdjustment)</li>
+        <li>재고 현황</li>
+        <li>재고 알럼</li>
+        <li>유통기한</li>
+        <li>설정</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">👔 /ceo — 임원 (2 페이지)</h4>
+      <ol style="font-size:13.5px; padding-left:20px;">
+        <li>대시보드 (12-col grid + 위젯)</li>
+        <li>위젯 편집 (프리셋 10종)</li>
+      </ol>
+      <p style="font-size:12.5px; color:var(--c-text-muted); margin-top:8px;">
+        프리셋: 이번달매출·미수금·진행주문·활성거래처·재고알림·만료임박계약 (KPI 6) + Top5거래처·재고부족Top5·만료임박계약Top5·최근주문5 (LIST 4)
+      </p>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🤝 /client — 거래처 (6 메뉴, 읽기전용)</h4>
+      <ol style="font-size:13.5px; padding-left:20px;">
+        <li>대시보드 (내 주문 · 명세서 · 미수금)</li>
+        <li>발주 현황 + 상세</li>
+        <li>거래명세서 + PDF</li>
+        <li>수금 · 미수금 (월별 원장)</li>
+        <li>판매 계약서</li>
+        <li>내 정보 (읽기)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- RBAC -------------- -->
+  <h2>4. RBAC Role 권한 매트릭스</h2>
+  <p>● = 가능, ○ = 본인 데이터 한정, − = 차단. 포털 진입 + 주요 서버 액션 수행 권한.</p>
+
+  <div class="table-wrap">
+    <table class="data matrix">
+      <thead>
+        <tr>
+          <th style="text-align:left">액션 / 영역</th>
+          <th>TENANT_OWNER</th>
+          <th>ADMIN</th>
+          <th>EXEC</th>
+          <th>QC</th>
+          <th>CLIENT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="text-align:left">/admin 진입</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">/exec 진입</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">/qc 진입</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">/ceo 진입</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">/client 진입</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-yes">●</td></tr>
+        <tr><td style="text-align:left">거래처 CRUD</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">제품 · 재고 CRUD</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">주문 생성 · 상태 전환</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-partial">○</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">출고 칸반 이동</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">거래명세서 발행</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">명세서 PDF 다운로드</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-partial">○</td><td class="dot-no">−</td><td class="dot-partial">○</td></tr>
+        <tr><td style="text-align:left">수금 등록 · BankTxn 매칭</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">원장 마감 · 재개</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">담당자 매출 (타인 조회)</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">학회 · 방문자 CRUD</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">CEO 위젯 편집</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">샘플 출고</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">칸반 단계 커스터마이징</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">테넌트 설정 편집</td><td class="dot-yes">●</td><td class="dot-yes">●</td><td class="dot-no">−</td><td class="dot-yes">●</td><td class="dot-no">−</td></tr>
+        <tr><td style="text-align:left">내 데이터 조회 (거래처 포털)</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-no">−</td><td class="dot-yes">●</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RBAC 구현 코드 -------------- -->
+  <h2>5. RBAC 구현 (코드)</h2>
+  <p>모든 서버 액션은 <code>src/lib/session.ts</code> 의 두 헬퍼를 통해 권한을 강제합니다.</p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h4 class="mt-0"><code>requireRole(...roles)</code></h4>
+      <p style="font-size:13.5px;">세션에서 role 을 꺼내 허용 목록과 매칭. 불일치 시 <code>/403</code> redirect.</p>
+      <pre><code>await requireRole("ADMIN", "TENANT_OWNER");
+await requireRole("QC", "ADMIN", "TENANT_OWNER");</code></pre>
+    </div>
+    <div class="card">
+      <h4 class="mt-0"><code>requireClient()</code></h4>
+      <p style="font-size:13.5px;">role=CLIENT && clientId 존재 검증. 거래처 포털 전용.</p>
+      <pre><code>const user = await requireClient();
+// user.clientId 보장됨
+const orders = await prisma.order.findMany({
+  where: { clientId: user.clientId }
+});</code></pre>
+    </div>
+  </div>
+
+  <!-- 기본 계정 -------------- -->
+  <h2>6. 시드 기본 계정</h2>
+  <div class="note">
+    패스워드 공통: <code>altibio123!@#</code>. 개발 환경 시드로 자동 생성.
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Role</th><th>Email</th><th>용도</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-brand">TENANT_OWNER</span></td><td class="mono">owner@altibio.local</td><td>대표 · 모든 권한</td></tr>
+        <tr><td><span class="badge badge-brand">ADMIN</span></td><td class="mono">admin@altibio.local</td><td>경영지원팀장</td></tr>
+        <tr><td><span class="badge badge-brand">EXEC</span></td><td class="mono">exec1@altibio.local<br />exec2@altibio.local</td><td>영업 담당자</td></tr>
+        <tr><td><span class="badge badge-brand">QC</span></td><td class="mono">qc@altibio.local</td><td>QC/창고 담당</td></tr>
+        <tr><td><span class="badge badge-brand">CLIENT</span></td><td class="mono">c-agen-001@client.local<br />c-agen-002@client.local<br />c-agen-003@client.local</td><td>거래처(AGENCY) 포털 · 시드로 3건 자동 생성</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

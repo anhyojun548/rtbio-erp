@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>05. 구현 현황 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'neutral', securityLevel:'loose', fontFamily:'Pretendard, Noto Sans KR, sans-serif'});</script>
+<script src="assets/diagram-zoom.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html" class="active">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb"><a href="index.html">허브</a> <span class="sep">/</span> 리포트 <span class="sep">/</span> 05. 구현 현황</div>
+  <h1 class="page-title">05. 구현 현황 리포트</h1>
+  <p class="page-subtitle">2026-04-20 기준 Phase 3A~3H 완료. 핵심 요구사항 R01~R24 전량 구현 · 362 단위 테스트 green.</p>
+
+  <!-- 핵심 지표 --------------- -->
+  <h2>1. 핵심 지표</h2>
+  <div class="grid grid-4">
+    <div class="stat ok">
+      <p class="stat-label">요구사항 달성률</p>
+      <p class="stat-value">100%</p>
+      <p class="stat-sub">R01~R24 · 24/24</p>
+    </div>
+    <div class="stat brand">
+      <p class="stat-label">단위 테스트</p>
+      <p class="stat-value">362</p>
+      <p class="stat-sub">22 파일 · 모두 통과</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">스모크 시나리오</p>
+      <p class="stat-value">15</p>
+      <p class="stat-sub">실 DB 파이프라인 검증</p>
+    </div>
+    <div class="stat warn">
+      <p class="stat-label">타입 체크</p>
+      <p class="stat-value">0</p>
+      <p class="stat-sub">tsc --noEmit 에러</p>
+    </div>
+  </div>
+
+  <!-- Phase 타임라인 --------------- -->
+  <h2>2. Phase 진행 타임라인</h2>
+
+  <div class="timeline">
+    <div class="timeline-item done">
+      <p class="timeline-date">2026-04-15 · Phase 1</p>
+      <p class="timeline-title">스키마 · 마이그레이션 · 시드</p>
+      <p class="timeline-desc">Prisma 멀티스키마 · 복수 배송지 · 기본 시드 데이터.</p>
+    </div>
+    <div class="timeline-item done">
+      <p class="timeline-date">2026-04-16 · Phase 2</p>
+      <p class="timeline-title">NextAuth + RBAC + AuditLog</p>
+      <p class="timeline-desc">JWT 세션 · 포털별 RBAC 매트릭스 · 감사로그 유틸.</p>
+    </div>
+    <div class="timeline-item done">
+      <p class="timeline-date">2026-04-17 · Phase 3A-3C</p>
+      <p class="timeline-title">거래처 · 제품 · 재고 (마스터 데이터)</p>
+      <p class="timeline-desc">거래처 CRUD + 배송지 · 제품 + 사이즈 · 이중재고 + 동시성 · InventoryLog/Adjustment.</p>
+    </div>
+    <div class="timeline-item done">
+      <p class="timeline-date">2026-04-18 · Phase 3D-1, 3D-2a, 3D-2b-1</p>
+      <p class="timeline-title">가격 규칙 + 주문 DRAFT + SUBMIT</p>
+      <p class="timeline-desc">ClientDiscount/FixedPrice · 주문 DRAFT CRUD · 공식 orderNumber 채번 + 재스냅샷.</p>
+    </div>
+    <div class="timeline-item done">
+      <p class="timeline-date">2026-04-19 · Phase 3D-2b-2,3 / 3D-2c / 3D-3a,3b / 3D-4a,b,c / 3E-1,2,3 / 3F-1,2,3 / 3G-1,2,3,4 / 3H-1,2</p>
+      <p class="timeline-title">주문 상태머신 완성 · Shipment 칸반 · 명세서·수금·원장 · 유통기한·보고서·알럼 · 포털 전체</p>
+      <p class="timeline-desc">REJECT/HOLD/CANCEL · CONFIRM(RESERVE) · SHIP · Invoice+PDF · Payment+BankTxn · ClosingLedger · 유통기한·출고CSV·월간보고서 · 테넌트설정·재고알럼·칸반커스터마이징 · 영업포털·담당자매출·학회방명록 · 데이터사용량·판매계약서·영업이력서·CEO대시보드 · QC포털+거래처포털.</p>
+    </div>
+    <div class="timeline-item">
+      <p class="timeline-date">2026-04-20 · 현재</p>
+      <p class="timeline-title">데모 준비 · 문서화</p>
+      <p class="timeline-desc">4/21 1차 데모 + 4/27 2차 데모 통합 진행 예정. 기술 문서 9종 작성.</p>
+    </div>
+    <div class="timeline-item pending">
+      <p class="timeline-date">2026-04-30 · 계약 체결 예정</p>
+      <p class="timeline-title">과업내용서 선택 · 서명 · 착수금</p>
+      <p class="timeline-desc">간소화 vs 상세 중 1종 선택. 착수금 입금 후 Phase 4 시작.</p>
+    </div>
+    <div class="timeline-item pending">
+      <p class="timeline-date">2026-05-04+ · Phase 4-9</p>
+      <p class="timeline-title">이메일·알림 · 파일 업로드 · QA · Azure 배포</p>
+      <p class="timeline-desc">운영 전환용 잔여 작업. 상세는 <a href="06-roadmap-remaining.html">06. 잔여 로드맵</a>.</p>
+    </div>
+  </div>
+
+  <!-- 구현 상세 --------------- -->
+  <h2>3. Phase 3 세부 완료 내역</h2>
+
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Phase</th><th>범위</th><th>주요 R</th><th>테스트</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">3A</td><td>거래처 CRUD + 복수 배송지 UI</td><td>R01</td><td>13</td></tr>
+        <tr><td class="mono">3B</td><td>제품 CRUD + 사이즈별 재고 초기값 + 유통기한</td><td>R08·R19</td><td>14</td></tr>
+        <tr><td class="mono">3C</td><td>입고·조정 + 이중재고 동시성 + InventoryLog</td><td>R08</td><td>15</td></tr>
+        <tr><td class="mono">3D-1</td><td>거래처 할인율 · 제품 고정가</td><td>R02</td><td>—</td></tr>
+        <tr><td class="mono">3D-2a</td><td>주문 DRAFT CRUD + 라인 + 배송지 스냅샷</td><td>R03</td><td>25</td></tr>
+        <tr><td class="mono">3D-2b-1</td><td>SUBMIT + 공식 orderNumber + billingMonth</td><td>R03</td><td>5</td></tr>
+        <tr><td class="mono">3D-2b-2</td><td>REJECT · HOLD · RESUME · CANCEL</td><td>R03</td><td>16</td></tr>
+        <tr><td class="mono">3D-2b-3</td><td>CONFIRM(RESERVE) + CANCEL 확장(RELEASE)</td><td>R04</td><td>3</td></tr>
+        <tr><td class="mono">3D-2c</td><td>Shipment 수명주기 + 칸반 UI + SHIP</td><td>R04·R05</td><td>15</td></tr>
+        <tr><td class="mono">3D-3a</td><td>거래명세서 (Invoice) + PDF</td><td>R07·R18</td><td>21</td></tr>
+        <tr><td class="mono">3D-3b</td><td>수금 + 원장 (Payment · ClosingLedger · BankTxn)</td><td>R09·R10·R12</td><td>39</td></tr>
+        <tr><td class="mono">3D-4a</td><td>유통기한 로트 (ExpiryLot)</td><td>R19</td><td>16</td></tr>
+        <tr><td class="mono">3D-4b</td><td>출고내역 조회 + CSV</td><td>R17</td><td>—</td></tr>
+        <tr><td class="mono">3D-4c</td><td>월간 보고서</td><td>R16</td><td>—</td></tr>
+        <tr><td class="mono">3E-1</td><td>칸반 단계 커스터마이징</td><td>R05</td><td>13</td></tr>
+        <tr><td class="mono">3E-2</td><td>테넌트 설정 (업무시간 · VAT율 등)</td><td>R13·R18</td><td>18</td></tr>
+        <tr><td class="mono">3E-3</td><td>재고 임계치 알럼</td><td>R14</td><td>11</td></tr>
+        <tr><td class="mono">3F-1</td><td>영업 포털 골격 (내 거래처/주문/매출)</td><td>R11</td><td>—</td></tr>
+        <tr><td class="mono">3F-2</td><td>담당자별 매출 집계</td><td>R15</td><td>—</td></tr>
+        <tr><td class="mono">3F-3</td><td>학회 방명록</td><td>R23</td><td>18</td></tr>
+        <tr><td class="mono">3G-1</td><td>데이터 사용량 입력</td><td>R22</td><td>18</td></tr>
+        <tr><td class="mono">3G-2</td><td>판매 계약서 (4단계 상태 자동)</td><td>R20</td><td>25</td></tr>
+        <tr><td class="mono">3G-3</td><td>기간별 영업 이력서</td><td>R21</td><td>11</td></tr>
+        <tr><td class="mono">3G-4</td><td>CEO 대시보드 위젯 커스터마이징</td><td>R24</td><td>17</td></tr>
+        <tr><td class="mono">3H-1</td><td>QC 포털 (8 메뉴)</td><td>R02·R03·R09·R14·R17·R19</td><td>16*</td></tr>
+        <tr><td class="mono">3H-2</td><td>거래처 포털 (6 메뉴 · 읽기전용)</td><td>R01·R08</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 파일 통계 --------------- -->
+  <h2>4. 코드베이스 통계</h2>
+  <div class="grid grid-4">
+    <div class="stat"><p class="stat-label">Page · Layout · Route</p><p class="stat-value">67</p><p class="stat-sub">App Router 파일</p></div>
+    <div class="stat"><p class="stat-label">UI 컴포넌트</p><p class="stat-value">54</p><p class="stat-sub">포털별 분리</p></div>
+    <div class="stat"><p class="stat-label">서버 액션 · 유틸</p><p class="stat-value">51</p><p class="stat-sub">src/lib/**/*.ts</p></div>
+    <div class="stat"><p class="stat-label">Prisma 모델</p><p class="stat-value">33</p><p class="stat-sub">+ 8 enum · 6 migration</p></div>
+  </div>
+
+  <!-- 검증 방식 --------------- -->
+  <h2>5. 검증 방식</h2>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h4 class="mt-0">🧪 단위 테스트 — Vitest (362건)</h4>
+      <p style="font-size:13.5px;">순수 함수(validator · pricing · classifier) 중심. 경계값·에러 케이스·우선순위 로직 커버.</p>
+      <pre><code>npx vitest run</code></pre>
+      <div style="margin-top:8px;">
+        <span class="badge badge-ok">order 25</span>
+        <span class="badge badge-ok">payment 24</span>
+        <span class="badge badge-ok">sales-contract 25</span>
+        <span class="badge badge-ok">pricing 22</span>
+        <span class="badge badge-ok">invoice 21</span>
+        <span class="badge badge-ok">order-transition 24</span>
+        <span class="badge badge-ok">conference 18</span>
+        <span class="badge badge-ok">tenant-setting 18</span>
+        <span class="badge badge-ok">data-usage 18</span>
+        <span class="badge badge-ok">widget-dashboard 17</span>
+        <span class="badge badge-ok">expiry 16</span>
+        <span class="badge badge-ok">inventory 16</span>
+        <span class="badge badge-ok">session 15</span>
+        <span class="badge badge-ok">ledger 15</span>
+        <span class="badge badge-ok">shipment 15</span>
+        <span class="badge badge-ok">product 14</span>
+        <span class="badge badge-ok">client 13</span>
+        <span class="badge badge-ok">kanban 13</span>
+        <span class="badge badge-ok">stock-alert 11</span>
+        <span class="badge badge-ok">sales-history 11</span>
+        <span class="badge badge-ok">invariant 6</span>
+        <span class="badge badge-ok">pricing-lib 5</span>
+      </div>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🔌 스모크 시나리오 (15건)</h4>
+      <p style="font-size:13.5px;">실 PostgreSQL 에 대한 End-to-End 파이프라인 검증. Phase 별로 누적.</p>
+      <div style="font-size:13px;">
+        <p><code>smoke-order</code> · 주문 DRAFT → SUBMIT (seq 증가)</p>
+        <p><code>smoke-order-submit</code> · SUBMIT 재실행 가드</p>
+        <p><code>smoke-order-transition</code> · REJECT/HOLD/RESUME/CANCEL 4</p>
+        <p><code>smoke-order-confirm</code> · RESERVE · 복원 · 롤백 3</p>
+        <p><code>smoke-shipment</code> · 수명주기 4</p>
+        <p><code>smoke-shipment-history</code> · 리스트·CSV 5</p>
+        <p><code>smoke-kanban-columns</code> · CRUD + reorder 5</p>
+        <p><code>smoke-invoice</code> · 생성·발행·취소·재발급 5</p>
+        <p><code>smoke-payment</code> · BankTxn 매칭 · 원장 6</p>
+        <p><code>smoke-expiry</code> · 4단계 분류 5</p>
+        <p><code>smoke-stock-alert</code> · 정렬 · 집계 6</p>
+        <p><code>smoke-tenant-setting</code> · VAT 재계산 5</p>
+        <p><code>smoke-monthly-report</code> · 집계 2</p>
+        <p><code>smoke-exec</code>·<code>sales-performance</code>·<code>sales-history</code>·<code>conference</code>·<code>data-usage</code>·<code>sales-contract</code>·<code>widget-dashboard</code> 영업·리포트 시나리오 6~7</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 시연 가능 기능 --------------- -->
+  <h2>6. 즉시 시연 가능 기능</h2>
+  <p>아래 모든 기능은 <strong>실 개발 앱</strong>으로 시연 가능. 프로토타입 HTML 이 아닌 Next.js + PostgreSQL 기반.</p>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h4 class="mt-0">📊 경영지원</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>거래처 등록 → 배송지 추가</li>
+        <li>할인율 · 고정가 패널</li>
+        <li>제품 등록 → 사이즈 → 로트</li>
+        <li>입고 · 반품 · 폐기</li>
+        <li>주문 DRAFT → SUBMIT → CONFIRM → 취소</li>
+        <li>명세서 발급 → 발송 → PDF</li>
+        <li>수금 등록 → BankTxn 매칭</li>
+        <li>원장 재계산 → 마감 → 재개</li>
+        <li>월간 보고서 · 담당자 매출</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🏭 QC</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>재고/유통기한 위험 알럼</li>
+        <li>출고 칸반 이동 · 보류</li>
+        <li>출고 내역 CSV 다운로드</li>
+        <li>샘플 출고 등록</li>
+        <li>업무시간 · VAT율 설정</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">💼 영업</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>내 거래처 · 내 주문 필터</li>
+        <li>이번 달 매출 · Top 5 거래처</li>
+        <li>학회 등록 · 방명록 입력</li>
+        <li>방문자 상태 관리</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">👔 CEO</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>위젯 대시보드 — 10 프리셋</li>
+        <li>12-col grid · 폭 조절</li>
+        <li>기간 override · 기본 리셋</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🤝 거래처</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>내 발주 현황 + 타임라인</li>
+        <li>내 명세서 → PDF 다운로드</li>
+        <li>월별 원장 · 미수금</li>
+        <li>판매 계약서 · D-N 뱃지</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">🔐 공통</h4>
+      <ul style="font-size:13px; padding-left:18px; margin:0;">
+        <li>5종 Role 로그인 시연</li>
+        <li>/403 권한 차단</li>
+        <li>감사 로그 자동 기록</li>
+        <li>멀티스키마 데이터 격리</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 미구현 요약 --------------- -->
+  <h2>7. 아직 미구현 (운영 전환용)</h2>
+  <div class="grid grid-4">
+    <div class="card card-muted">
+      <h4 class="mt-0">📧 이메일 발송</h4>
+      <p style="font-size:13px;">EmailQueue 스키마만 있음. Daum SMTP 연동·발송 워커 미구현.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">🔔 인앱 알림</h4>
+      <p style="font-size:13px;">Notification 스키마만 있음. 벨 아이콘·읽음처리 UI 미구현.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">📎 파일 업로드</h4>
+      <p style="font-size:13px;">계약 PDF·제품 이미지 업로드 없음. Azure Blob 연결 필요.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">📱 모바일 반응형</h4>
+      <p style="font-size:13px;">Desktop 우선. 테이블·사이드바 모바일 가공 미완.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">🧪 E2E 테스트</h4>
+      <p style="font-size:13px;">Playwright 시나리오 미작성. 현재는 단위·스모크만.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">📜 감사 조회 UI</h4>
+      <p style="font-size:13px;">AuditLog 기록만. 조회 화면 없음.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">🏢 멀티테넌시 확장</h4>
+      <p style="font-size:13px;">현재 altibio 1곳. 테넌트 자동 생성 없음.</p>
+    </div>
+    <div class="card card-muted">
+      <h4 class="mt-0">☁️ Azure 배포</h4>
+      <p style="font-size:13px;">Container Apps · DB · Blob · Front Door 구성 필요.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>다음 단계</strong> — 계약 체결 후 Phase 4~9 로 전환. 상세 일정 · 공수 추정은
+    <a href="06-roadmap-remaining.html">06. 잔여 로드맵</a>에서 확인.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

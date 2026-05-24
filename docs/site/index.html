@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RTBIO ERP · 기술 문서 허브</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html" class="active">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털 매트릭스</a>
+      <a href="05-implementation-status.html">구현 현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb">Docs <span class="sep">/</span> 허브</div>
+  <h1 class="page-title">RTBIO ERP 기술 문서 허브</h1>
+  <p class="page-subtitle">
+    의료용품 업체 대상 멀티테넌트 SaaS ERP 시스템. 현재까지의 구현 현황과 잔여 로드맵을
+    설계 · 리포트 · 레퍼런스 9종으로 정리했습니다. 대상: <strong>경영진</strong>(상단 요약) ·
+    <strong>개발팀</strong>(하단 상세).
+  </p>
+
+  <!-- 핵심 현황 --------------------------------------------------------- -->
+  <section>
+    <div class="grid grid-4">
+      <div class="stat brand">
+        <p class="stat-label">핵심 요구사항 완료</p>
+        <p class="stat-value">24 / 24</p>
+        <p class="stat-sub">R01~R24 전체 구현</p>
+      </div>
+      <div class="stat ok">
+        <p class="stat-value">362</p>
+        <p class="stat-label">단위 테스트</p>
+        <p class="stat-sub">22 파일 · 100% green</p>
+      </div>
+      <div class="stat">
+        <p class="stat-value">15</p>
+        <p class="stat-label">스모크 시나리오</p>
+        <p class="stat-sub">DB 파이프라인 검증</p>
+      </div>
+      <div class="stat warn">
+        <p class="stat-value">4</p>
+        <p class="stat-label">남은 Phase</p>
+        <p class="stat-sub">알림 · 파일 · QA · 배포</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 진행률 --------------------------------------------------------- -->
+  <section class="card" style="margin-top: 32px;">
+    <h3 class="card-title mt-0">전체 진행률</h3>
+
+    <div style="font-size:13px; color:var(--c-text-muted); margin-bottom:4px;">
+      <strong>Phase 3 (기능 개발)</strong>
+      <span style="float:right">100%</span>
+    </div>
+    <div class="progress"><div class="progress-fill" style="width:100%"></div></div>
+
+    <div style="font-size:13px; color:var(--c-text-muted); margin-top:16px; margin-bottom:4px;">
+      <strong>Phase 4 (이메일 · 인앱 알림)</strong>
+      <span style="float:right">0%</span>
+    </div>
+    <div class="progress"><div class="progress-fill warn" style="width:0%"></div></div>
+
+    <div style="font-size:13px; color:var(--c-text-muted); margin-top:16px; margin-bottom:4px;">
+      <strong>Phase 5 (파일 업로드 · Storage)</strong>
+      <span style="float:right">0%</span>
+    </div>
+    <div class="progress"><div class="progress-fill warn" style="width:0%"></div></div>
+
+    <div style="font-size:13px; color:var(--c-text-muted); margin-top:16px; margin-bottom:4px;">
+      <strong>Phase 6 (QA · 모바일 · E2E)</strong>
+      <span style="float:right">10%</span>
+    </div>
+    <div class="progress"><div class="progress-fill warn" style="width:10%"></div></div>
+
+    <div style="font-size:13px; color:var(--c-text-muted); margin-top:16px; margin-bottom:4px;">
+      <strong>Phase 9 (Azure 배포)</strong>
+      <span style="float:right">0%</span>
+    </div>
+    <div class="progress"><div class="progress-fill warn" style="width:0%"></div></div>
+  </section>
+
+  <!-- 문서 맵 ------------------------------------------------- -->
+  <h2>설계 문서</h2>
+  <div class="grid grid-2">
+    <a class="doc-card" href="01-system-architecture.html">
+      <span class="doc-card-num">01</span>
+      <h3>시스템 아키텍처</h3>
+      <p>5개 포털 · Next.js 14 · Prisma · PostgreSQL · 배포 구성</p>
+    </a>
+    <a class="doc-card" href="02-database-erd.html">
+      <span class="doc-card-num">02</span>
+      <h3>데이터베이스 ERD</h3>
+      <p>33 모델 · 멀티테넌트 스키마 분리 · CASCADE 정책</p>
+    </a>
+    <a class="doc-card" href="03-business-flow.html">
+      <span class="doc-card-num">03</span>
+      <h3>비즈니스 플로우</h3>
+      <p>발주 수명주기 · 이중 재고 · 가격 우선순위 · 수금 파이프라인</p>
+    </a>
+    <a class="doc-card" href="04-portal-matrix.html">
+      <span class="doc-card-num">04</span>
+      <h3>포털 × 기능 매트릭스</h3>
+      <p>5 포털 × R01~R24 + RBAC Role 권한표</p>
+    </a>
+  </div>
+
+  <h2>리포트</h2>
+  <div class="grid grid-2">
+    <a class="doc-card" href="05-implementation-status.html">
+      <span class="doc-card-num">05</span>
+      <h3>구현 현황 리포트</h3>
+      <p>Phase 3A~3H 완료 내역 · 테스트 커버리지 · 파일 통계</p>
+    </a>
+    <a class="doc-card" href="06-roadmap-remaining.html">
+      <span class="doc-card-num">06</span>
+      <h3>잔여 로드맵</h3>
+      <p>Phase 4~9 · Gantt 차트 · 우선순위 · 공수 추정</p>
+    </a>
+  </div>
+
+  <h2>레퍼런스</h2>
+  <div class="grid grid-3">
+    <a class="doc-card" href="07-api-reference.html">
+      <span class="doc-card-num">07</span>
+      <h3>서버 액션 레퍼런스</h3>
+      <p>24개 Action 파일 · 주요 함수 · 입출력 · 권한</p>
+    </a>
+    <a class="doc-card" href="08-component-inventory.html">
+      <span class="doc-card-num">08</span>
+      <h3>UI 컴포넌트 인벤토리</h3>
+      <p>포털별 · 재사용 가능 컴포넌트 · 파일 경로</p>
+    </a>
+    <a class="doc-card" href="09-audit-log-catalog.html">
+      <span class="doc-card-num">09</span>
+      <h3>감사 로그 카탈로그</h3>
+      <p>AuditLog.action 코드표 · 리소스 타입 · 메타데이터</p>
+    </a>
+  </div>
+
+  <!-- 기술 스택 요약 --------------------------------------- -->
+  <h2>기술 스택</h2>
+  <div class="grid grid-3">
+    <div class="card">
+      <h4 class="mt-0">앱 · 프론트엔드</h4>
+      <ul style="margin:0; padding-left:20px;">
+        <li>Next.js 14 (App Router)</li>
+        <li>TypeScript strict</li>
+        <li>Tailwind CSS</li>
+        <li>Server Actions (RSC)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">데이터 · 백엔드</h4>
+      <ul style="margin:0; padding-left:20px;">
+        <li>PostgreSQL 16</li>
+        <li>Prisma 5.22 (멀티스키마)</li>
+        <li>NextAuth.js + JWT + bcrypt</li>
+        <li>Zod 검증</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">인프라 · 운영</h4>
+      <ul style="margin:0; padding-left:20px;">
+        <li>Azure Container Apps (예정)</li>
+        <li>Azure PostgreSQL Flexible Server</li>
+        <li>Azure Blob Storage</li>
+        <li>Daum SMTP (현행 메일 계정)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 상단 요약 --------------------------------------- -->
+  <h2>🎯 경영진 한눈에 보기</h2>
+  <div class="note ok">
+    <div class="note-title">✅ 계약 체결 시 즉시 데모 가능</div>
+    프로토타입이 아닌 <strong>실 개발 앱으로 5 포털 전체 시연 가능</strong>.
+    주문·출고·명세서·수금·원장의 End-to-End 파이프라인이 데이터베이스 트랜잭션으로 검증되어 동작합니다.
+    계약 전 요구사항 R01~R24 24개 항목이 모두 구현 · 테스트 완료 상태입니다.
+  </div>
+  <div class="note warn">
+    <div class="note-title">⚠️ 운영 전환까지 추가 4 Phase 필요</div>
+    이메일 자동 발송(거래명세서 · 알림), 파일 업로드(계약 PDF), 모바일 반응형, Azure 배포 구성은
+    계약 직후 착수가 필요한 작업입니다. 상세는 <a href="06-roadmap-remaining.html">잔여 로드맵</a>을
+    참고해주세요.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div>문서 최종 업데이트 2026-04-20</div>
+</footer>
+
+</body>
+</html>

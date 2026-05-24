@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>09. 감사 로그 카탈로그 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="index.html">허브</a> <span class="sep">/</span> 레퍼런스 <span class="sep">/</span> 09. 감사 로그 카탈로그
+  </div>
+
+  <h1 class="page-title">감사 로그 카탈로그</h1>
+  <p class="page-subtitle">
+    모든 상태 변경은 <code>AuditLog</code> 테이블에 기록됩니다. 이 문서는 현재까지 정의된
+    <strong>72개 action 코드</strong> 의 의미·연관 리소스·metadata 키를 정리한 표준 카탈로그입니다.
+    규제 대응·문제 추적·사용자 조사용 단일 진실 원천.
+  </p>
+
+  <!-- 요약 -->
+  <div class="grid grid-4">
+    <div class="stat brand"><p class="stat-label">정의된 action</p><p class="stat-value">72</p><p class="stat-sub">domain × verb</p></div>
+    <div class="stat"><p class="stat-label">도메인 그룹</p><p class="stat-value">15</p><p class="stat-sub">CLIENT · ORDER · …</p></div>
+    <div class="stat ok"><p class="stat-label">로그 기록 액션</p><p class="stat-value">100%</p><p class="stat-sub">모든 쓰기 = logAudit</p></div>
+    <div class="stat warn"><p class="stat-label">보관 주기</p><p class="stat-value">∞</p><p class="stat-sub">소프트 삭제 없음</p></div>
+  </div>
+
+  <!-- AuditLog 스키마 -->
+  <h2>AuditLog 스키마</h2>
+  <div class="card">
+    <pre><code>model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?               // 시스템 이벤트는 null
+  action     String                // "ORDER_SUBMIT" 등 (본 카탈로그)
+  resource   String                // "Order:cuid123" 같이 TYPE:ID 형식
+  metadata   Json?                 // action 별 부가 정보
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, action])
+  @@index([tenantId, resource])
+}</code></pre>
+  </div>
+
+  <h3>명명 규약</h3>
+  <ul style="font-size:14px;">
+    <li><strong>형식</strong>: <code>DOMAIN_VERB</code> (예: <code>ORDER_SUBMIT</code>) 또는 <code>DOMAIN_SUB_VERB</code> (예: <code>CLIENT_ADDRESS_CREATE</code>)</li>
+    <li><strong>대문자 + 언더스코어</strong> · 동사는 현재형 · 과거형 금지</li>
+    <li><strong>resource</strong>: <code>TYPE:id</code> 형태. TYPE 은 Prisma 모델명 PascalCase</li>
+    <li><strong>metadata</strong>: 사람이 읽을 수 있는 요약 + 롤백에 필요한 이전 값</li>
+  </ul>
+
+  <!-- CLIENT -->
+  <h2>CLIENT · 거래처 (6)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata 주요 키</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">CLIENT_CREATE</td><td class="mono">Client:{id}</td><td>거래처 신규 등록</td><td><code>code</code> · <code>name</code> · <code>type</code></td></tr>
+        <tr><td class="mono">CLIENT_UPDATE</td><td class="mono">Client:{id}</td><td>거래처 정보 변경</td><td><code>diff</code> (이전→현재)</td></tr>
+        <tr><td class="mono">CLIENT_ADDRESS_CREATE</td><td class="mono">ClientAddress:{id}</td><td>배송지 추가</td><td><code>clientId</code> · <code>label</code> · <code>isDefault</code></td></tr>
+        <tr><td class="mono">CLIENT_ADDRESS_UPDATE</td><td class="mono">ClientAddress:{id}</td><td>배송지 수정</td><td><code>clientId</code> · <code>diff</code></td></tr>
+        <tr><td class="mono">CLIENT_ADDRESS_DELETE</td><td class="mono">ClientAddress:{id}</td><td>배송지 삭제</td><td><code>clientId</code> · <code>label</code></td></tr>
+        <tr><td class="mono">CLIENT_ADDRESS_SET_DEFAULT</td><td class="mono">ClientAddress:{id}</td><td>기본 배송지 전환</td><td><code>clientId</code> · <code>previousDefaultId</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CLIENT_PRICING -->
+  <h2>CLIENT_PRICING · 거래처 가격 정책 (4)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata 주요 키</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">CLIENT_DISCOUNT_UPSERT</td><td class="mono">ClientDiscount:{id}</td><td>카테고리 할인율 설정/갱신</td><td><code>clientId</code> · <code>category</code> · <code>rate</code></td></tr>
+        <tr><td class="mono">CLIENT_DISCOUNT_DELETE</td><td class="mono">ClientDiscount:{id}</td><td>할인율 제거</td><td><code>clientId</code> · <code>category</code></td></tr>
+        <tr><td class="mono">CLIENT_FIXEDPRICE_UPSERT</td><td class="mono">ClientFixedPrice:{id}</td><td>제품 고정가 설정/갱신</td><td><code>clientId</code> · <code>productId</code> · <code>price</code></td></tr>
+        <tr><td class="mono">CLIENT_FIXEDPRICE_DELETE</td><td class="mono">ClientFixedPrice:{id}</td><td>고정가 제거</td><td><code>clientId</code> · <code>productId</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PRODUCT -->
+  <h2>PRODUCT · 제품 (5)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">PRODUCT_CREATE</td><td class="mono">Product:{id}</td><td>제품 등록</td><td><code>code</code> · <code>name</code> · <code>category</code></td></tr>
+        <tr><td class="mono">PRODUCT_UPDATE</td><td class="mono">Product:{id}</td><td>제품 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">PRODUCT_SIZE_CREATE</td><td class="mono">ProductSize:{id}</td><td>사이즈 추가</td><td><code>productId</code> · <code>sizeLabel</code> · <code>initialStock</code></td></tr>
+        <tr><td class="mono">PRODUCT_SIZE_UPDATE</td><td class="mono">ProductSize:{id}</td><td>사이즈 수정</td><td><code>productId</code> · <code>diff</code></td></tr>
+        <tr><td class="mono">PRODUCT_SIZE_DELETE</td><td class="mono">ProductSize:{id}</td><td>사이즈 삭제</td><td><code>productId</code> · <code>sizeLabel</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- INVENTORY -->
+  <h2>INVENTORY · 재고 (2)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">INVENTORY_RECEIVE</td>
+          <td class="mono">InventoryLog:{id}</td>
+          <td>입고(RECEIVE)</td>
+          <td><code>sizeId</code> · <code>qty</code> · <code>note</code> · <code>physicalAfter</code></td>
+        </tr>
+        <tr>
+          <td class="mono">INVENTORY_ADJUST</td>
+          <td class="mono">InventoryAdjustment:{id}</td>
+          <td>조정(반품/폐기/실사조정/입고보정/샘플출고)</td>
+          <td><code>sizeId</code> · <code>qty</code> · <code>reason</code> · <code>note</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <strong>주의</strong> — <em>주문 확정/출고로 인한 재고 변동은 별도 action 을 사용하지 않고
+    <code>ORDER_CONFIRM</code> / <code>SHIPMENT_MOVE</code> / <code>SHIPMENT_COMPLETE</code> 의 metadata</em>
+    에 <code>shipLines</code> 등으로 포함됩니다. <code>InventoryLog</code> 에는 물리 기록이 남습니다.
+  </div>
+
+  <!-- ORDER -->
+  <h2>ORDER · 주문 (11)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">ORDER_CREATE_DRAFT</td><td class="mono">Order:{id}</td><td>DRAFT 생성</td><td><code>clientId</code> · <code>shipToAddressId</code></td></tr>
+        <tr><td class="mono">ORDER_UPDATE_DRAFT</td><td class="mono">Order:{id}</td><td>DRAFT 헤더 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">ORDER_DELETE_DRAFT</td><td class="mono">Order:{id}</td><td>DRAFT 삭제</td><td><code>clientId</code> · <code>lineCount</code></td></tr>
+        <tr><td class="mono">ORDER_ITEM_ADD</td><td class="mono">OrderItem:{id}</td><td>라인 추가</td><td><code>orderId</code> · <code>productId</code> · <code>sizeId</code> · <code>qty</code> · <code>unitPrice</code></td></tr>
+        <tr><td class="mono">ORDER_ITEM_UPDATE</td><td class="mono">OrderItem:{id}</td><td>라인 수정</td><td><code>orderId</code> · <code>diff</code></td></tr>
+        <tr><td class="mono">ORDER_ITEM_DELETE</td><td class="mono">OrderItem:{id}</td><td>라인 삭제</td><td><code>orderId</code> · <code>productId</code></td></tr>
+        <tr><td class="mono">ORDER_SUBMIT</td><td class="mono">Order:{id}</td><td>DRAFT→SUBMITTED + 공식 번호 채번</td><td><code>orderNumber</code> · <code>billingMonth</code> · <code>totalAmount</code></td></tr>
+        <tr><td class="mono">ORDER_REJECT</td><td class="mono">Order:{id}</td><td>SUBMITTED→REJECTED</td><td><code>rejectReason</code> · <code>rejectedAt</code></td></tr>
+        <tr><td class="mono">ORDER_HOLD</td><td class="mono">Order:{id}</td><td>SUBMITTED/CONFIRMED→HELD</td><td><code>heldReason</code> · <code>heldAt</code></td></tr>
+        <tr><td class="mono">ORDER_RESUME</td><td class="mono">Order:{id}</td><td>HELD→이전 상태</td><td><code>fromStatus</code> · <code>toStatus</code></td></tr>
+        <tr><td class="mono">ORDER_CONFIRM</td><td class="mono">Order:{id}</td><td>SUBMITTED→CONFIRMED + availableStock 차감</td><td><code>reservedLines</code>(per-line RESERVE)</td></tr>
+        <tr><td class="mono">ORDER_CANCEL</td><td class="mono">Order:{id}</td><td>CANCELLED (상태별 RESERVE 복원 여부)</td><td><code>fromStatus</code> · <code>releasedLines</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SHIPMENT -->
+  <h2>SHIPMENT · 출고 (5)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">SHIPMENT_START</td><td class="mono">Shipment:{id}</td><td>CONFIRMED→SHIPPING + 첫 컬럼 진입</td><td><code>orderId</code> · <code>orderNumber</code> · <code>firstStageId</code></td></tr>
+        <tr><td class="mono">SHIPMENT_MOVE</td><td class="mono">Shipment:{id}</td><td>단계 이동 (terminal 아님)</td><td><code>fromStageId</code> · <code>toStageId</code> · <code>toStageKey</code></td></tr>
+        <tr><td class="mono">SHIPMENT_COMPLETE</td><td class="mono">Shipment:{id}</td><td>terminal 진입 → physicalStock 차감 + Order COMPLETED</td><td><code>shipLines</code> · <code>completed:true</code></td></tr>
+        <tr><td class="mono">SHIPMENT_HOLD</td><td class="mono">Shipment:{id}</td><td>출고 보류</td><td><code>reason</code></td></tr>
+        <tr><td class="mono">SHIPMENT_RESUME</td><td class="mono">Shipment:{id}</td><td>보류 해제</td><td><code>note</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- KANBAN -->
+  <h2>KANBAN · 칸반 단계 관리 (4)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">KANBAN_COLUMN_CREATE</td><td class="mono">KanbanColumn:{id}</td><td>단계 추가</td><td><code>key</code> · <code>label</code> · <code>isTerminal</code></td></tr>
+        <tr><td class="mono">KANBAN_COLUMN_UPDATE</td><td class="mono">KanbanColumn:{id}</td><td>단계 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">KANBAN_COLUMN_DELETE</td><td class="mono">KanbanColumn:{id}</td><td>단계 삭제 (shipments=0 필요)</td><td><code>key</code> · <code>label</code></td></tr>
+        <tr><td class="mono">KANBAN_COLUMN_REORDER</td><td class="mono">KanbanColumn:bulk</td><td>순서 재배치</td><td><code>items</code>(id→sortOrder 매핑)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- INVOICE -->
+  <h2>INVOICE · 거래명세서 (5)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">INVOICE_CREATE_DRAFT</td><td class="mono">Invoice:{id}</td><td>COMPLETED 주문에서 DRAFT 생성</td><td><code>orderId</code> · <code>totalAmount</code></td></tr>
+        <tr><td class="mono">INVOICE_UPDATE_DRAFT</td><td class="mono">Invoice:{id}</td><td>DRAFT 편집 (공급자·VAT 재계산)</td><td><code>diff</code> · <code>vatRate</code></td></tr>
+        <tr><td class="mono">INVOICE_ISSUE</td><td class="mono">Invoice:{id}</td><td>DRAFT→ISSUED + 공식 번호 채번</td><td><code>invoiceNumber</code> · <code>issueDate</code></td></tr>
+        <tr><td class="mono">INVOICE_SENT</td><td class="mono">Invoice:{id}</td><td>ISSUED→SENT</td><td><code>sentAt</code></td></tr>
+        <tr><td class="mono">INVOICE_CANCEL</td><td class="mono">Invoice:{id}</td><td>취소 (사유 기록)</td><td><code>cancelReason</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAYMENT -->
+  <h2>PAYMENT · 수금 (3)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">PAYMENT_RECORD</td><td class="mono">Payment:{id}</td><td>수금 등록</td><td><code>clientId</code> · <code>amount</code> · <code>method</code> · <code>paidAt</code></td></tr>
+        <tr><td class="mono">PAYMENT_UPDATE</td><td class="mono">Payment:{id}</td><td>수금 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">PAYMENT_CANCEL</td><td class="mono">Payment:{id}</td><td>수금 소프트 취소 (BankTxn FK 보존)</td><td><code>previousAmount</code> · <code>reason</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BANKTXN -->
+  <h2>BANKTXN · 은행 거래 (5)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">BANKTXN_CREATE</td><td class="mono">BankTransaction:{id}</td><td>수기 입력 또는 임포트</td><td><code>bankName</code> · <code>amount</code> · <code>txnDate</code></td></tr>
+        <tr><td class="mono">BANKTXN_UPDATE</td><td class="mono">BankTransaction:{id}</td><td>수정 (매칭 상태면 거부)</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">BANKTXN_DELETE</td><td class="mono">BankTransaction:{id}</td><td>삭제 (매칭 상태면 거부)</td><td><code>bankName</code> · <code>amount</code></td></tr>
+        <tr><td class="mono">BANKTXN_MATCH</td><td class="mono">BankTransaction:{id}</td><td>Payment 와 매칭</td><td><code>paymentId</code></td></tr>
+        <tr><td class="mono">BANKTXN_UNMATCH</td><td class="mono">BankTransaction:{id}</td><td>매칭 해제</td><td><code>paymentId</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LEDGER -->
+  <h2>LEDGER · 원장 (4)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">LEDGER_RECOMPUTE</td><td class="mono">ClosingLedger:{id}</td><td>거래처별 월 재계산</td><td><code>clientId</code> · <code>month</code> · <code>carry</code> · <code>sales</code> · <code>received</code> · <code>balance</code></td></tr>
+        <tr><td class="mono">LEDGER_RECOMPUTE_MONTH</td><td class="mono">ClosingLedger:bulk</td><td>이달 전체 거래처 재계산</td><td><code>month</code> · <code>count</code> · <code>failures</code></td></tr>
+        <tr><td class="mono">LEDGER_CLOSE</td><td class="mono">ClosingLedger:{id}</td><td>월 마감</td><td><code>clientId</code> · <code>month</code> · <code>balance</code></td></tr>
+        <tr><td class="mono">LEDGER_REOPEN</td><td class="mono">ClosingLedger:{id}</td><td>마감 해제 (사유 필수)</td><td><code>clientId</code> · <code>month</code> · <code>reason</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EXPIRY -->
+  <h2>EXPIRY · 유통기한 로트 (3)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">EXPIRY_LOT_CREATE</td><td class="mono">ExpiryLot:{id}</td><td>로트 등록</td><td><code>sizeId</code> · <code>lotNumber</code> · <code>quantity</code> · <code>expiryDate</code></td></tr>
+        <tr><td class="mono">EXPIRY_LOT_UPDATE</td><td class="mono">ExpiryLot:{id}</td><td>로트 수정</td><td><code>diff</code> (remainingQty 변경 포함)</td></tr>
+        <tr><td class="mono">EXPIRY_LOT_DELETE</td><td class="mono">ExpiryLot:{id}</td><td>로트 삭제</td><td><code>sizeId</code> · <code>lotNumber</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CONFERENCE -->
+  <h2>CONFERENCE · 학회 · 방명록 (6)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">CONFERENCE_CREATE</td><td class="mono">Conference:{id}</td><td>학회 등록</td><td><code>name</code> · <code>startDate</code> · <code>endDate</code></td></tr>
+        <tr><td class="mono">CONFERENCE_UPDATE</td><td class="mono">Conference:{id}</td><td>학회 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">CONFERENCE_DELETE</td><td class="mono">Conference:{id}</td><td>학회 삭제 (CASCADE Visitor)</td><td><code>name</code> · <code>visitorCount</code></td></tr>
+        <tr><td class="mono">CONFERENCE_VISITOR_CREATE</td><td class="mono">ConferenceVisitor:{id}</td><td>방문자 추가</td><td><code>conferenceId</code> · <code>name</code> · <code>assignedRepId</code></td></tr>
+        <tr><td class="mono">CONFERENCE_VISITOR_UPDATE</td><td class="mono">ConferenceVisitor:{id}</td><td>방문자 수정 (담당자·상태 변경)</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">CONFERENCE_VISITOR_DELETE</td><td class="mono">ConferenceVisitor:{id}</td><td>방문자 삭제</td><td><code>conferenceId</code> · <code>name</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CONTRACT -->
+  <h2>CONTRACT · 판매 계약서 (3)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">CONTRACT_CREATE</td><td class="mono">SalesContract:{id}</td><td>계약 등록</td><td><code>clientId</code> · <code>title</code> · <code>startDate</code> · <code>endDate</code> · <code>signed</code></td></tr>
+        <tr><td class="mono">CONTRACT_UPDATE</td><td class="mono">SalesContract:{id}</td><td>계약 수정</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">CONTRACT_DELETE</td><td class="mono">SalesContract:{id}</td><td>계약 삭제</td><td><code>clientId</code> · <code>title</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DATA_USAGE -->
+  <h2>DATA_USAGE · 데이터 사용량 (3)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:210px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">DATA_USAGE_CREATE</td><td class="mono">DataUsage:{id}</td><td>월간 사용량 수기 입력</td><td><code>month</code> · <code>category</code> · <code>amount</code> · <code>unit</code></td></tr>
+        <tr><td class="mono">DATA_USAGE_UPDATE</td><td class="mono">DataUsage:{id}</td><td>사용량 수정 (또는 upsert 시 update 분기)</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">DATA_USAGE_DELETE</td><td class="mono">DataUsage:{id}</td><td>사용량 제거</td><td><code>month</code> · <code>category</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TENANT_SETTING -->
+  <h2>TENANT_SETTING · 테넌트 설정 (2)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:230px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">TENANT_SETTING_UPDATE</td><td class="mono">TenantSetting:{key}</td><td>단일 키 업서트</td><td><code>key</code> · <code>previousValue</code> · <code>nextValue</code></td></tr>
+        <tr><td class="mono">TENANT_SETTING_BULK_UPDATE</td><td class="mono">TenantSetting:bulk</td><td>여러 키 일괄 업서트</td><td><code>items</code>(key→value 배열)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DASHBOARD -->
+  <h2>DASHBOARD · CEO 위젯 (5)</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th style="width:230px;">action</th><th>리소스</th><th>의미</th><th>metadata</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">DASHBOARD_WIDGET_CREATE</td><td class="mono">DashboardWidget:{id}</td><td>위젯 추가</td><td><code>preset</code> · <code>position</code> · <code>width</code> · <code>height</code></td></tr>
+        <tr><td class="mono">DASHBOARD_WIDGET_UPDATE</td><td class="mono">DashboardWidget:{id}</td><td>위젯 수정 (width·기간 override 등)</td><td><code>diff</code></td></tr>
+        <tr><td class="mono">DASHBOARD_WIDGET_DELETE</td><td class="mono">DashboardWidget:{id}</td><td>위젯 제거</td><td><code>preset</code></td></tr>
+        <tr><td class="mono">DASHBOARD_WIDGET_REORDER</td><td class="mono">DashboardWidget:bulk</td><td>순서 변경</td><td><code>items</code>(id→position)</td></tr>
+        <tr><td class="mono">DASHBOARD_LAYOUT_RESET</td><td class="mono">DashboardWidget:bulk</td><td>기본 레이아웃 리셋</td><td><code>defaultPresets</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 사용 패턴 -->
+  <h2>조회 패턴 (향후 UI)</h2>
+  <p>
+    현재 <code>/admin/audit</code> 조회 UI 는 미구현(Phase 6 에 예정). 아래는 SQL/Prisma
+    쿼리 예시입니다.
+  </p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 class="card-title mt-0">특정 주문의 전체 이력</h3>
+      <pre><code>await prisma.auditLog.findMany({
+  where: {
+    tenantId,
+    OR: [
+      { resource: `Order:${orderId}` },
+      // 관련 invoice, shipment 도 같이
+      { action: { startsWith: "SHIPMENT_" } },
+    ],
+  },
+  orderBy: { createdAt: "asc" },
+});</code></pre>
+    </div>
+    <div class="card">
+      <h3 class="card-title mt-0">사용자별 활동</h3>
+      <pre><code>await prisma.auditLog.findMany({
+  where: {
+    tenantId,
+    userId: userId,
+    createdAt: { gte: from, lt: to },
+  },
+  orderBy: { createdAt: "desc" },
+  take: 100,
+});</code></pre>
+    </div>
+  </div>
+
+  <!-- 운영 가이드 -->
+  <h2>운영 가이드</h2>
+  <div class="grid grid-2">
+    <div class="note">
+      <p class="note-title">📋 새 action 추가 시</p>
+      1. 본 카탈로그에 먼저 추가 → 이름·리소스·metadata 정의<br>
+      2. 액션 함수에서 <code>logAudit({...})</code> 호출<br>
+      3. 스모크 테스트로 로그 기록 검증
+    </div>
+    <div class="note ok">
+      <p class="note-title">✅ 변경 불가 원칙</p>
+      <code>AuditLog</code> 는 <strong>UPDATE/DELETE 금지</strong>. 잘못된 로그는
+      새 action 으로 보정(예: <code>ORDER_SUBMIT_CORRECTED</code>).
+    </div>
+    <div class="note warn">
+      <p class="note-title">⚠️ PII 주의</p>
+      metadata 에 <strong>주민번호·신용카드·계좌번호 기록 금지</strong>. 거래처 연락처도
+      최소화. 감사 로그는 개발자도 조회 가능.
+    </div>
+    <div class="note danger">
+      <p class="note-title">🔒 보관 정책</p>
+      법정 보관기간 5년 (전자세금계산서 근거). 5년 이전 로그는 cold storage 이관
+      (Phase 6 이후 고려).
+    </div>
+  </div>
+
+  <!-- 통계 -->
+  <h2>도메인별 통계</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>도메인</th><th class="num">action 수</th><th>주요 동사</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ORDER</td><td class="num">11</td><td>CREATE_DRAFT · SUBMIT · CONFIRM · CANCEL · HOLD · RESUME · REJECT · ITEM_*</td></tr>
+        <tr><td>CONFERENCE</td><td class="num">6</td><td>CREATE · UPDATE · DELETE · VISITOR_*</td></tr>
+        <tr><td>CLIENT</td><td class="num">6</td><td>CREATE · UPDATE · ADDRESS_*</td></tr>
+        <tr><td>PRODUCT</td><td class="num">5</td><td>CREATE · UPDATE · SIZE_*</td></tr>
+        <tr><td>INVOICE</td><td class="num">5</td><td>CREATE · UPDATE · ISSUE · SENT · CANCEL</td></tr>
+        <tr><td>SHIPMENT</td><td class="num">5</td><td>START · MOVE · COMPLETE · HOLD · RESUME</td></tr>
+        <tr><td>BANKTXN</td><td class="num">5</td><td>CREATE · UPDATE · DELETE · MATCH · UNMATCH</td></tr>
+        <tr><td>DASHBOARD</td><td class="num">5</td><td>WIDGET_* · LAYOUT_RESET</td></tr>
+        <tr><td>CLIENT_PRICING</td><td class="num">4</td><td>DISCOUNT_* · FIXEDPRICE_*</td></tr>
+        <tr><td>KANBAN</td><td class="num">4</td><td>COLUMN_CREATE · UPDATE · DELETE · REORDER</td></tr>
+        <tr><td>LEDGER</td><td class="num">4</td><td>RECOMPUTE · RECOMPUTE_MONTH · CLOSE · REOPEN</td></tr>
+        <tr><td>PAYMENT</td><td class="num">3</td><td>RECORD · UPDATE · CANCEL</td></tr>
+        <tr><td>EXPIRY</td><td class="num">3</td><td>LOT_CREATE · UPDATE · DELETE</td></tr>
+        <tr><td>CONTRACT</td><td class="num">3</td><td>CREATE · UPDATE · DELETE</td></tr>
+        <tr><td>DATA_USAGE</td><td class="num">3</td><td>CREATE · UPDATE · DELETE</td></tr>
+        <tr><td>TENANT_SETTING</td><td class="num">2</td><td>UPDATE · BULK_UPDATE</td></tr>
+        <tr><td>INVENTORY</td><td class="num">2</td><td>RECEIVE · ADJUST</td></tr>
+        <tr><th>합계</th><th class="num">76</th><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok" style="margin-top:32px;">
+    <strong>관련 문서</strong> — 스키마 정의는 <a href="02-database-erd.html">02. ERD</a>,
+    비즈니스 상태 전이는 <a href="03-business-flow.html">03. 플로우</a>,
+    액션의 구현 위치는 <a href="07-api-reference.html">07. API 레퍼런스</a> 참조.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>

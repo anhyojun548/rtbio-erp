@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>08. 컴포넌트 인벤토리 · RTBIO ERP</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="logo"><span class="logo-mark"></span>RTBIO ERP · 기술 문서</div>
+    <nav class="site-nav">
+      <a href="index.html">홈</a>
+      <a href="01-system-architecture.html">아키텍처</a>
+      <a href="02-database-erd.html">ERD</a>
+      <a href="03-business-flow.html">플로우</a>
+      <a href="04-portal-matrix.html">포털</a>
+      <a href="05-implementation-status.html">현황</a>
+      <a href="06-roadmap-remaining.html">로드맵</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb">
+    <a href="index.html">허브</a> <span class="sep">/</span> 레퍼런스 <span class="sep">/</span> 08. 컴포넌트 인벤토리
+  </div>
+
+  <h1 class="page-title">컴포넌트 인벤토리</h1>
+  <p class="page-subtitle">
+    RTBIO ERP 의 모든 React 컴포넌트 53개 + 공용 2개. 포털별 · 도메인별로 구조화됐으며
+    대부분 <strong>Server Component</strong> (기본) + 일부 <strong>Client Component</strong>
+    (<code>"use client"</code>, 폼/필터/인터랙션) 혼합.
+  </p>
+
+  <!-- 요약 -->
+  <div class="grid grid-4">
+    <div class="stat brand"><p class="stat-label">컴포넌트</p><p class="stat-value">55</p><p class="stat-sub">.tsx 파일 기준</p></div>
+    <div class="stat"><p class="stat-label">Server Components</p><p class="stat-value">약 58%</p><p class="stat-sub">Page 포함</p></div>
+    <div class="stat ok"><p class="stat-label">Client Components</p><p class="stat-value">약 42%</p><p class="stat-sub">"use client"</p></div>
+    <div class="stat warn"><p class="stat-label">포털</p><p class="stat-value">5</p><p class="stat-sub">+ 공용</p></div>
+  </div>
+
+  <!-- 구조 -->
+  <h2>디렉터리 구조</h2>
+  <pre><code>src/components/
+├── SessionProvider.tsx           // 공용 · NextAuth 세션
+├── TopBar.tsx                    // 공용 · 상단 사용자 바
+│
+├── admin/                        // 경영지원 포털 (29)
+│   ├── Sidebar.tsx
+│   ├── clients/                  // 거래처 (6)
+│   ├── products/                 // 제품 (5)
+│   ├── inventory/                // 재고 (3)
+│   ├── orders/                   // 주문 (6)
+│   ├── shipments/                // 출고 (3)
+│   ├── invoices/                 // 거래명세서 (4)
+│   ├── payments/                 // 수금 (3)
+│   ├── ledger/                   // 원장 (1)
+│   ├── expiry/                   // 유통기한 (1)
+│   ├── alerts/                   // 재고 알럼 (1)
+│   ├── settings/                 // 테넌트 설정 (1)
+│   ├── data-usage/               // 데이터 사용량 (1)
+│   ├── contracts/                // 판매 계약 (2)
+│   └── reports/                  // 리포트 (4)
+│
+├── exec/                         // 영업 포털 (5)
+│   ├── Sidebar.tsx
+│   ├── MyClientsTable.tsx
+│   ├── MyOrdersTable.tsx
+│   └── conferences/              // 학회 (2)
+│
+├── ceo/                          // CEO 포털 (2)
+│   ├── WidgetCard.tsx
+│   └── WidgetCustomizer.tsx
+│
+├── qc/                           // QC 포털 (2)
+│   ├── Sidebar.tsx
+│   └── SampleShipForm.tsx
+│
+└── client/                       // 거래처 포털 (1)
+    └── Sidebar.tsx</code></pre>
+
+  <!-- 공용 -->
+  <h2>공용 컴포넌트</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>컴포넌트</th><th>유형</th><th>역할</th><th>주요 의존성</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">SessionProvider</td>
+          <td><span class="badge badge-brand">Client</span></td>
+          <td>NextAuth SessionProvider 래퍼</td>
+          <td>next-auth/react</td>
+        </tr>
+        <tr>
+          <td class="mono">TopBar</td>
+          <td><span class="badge badge-gray">Server</span></td>
+          <td>상단 헤더 · 사용자명 · 로그아웃</td>
+          <td>auth(), signOut</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 경영지원 -->
+  <h2>경영지원 포털 <code>src/components/admin/</code></h2>
+
+  <h3>거래처 <span class="badge badge-gray">6</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ClientForm</td><td><span class="badge badge-brand">Client</span></td><td>거래처 등록/수정 폼 (useTransition + router.refresh)</td></tr>
+        <tr><td class="mono">ListFilter</td><td><span class="badge badge-brand">Client</span></td><td>q · 유형 · active 필터 바</td></tr>
+        <tr><td class="mono">AddressPanel</td><td><span class="badge badge-brand">Client</span></td><td>배송지 CRUD 인라인 · isDefault 토글</td></tr>
+        <tr><td class="mono">DiscountPanel</td><td><span class="badge badge-brand">Client</span></td><td>카테고리 할인율 업서트</td></tr>
+        <tr><td class="mono">FixedPricePanel</td><td><span class="badge badge-brand">Client</span></td><td>제품 고정가 업서트</td></tr>
+        <tr><td class="mono">ToggleActiveButton</td><td><span class="badge badge-brand">Client</span></td><td>활성/비활성 전환</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>제품 <span class="badge badge-gray">5</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ProductForm</td><td><span class="badge badge-brand">Client</span></td><td>제품 등록/수정 · 카테고리 select</td></tr>
+        <tr><td class="mono">ListFilter</td><td><span class="badge badge-brand">Client</span></td><td>검색 · 카테고리 · 브랜드 필터</td></tr>
+        <tr><td class="mono">SizesPanel</td><td><span class="badge badge-brand">Client</span></td><td>사이즈 CRUD · 초기 재고/reorderPoint</td></tr>
+        <tr><td class="mono">LotsPanel</td><td><span class="badge badge-brand">Client</span></td><td>유통기한 로트 추가/편집/삭제 · 단계 뱃지</td></tr>
+        <tr><td class="mono">ToggleActiveButton</td><td><span class="badge badge-brand">Client</span></td><td>활성/비활성 전환</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>재고 <span class="badge badge-gray">3</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">SummaryTable</td><td><span class="badge badge-gray">Server</span></td><td>사이즈별 재고 현황 · 색상 임계치</td></tr>
+        <tr><td class="mono">InventoryDialog</td><td><span class="badge badge-brand">Client</span></td><td>입고/조정 모달 · 사유 선택</td></tr>
+        <tr><td class="mono">LogFilterBar</td><td><span class="badge badge-brand">Client</span></td><td>이력 필터 (타입·기간)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>주문 <span class="badge badge-gray">6</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ListFilter</td><td><span class="badge badge-brand">Client</span></td><td>q · 상태 · 기간 필터</td></tr>
+        <tr><td class="mono">OrderCreateForm</td><td><span class="badge badge-brand">Client</span></td><td>신규 주문 DRAFT 생성 + 배송지 선택</td></tr>
+        <tr><td class="mono">HeaderEditForm</td><td><span class="badge badge-brand">Client</span></td><td>주문 헤더(메모·담당자·배송지) 편집</td></tr>
+        <tr><td class="mono">ItemsPanel</td><td><span class="badge badge-brand">Client</span></td><td>라인 CRUD · 단가 미리보기</td></tr>
+        <tr><td class="mono">StatusActions</td><td><span class="badge badge-brand">Client</span></td><td>SUBMIT/REJECT/HOLD/RESUME/CONFIRM/CANCEL 버튼 + 사유 모달</td></tr>
+        <tr><td class="mono">DeleteOrderButton</td><td><span class="badge badge-brand">Client</span></td><td>DRAFT 삭제 확인</td></tr>
+        <tr><td class="mono">IssueInvoiceButton</td><td><span class="badge badge-brand">Client</span></td><td>COMPLETED → 거래명세서 DRAFT 생성</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>출고 <span class="badge badge-gray">3</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ShipmentCard</td><td><span class="badge badge-brand">Client</span></td><td>칸반 카드 · 단계 이동 · 보류/재개 인라인 모달</td></tr>
+        <tr><td class="mono">ShipmentHistoryBoard</td><td><span class="badge badge-brand">Client</span></td><td>완료 이력 필터 + 테이블</td></tr>
+        <tr><td class="mono">KanbanColumnAdminBoard</td><td><span class="badge badge-brand">Client</span></td><td>단계 추가/편집/재정렬/삭제</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>거래명세서 <span class="badge badge-gray">4</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">InvoiceListFilter</td><td><span class="badge badge-brand">Client</span></td><td>거래처/상태/기간 필터</td></tr>
+        <tr><td class="mono">InvoiceDraftEditForm</td><td><span class="badge badge-brand">Client</span></td><td>DRAFT 편집 (공급자·VAT 재계산)</td></tr>
+        <tr><td class="mono">InvoiceStatusActions</td><td><span class="badge badge-brand">Client</span></td><td>발행/발송/취소 버튼</td></tr>
+        <tr><td class="mono">InvoicePdfDocument</td><td><span class="badge badge-gray">Server</span></td><td>@react-pdf/renderer Document</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>수금 · 원장 · 기타 <span class="badge badge-gray">8</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">PaymentRecordForm</td><td><span class="badge badge-brand">Client</span></td><td>수금 등록 폼</td></tr>
+        <tr><td class="mono">PaymentList</td><td><span class="badge badge-brand">Client</span></td><td>수금 목록 + 취소 버튼</td></tr>
+        <tr><td class="mono">BankTxnPanel</td><td><span class="badge badge-brand">Client</span></td><td>은행 거래 CRUD + 매칭 UI</td></tr>
+        <tr><td class="mono">LedgerBoard</td><td><span class="badge badge-brand">Client</span></td><td>월별 원장 표 + 마감/재개</td></tr>
+        <tr><td class="mono">ExpiryBoard</td><td><span class="badge badge-brand">Client</span></td><td>유통기한 대시보드 + 필터</td></tr>
+        <tr><td class="mono">StockAlertBoard</td><td><span class="badge badge-brand">Client</span></td><td>재고 알럼 테이블</td></tr>
+        <tr><td class="mono">TenantSettingsBoard</td><td><span class="badge badge-brand">Client</span></td><td>테넌트 설정 편집</td></tr>
+        <tr><td class="mono">DataUsageBoard</td><td><span class="badge badge-brand">Client</span></td><td>월별 데이터 사용량 입력</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>계약서 · 리포트 <span class="badge badge-gray">6</span></h3>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ContractFilterBar</td><td><span class="badge badge-brand">Client</span></td><td>계약 검색·상태·서명 필터</td></tr>
+        <tr><td class="mono">ContractForm</td><td><span class="badge badge-brand">Client</span></td><td>계약 등록/수정/삭제</td></tr>
+        <tr><td class="mono">MonthlyReportBoard</td><td><span class="badge badge-brand">Client</span></td><td>월간 보고 월 선택 + 위젯</td></tr>
+        <tr><td class="mono">SalesHistoryBoard</td><td><span class="badge badge-brand">Client</span></td><td>영업 이력 타임라인 + 필터</td></tr>
+        <tr><td class="mono">MonthPicker</td><td><span class="badge badge-brand">Client</span></td><td>재사용 월 선택기 (전/다음달 버튼)</td></tr>
+        <tr><td class="mono">Sidebar</td><td><span class="badge badge-gray">Server</span></td><td>경영지원 사이드바 (20+ 메뉴)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 영업 -->
+  <h2>영업 포털 <code>src/components/exec/</code></h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Sidebar</td><td><span class="badge badge-gray">Server</span></td><td>영업 사이드바 (대시보드·거래처·주문·학회 등)</td></tr>
+        <tr><td class="mono">MyClientsTable</td><td><span class="badge badge-brand">Client</span></td><td>내 거래처 테이블 + 정렬/필터</td></tr>
+        <tr><td class="mono">MyOrdersTable</td><td><span class="badge badge-brand">Client</span></td><td>내 주문 테이블 + 필터</td></tr>
+        <tr><td class="mono">conferences/ConferenceForm</td><td><span class="badge badge-brand">Client</span></td><td>학회 등록/수정/삭제</td></tr>
+        <tr><td class="mono">conferences/VisitorPanel</td><td><span class="badge badge-brand">Client</span></td><td>방문자 테이블 + 인라인 편집</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CEO -->
+  <h2>CEO 포털 <code>src/components/ceo/</code></h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">WidgetCard</td><td><span class="badge badge-gray">Server</span></td><td>KPI/LIST 위젯 렌더 · href 있으면 Link 래핑</td></tr>
+        <tr><td class="mono">WidgetCustomizer</td><td><span class="badge badge-brand">Client</span></td><td>위젯 추가/재정렬/기간 override/제거</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QC -->
+  <h2>QC 포털 <code>src/components/qc/</code></h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Sidebar</td><td><span class="badge badge-gray">Server</span></td><td>QC 사이드바 (칸반·재고·유통기한·샘플)</td></tr>
+        <tr><td class="mono">SampleShipForm</td><td><span class="badge badge-brand">Client</span></td><td>샘플 출고 (InventoryAdjustment 호출)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <strong>재사용 전략</strong> — QC 포털은 admin/* 컴포넌트를 재사용(ExpiryBoard, StockAlertBoard,
+    ShipmentCard, TenantSettingsBoard 등). 전용 컴포넌트는 사이드바와 샘플 출고 폼 2개뿐.
+  </div>
+
+  <!-- 거래처 -->
+  <h2>거래처 포털 <code>src/components/client/</code></h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>컴포넌트</th><th>유형</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Sidebar</td><td><span class="badge badge-gray">Server</span></td><td>거래처 사이드바 (발주·명세서·수금·계약·내 정보)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <strong>읽기전용 UI</strong> — 거래처 포털은 <em>전용 Form 컴포넌트 없음</em>. 모든 페이지는
+    Server Component 로 데이터 렌더링만 수행. 쿼리 필터는 <code>URLSearchParams</code> + 폼 링크 방식.
+  </div>
+
+  <!-- 공통 패턴 -->
+  <h2>공통 구현 패턴</h2>
+
+  <h3>1. Client Component + Server Action</h3>
+  <div class="grid grid-2">
+    <div class="card">
+      <h4 class="mt-0">클라이언트 (폼)</h4>
+      <pre><code>"use client";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/actions/client";
+
+export function ClientForm() {
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function onSubmit(formData: FormData) {
+    startTransition(async () => {
+      try {
+        await createClient(Object.fromEntries(formData));
+        router.refresh();
+      } catch (e) {
+        setError(e.message);
+      }
+    });
+  }
+  // ...
+}</code></pre>
+    </div>
+    <div class="card">
+      <h4 class="mt-0">서버 (액션)</h4>
+      <pre><code>"use server";
+export async function createClient(input) {
+  await requireRole("ADMIN");
+  const parsed = createClientSchema.parse(input);
+  const client = await prisma.client.create({...});
+  await logAudit({...});
+  revalidatePath("/admin/clients");
+  return client;
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>2. 필터 → URLSearchParams</h3>
+  <div class="card">
+    <pre><code>// ListFilter.tsx
+const params = new URLSearchParams(searchParams.toString());
+if (q) params.set("q", q); else params.delete("q");
+router.push(`?${params.toString()}`);
+
+// page.tsx (Server Component)
+export default async function Page({ searchParams }) {
+  const clients = await listClients({
+    q: searchParams.q,
+    type: searchParams.type,
+  });
+  return &lt;ClientTable items={clients} /&gt;;
+}</code></pre>
+  </div>
+
+  <h3>3. 직렬화 (Server → Client)</h3>
+  <div class="note warn">
+    <strong>주의</strong> — <code>Date</code> · <code>Decimal</code> 은 Server Component 에서
+    Client Component 로 <em>그대로 전달 불가</em>. 반드시 직렬화:
+    <ul style="margin-top:4px;">
+      <li>Date → <code>date.toISOString()</code> (문자열)</li>
+      <li>Decimal → <code>Number(decimal)</code> 또는 <code>decimal.toString()</code></li>
+    </ul>
+    이후 Client 에서 필요 시 <code>new Date(iso)</code> 로 복원.
+  </div>
+
+  <!-- 외부 라이브러리 -->
+  <h2>주요 외부 라이브러리</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>라이브러리</th><th>사용처</th><th>목적</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">@react-pdf/renderer</td><td>InvoicePdfDocument</td><td>거래명세서 PDF 서버 렌더링</td></tr>
+        <tr><td class="mono">zod</td><td>validators/*</td><td>입력 검증 + 타입 추론</td></tr>
+        <tr><td class="mono">next-auth</td><td>SessionProvider · 모든 액션</td><td>인증 + 세션</td></tr>
+        <tr><td class="mono">bcrypt</td><td>authorize · 시드</td><td>비밀번호 해싱</td></tr>
+        <tr><td class="mono">@prisma/client</td><td>모든 액션</td><td>ORM</td></tr>
+        <tr><td class="mono">tailwindcss</td><td>전체 UI</td><td>스타일링 (utility-first)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <strong>다음 단계</strong> — 감사 로그가 기록하는 액션 코드 전체는
+    <a href="09-audit-log-catalog.html">09. 감사 로그 카탈로그</a> 참조.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>RTBIO ERP · 알티바이오 · 2026</div>
+  <div><a href="index.html">← 허브로</a></div>
+</footer>
+
+</body>
+</html>
