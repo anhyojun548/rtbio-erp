@@ -445,12 +445,15 @@ function dePeriodToRange(periodLabel, now = new Date()) {
 
 /** const 선언된 data.js 의 mock 배열들을 window 에 노출 (DataExplorer 가 참조 가능하게) */
 (function exposeData() {
-  if (typeof CLIENTS !== 'undefined') window.CLIENTS = CLIENTS;
-  if (typeof PRODUCTS !== 'undefined') window.PRODUCTS = PRODUCTS;
-  if (typeof ORDERS !== 'undefined') window.ORDERS = ORDERS;
-  if (typeof INVOICE_HISTORY !== 'undefined') window.INVOICE_HISTORY = INVOICE_HISTORY;
+  // data-loader 가 /api/* 로 채운 실 데이터를 보존 — mock 으로 덮어쓰지 않음
+  // CLIENTS / PRODUCTS / ORDERS / INVOICE_HISTORY / RECEIVABLES 는 OR-guard:
+  //   window.X 가 이미 채워져 있으면(data-loader 결과) 그대로, 아니면 mock fallback
+  if (typeof CLIENTS !== 'undefined') window.CLIENTS = window.CLIENTS || CLIENTS;
+  if (typeof PRODUCTS !== 'undefined') window.PRODUCTS = window.PRODUCTS || PRODUCTS;
+  if (typeof ORDERS !== 'undefined') window.ORDERS = window.ORDERS || ORDERS;
+  if (typeof INVOICE_HISTORY !== 'undefined') window.INVOICE_HISTORY = window.INVOICE_HISTORY || INVOICE_HISTORY;
   if (typeof QC_STAFF !== 'undefined') window.QC_STAFF = QC_STAFF;
-  if (typeof RECEIVABLES !== 'undefined') window.RECEIVABLES = RECEIVABLES;
+  if (typeof RECEIVABLES !== 'undefined') window.RECEIVABLES = window.RECEIVABLES || RECEIVABLES;
   // 경영지원팀 #2: 데이터 탐색기 함수/스키마도 window 에 노출 (preview/test 용)
   if (typeof DE_SCHEMAS !== 'undefined') window.DE_SCHEMAS = DE_SCHEMAS;
   if (typeof deBuildInventoryFlat === 'function') window.deBuildInventoryFlat = deBuildInventoryFlat;

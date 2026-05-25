@@ -72,9 +72,19 @@
   function normalizeClient(c) {
     if (!c || typeof c !== 'object') return c;
     var mapped = CLIENT_TYPE_MAP[c.type];
-    return mapped
+    var base = mapped
       ? Object.assign({}, c, { type: mapped, _typeEnum: c.type })
-      : c;
+      : Object.assign({}, c);
+    // prototype 호환 derived fields (API 응답에 없는 필드 fallback)
+    // prototype 의 client card / getClientById 등이 참조하는 필드들
+    base.manager        = base.manager        || base.representative || base.contactName || '-';
+    base.salesRep       = base.salesRep       || base.salesRepName   || '-';
+    base.paymentMethod  = base.paymentMethod  || base.paymentTerms   || '계좌이체';
+    base.closingPeriod  = base.closingPeriod  || '1월~말일';
+    base.priceListName  = base.priceListName  || 'RTBIO';
+    base.discounts      = base.discounts      || {};
+    base.fixedPrices    = base.fixedPrices    || [];
+    return base;
   }
 
   function normalizeOrder(o) {
@@ -176,6 +186,15 @@
         transactions: (window.TRANSACTIONS  || []).length,
         conferences:  (window.CONFERENCES   || []).length,
         expiry:       (window.EXPIRY_LOTS   || []).length,
+      });
+
+      // FINAL 진단: DOMContentLoaded 큐 실행 이후 실제 데이터 양 확인
+      // (data-explorer-schemas.js 의 exposeData 가 OR-guard 로 덮어쓰지 않는지 검증)
+      console.info('[data-loader] FINAL:', {
+        clients:     (window.CLIENTS  || []).length,
+        products:    (window.PRODUCTS || []).length,
+        orders:      (window.ORDERS   || []).length,
+        firstClient: window.CLIENTS && window.CLIENTS[0] ? window.CLIENTS[0].name : null,
       });
 
       /* FIX-B4: 사이드바 사용자명 / 역할 / 아바타 → window.CURRENT_USER 반영 */
