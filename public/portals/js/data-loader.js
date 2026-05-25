@@ -127,7 +127,7 @@
         '/api/settings',
         '/api/manuals',
         '/api/procurement',
-        '/api/data-explorer?limit=200',
+        '/api/data-explorer?limit=10000',  // 매출 집계 정확도 (41K 중 최근 10K)
         '/api/conferences',
         '/api/expiry',
       ];

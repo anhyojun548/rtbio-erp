@@ -64,6 +64,17 @@ function getVisiblePresets() {
 function _fmtKRW(n) { return '₩' + Math.round(n).toLocaleString(); }
 function _yyyymm(d) { return d.toISOString().slice(0, 7); }
 function _today() { return new Date().toISOString().slice(0, 10); }
+// 데이터의 가장 최신 거래월 (TRANSACTIONS 분포가 과거일 때 의미있는 KPI 표시)
+function _latestDataMonth() {
+  var txns = window.TRANSACTIONS || [];
+  if (!txns.length) return _yyyymm(new Date());
+  var max = '';
+  for (var i = 0; i < txns.length; i++) {
+    var d = (txns[i].txnDate || '').slice(0, 7);
+    if (d > max) max = d;
+  }
+  return max || _yyyymm(new Date());
+}
 function _last7Days() {
   var days = [];
   var now = new Date();
@@ -77,7 +88,7 @@ function _last7Days() {
 
 const MOCK = {
   get monthly_sales() {
-    var ym = _yyyymm(new Date());
+    var ym = _latestDataMonth();  // 데이터의 가장 최신 월 (현재 월이 비어있을 때)
     var sales = (window.TRANSACTIONS || [])
       .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
       .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
@@ -107,10 +118,23 @@ const MOCK = {
   },
 
   get weekly_sales() {
-    var days = _last7Days();
-    var data = days.map(function (d) {
+    // 데이터의 가장 최근 거래 7일 (현재 날짜가 데이터 외라면)
+    var txns = window.TRANSACTIONS || [];
+    var maxDate = '';
+    for (var i = 0; i < txns.length; i++) {
+      var d = (txns[i].txnDate || '').slice(0, 10);
+      if (d > maxDate) maxDate = d;
+    }
+    var anchorDate = maxDate ? new Date(maxDate) : new Date();
+    var days = [];
+    for (var j = 6; j >= 0; j--) {
+      var d2 = new Date(anchorDate);
+      d2.setDate(d2.getDate() - j);
+      days.push(d2.toISOString().slice(0, 10));
+    }
+    var data = days.map(function (day) {
       var sum = (window.TRANSACTIONS || [])
-        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(d); })
+        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(day); })
         .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
       return Math.round(sum);
     });
@@ -118,8 +142,8 @@ const MOCK = {
   },
 
   get client_share() {
-    // 이번 달 거래처별 매출 Top 5
-    var ym = _yyyymm(new Date());
+    // 데이터 최신 월의 거래처별 매출 Top 5
+    var ym = _latestDataMonth();
     var byClient = {};
     (window.TRANSACTIONS || [])
       .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
@@ -156,8 +180,8 @@ const MOCK = {
   },
 
   get product_mix() {
-    // 이번 달 카테고리별 매출 비중
-    var ym = _yyyymm(new Date());
+    // 데이터 최신 월의 카테고리별 매출 비중
+    var ym = _latestDataMonth();
     var byCat = {};
     (window.TRANSACTIONS || [])
       .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
@@ -173,11 +197,12 @@ const MOCK = {
   },
 
   get monthly_trend() {
-    // 최근 6개월 매출
-    var now = new Date();
+    // 데이터의 가장 최근 월 기준 최근 6개월 매출
+    var latestYM = _latestDataMonth();
+    var anchor = new Date(latestYM + '-01');
     var months = [];
     for (var i = 5; i >= 0; i--) {
-      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
       months.push(d.toISOString().slice(0, 7));
     }
     var data = months.map(function (m) {
@@ -190,7 +215,7 @@ const MOCK = {
   },
 
   get sales_target() {
-    var ym = _yyyymm(new Date());
+    var ym = _latestDataMonth();
     var sales = (window.TRANSACTIONS || [])
       .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
       .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
