@@ -60,108 +60,244 @@ function getVisiblePresets() {
   });
 }
 
-// ── Mock Data for Presets ──
+// ── Dynamic Dashboard Data (data-loader 가 채운 window.* 로 계산) ──
+function _fmtKRW(n) { return '₩' + Math.round(n).toLocaleString(); }
+function _yyyymm(d) { return d.toISOString().slice(0, 7); }
+function _today() { return new Date().toISOString().slice(0, 10); }
+function _last7Days() {
+  var days = [];
+  var now = new Date();
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(now);
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
 const MOCK = {
-  monthly_sales: { value: '₩47,850,000', desc: '목표 대비 95.7%', change: '+12.3%', changeDir: 'up' },
-  today_orders: { value: '8건', desc: '금일 접수된 발주', change: '+3건', changeDir: 'up' },
-  total_ar: { value: '₩12,770,000', desc: '연체 3건', change: '+5.2%', changeDir: 'down' },
-  active_clients: { value: '5개', desc: '대리점 3 / 병원 2', change: '', changeDir: '' },
-  weekly_sales: {
-    labels: ['04-05','04-06','04-07','04-08','04-09','04-10','04-11'],
-    data: [4200000,0,5100000,6300000,4800000,5500000,3700000]
+  get monthly_sales() {
+    var ym = _yyyymm(new Date());
+    var sales = (window.TRANSACTIONS || [])
+      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
+      .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
+    return { value: _fmtKRW(sales), desc: ym + ' 누적', change: '', changeDir: 'up' };
   },
-  client_share: {
-    labels: ['메디팜 의료기','한빛정형외과','대한메디칼','세종재활의학과','미래의료기'],
-    data: [1491650,1397700,868200,682000,421950]
+
+  get today_orders() {
+    var today = _today();
+    var count = (window.ORDERS || [])
+      .filter(function (o) { return (o.createdAt || o.orderDate || '').startsWith(today); })
+      .length;
+    return { value: count + '건', desc: '금일 접수된 발주', change: '', changeDir: 'up' };
   },
-  today_order_list: {
-    headers: ['발주번호','거래처','금액','상태','시간'],
-    rows: [
-      ['ORD-0411-001','메디팜 의료기','₩570,000','접수','09:32'],
-      ['ORD-0411-002','한빛정형외과','₩647,700','접수','10:15'],
-      ['ORD-0411-003','미래의료기','₩291,000','접수','11:45'],
-      ['ORD-0411-004','대한메디칼','₩308,200','확정','08:10'],
-      ['ORD-0411-005','세종재활의학과','₩572,000','확정','08:45'],
-      ['ORD-0411-006','메디팜 의료기','₩414,150','확정','09:00'],
-      ['ORD-0411-007','한빛정형외과','₩338,400','출고중','07:50'],
-      ['ORD-0411-008','대한메디칼','₩560,000','출고중','07:30'],
-    ]
+
+  get total_ar() {
+    var sum = (window.LEDGERS || [])
+      .reduce(function (s, l) { return s + Number(l.balance || 0); }, 0);
+    var overdue = (window.LEDGERS || []).filter(function (l) { return Number(l.balance || 0) > 0; }).length;
+    return { value: _fmtKRW(sum), desc: overdue > 0 ? ('잔액 ' + overdue + '건') : '연체 없음', change: '', changeDir: 'down' };
   },
-  product_mix: {
-    labels: ['수술용품','진단기기','소모품','보호구','기타'],
-    data: [35,25,20,12,8]
+
+  get active_clients() {
+    var clients = (window.CLIENTS || []).filter(function (c) { return c.active !== false; });
+    var dealer = clients.filter(function (c) { return c.type === '대리점' || c._typeEnum === 'AGENCY'; }).length;
+    var hospital = clients.filter(function (c) { return c.type === '병원' || c._typeEnum === 'HOSPITAL'; }).length;
+    return { value: clients.length + '개', desc: '대리점 ' + dealer + ' / 병원 ' + hospital, change: '', changeDir: '' };
   },
-  monthly_trend: {
-    labels: ['11월','12월','1월','2월','3월','4월'],
-    data: [38200000,42100000,39800000,44500000,46200000,47850000]
+
+  get weekly_sales() {
+    var days = _last7Days();
+    var data = days.map(function (d) {
+      var sum = (window.TRANSACTIONS || [])
+        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(d); })
+        .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
+      return Math.round(sum);
+    });
+    return { labels: days.map(function (d) { return d.slice(5); }), data: data };
   },
-  sales_target: { value: 95.7, label: '95.7%', target: '₩50,000,000' },
-  low_stock: {
-    headers: ['품목코드','품목명','현재고','안전재고','부족분'],
-    rows: [
-      ['MED-0042','수술용 장갑 (M)','120','200','80'],
-      ['MED-0078','일회용 마스크 (50매)','80','300','220'],
-      ['MED-0123','소독용 알코올 500ml','45','100','55'],
-    ]
+
+  get client_share() {
+    // 이번 달 거래처별 매출 Top 5
+    var ym = _yyyymm(new Date());
+    var byClient = {};
+    (window.TRANSACTIONS || [])
+      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
+      .forEach(function (t) {
+        var key = t.clientName || t.clientCode || '미지정';
+        byClient[key] = (byClient[key] || 0) + Number(t.totalAmount || 0);
+      });
+    var sorted = Object.entries(byClient).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+    return {
+      labels: sorted.map(function (e) { var n = e[0]; return n.length > 10 ? n.slice(0, 10) + '…' : n; }),
+      data: sorted.map(function (e) { return Math.round(e[1]); }),
+    };
   },
-  ar_clients: {
-    headers: ['거래처','미수금','연체일','상태'],
-    rows: [
-      ['한국의료기','₩8,500,000','15일','주의'],
-      ['대한메디칼','₩3,200,000','7일','주의'],
-      ['글로벌헬스','₩12,100,000','32일','위험'],
-    ]
+
+  get today_order_list() {
+    var today = _today();
+    var orders = (window.ORDERS || [])
+      .filter(function (o) { return (o.createdAt || o.orderDate || '').startsWith(today); })
+      .slice(0, 10);
+    return {
+      headers: ['발주번호','거래처','금액','상태','시간'],
+      rows: orders.length === 0
+        ? [['—','오늘 발주 없음','—','—','—']]
+        : orders.map(function (o) {
+            return [
+              o.orderNumber || o.id,
+              (o.client && o.client.name) || o.clientName || '-',
+              _fmtKRW(Number(o.totalAmount || 0)),
+              o.status || '-',
+              (o.createdAt || '').slice(11, 16),
+            ];
+          }),
+    };
   },
+
+  get product_mix() {
+    // 이번 달 카테고리별 매출 비중
+    var ym = _yyyymm(new Date());
+    var byCat = {};
+    (window.TRANSACTIONS || [])
+      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
+      .forEach(function (t) {
+        var cat = t.category || '기타';
+        byCat[cat] = (byCat[cat] || 0) + Number(t.totalAmount || 0);
+      });
+    var sorted = Object.entries(byCat).sort(function (a, b) { return b[1] - a[1]; });
+    return {
+      labels: sorted.map(function (e) { return e[0]; }),
+      data: sorted.map(function (e) { return Math.round(e[1]); }),
+    };
+  },
+
+  get monthly_trend() {
+    // 최근 6개월 매출
+    var now = new Date();
+    var months = [];
+    for (var i = 5; i >= 0; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(d.toISOString().slice(0, 7));
+    }
+    var data = months.map(function (m) {
+      var sum = (window.TRANSACTIONS || [])
+        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(m); })
+        .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
+      return Math.round(sum);
+    });
+    return { labels: months.map(function (m) { return m.slice(5) + '월'; }), data: data };
+  },
+
+  get sales_target() {
+    var ym = _yyyymm(new Date());
+    var sales = (window.TRANSACTIONS || [])
+      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
+      .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
+    var target = 50000000;
+    var pct = target > 0 ? Math.min(100, (sales / target) * 100) : 0;
+    return { value: pct, label: pct.toFixed(1) + '%', target: _fmtKRW(target) };
+  },
+
+  get low_stock() {
+    // window.PRODUCTS 의 사이즈 중 reorderPoint 보다 낮은 재고
+    var rows = [];
+    (window.PRODUCTS || []).forEach(function (p) {
+      (p.sizes || []).forEach(function (s) {
+        var stock = s.availableStock || 0;
+        var rop = s.reorderPoint || 0;
+        if (rop > 0 && stock < rop) {
+          rows.push([p.code, p.name + ' (' + s.sizeCode + ')', String(stock), String(rop), String(rop - stock)]);
+        }
+      });
+    });
+    return {
+      headers: ['품목코드','품목명','현재고','안전재고','부족분'],
+      rows: rows.length === 0 ? [['—','재고 부족 없음','—','—','—']] : rows.slice(0, 10),
+    };
+  },
+
+  get ar_clients() {
+    var rows = (window.LEDGERS || [])
+      .filter(function (l) { return Number(l.balance || 0) > 0; })
+      .sort(function (a, b) { return Number(b.balance) - Number(a.balance); })
+      .slice(0, 10)
+      .map(function (l) {
+        return [
+          (l.client && l.client.name) || l.clientCode || '-',
+          _fmtKRW(Number(l.balance)),
+          '-',
+          Number(l.balance) > 5000000 ? '위험' : '주의',
+        ];
+      });
+    return {
+      headers: ['거래처','미수금','연체일','상태'],
+      rows: rows.length === 0 ? [['—','미수금 없음','—','—']] : rows,
+    };
+  },
+
   // C-4: 거래처+담당자 프리셋
-  client_reps: {
-    headers: ['거래처','유형','담당 영업사원','연락처','최근 거래일'],
-    rows: [
-      ['메디팜 의료기','대리점','박영업','010-1111-2222','2026-04-11'],
-      ['한빛정형외과','병원','신영업','010-3333-4444','2026-04-11'],
-      ['대한메디칼','대리점','이영업','010-5555-6666','2026-04-10'],
-      ['세종재활의학과','병원','박영업','010-7777-8888','2026-04-09'],
-      ['미래의료기','대리점','신영업','010-9999-0000','2026-04-11'],
-    ]
+  get client_reps() {
+    var rows = (window.CLIENTS || []).slice(0, 10).map(function (c) {
+      return [
+        c.name,
+        c.type || '-',
+        c.salesRep || '-',
+        c.phone || '-',
+        '-',
+      ];
+    });
+    return {
+      headers: ['거래처','유형','담당 영업사원','연락처','최근 거래일'],
+      rows: rows.length === 0 ? [['—','—','—','—','—']] : rows,
+    };
   },
+
   // 2026-05-12 미팅: 대표님 핵심 요청 — 베트남 발주 입고 트래킹
-  procurement_status: (function () {
-    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
+  get procurement_status() {
+    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
     return {
       headers: ['발주월','카테고리','발주량','입고량','진행률','선적'],
-      rows: projects.slice(0, 7).map(p => {
-        const pct = p.totalQty > 0 ? Math.round(p.receivedQty / p.totalQty * 100) : 0;
-        const shipIcons = (p.shipments||[]).map(s => s.shipmentType === 'AIR' ? '✈️' : '🚢').join(' ');
-        const catLabel = { FABRIC:'원단', MATERIAL:'부자재', PRODUCT:'제품' }[p.category] || p.category;
-        return [
-          p.orderDate.slice(0,7),
-          catLabel,
-          p.totalQty.toLocaleString(),
-          p.receivedQty.toLocaleString(),
-          pct + '%',
-          shipIcons,
-        ];
-      })
+      rows: projects.length === 0
+        ? [['—','발주 없음','—','—','—','—']]
+        : projects.slice(0, 7).map(function (p) {
+          var total = Number(p.totalQty || 0);
+          var recv = Number(p.receivedQty || 0);
+          var pct = total > 0 ? Math.round(recv / total * 100) : 0;
+          var ships = (p.shipments || []).map(function (s) { return s.shipmentType === 'AIR' ? '✈️' : '🚢'; }).join(' ');
+          var cat = { FABRIC: '원단', MATERIAL: '부자재', PRODUCT: '제품' }[p.category] || p.category || '-';
+          return [
+            (p.orderDate || '').slice(0, 7),
+            cat,
+            total.toLocaleString(),
+            recv.toLocaleString(),
+            pct + '%',
+            ships,
+          ];
+        }),
     };
-  })(),
-  production_progress: (function () {
-    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
-    const active = projects.filter(p => p.status !== 'COMPLETED');
-    const total = active.reduce((s,p) => s + p.totalQty, 0);
-    const received = active.reduce((s,p) => s + p.receivedQty, 0);
-    const pct = total > 0 ? Math.round(received / total * 100) : 100;
+  },
+
+  get production_progress() {
+    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
+    var active = projects.filter(function (p) { return p.status !== 'COMPLETED'; });
+    var total = active.reduce(function (s, p) { return s + Number(p.totalQty || 0); }, 0);
+    var received = active.reduce(function (s, p) { return s + Number(p.receivedQty || 0); }, 0);
+    var pct = total > 0 ? Math.round(received / total * 100) : 100;
     return { value: pct, label: pct + '%', target: '입고완료' };
-  })(),
-  in_transit_shipments: (function () {
-    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
-    const transit = [];
-    projects.forEach(p => {
-      (p.shipments||[]).filter(s => s.status === 'IN_TRANSIT').forEach(s => {
+  },
+
+  get in_transit_shipments() {
+    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
+    var transit = [];
+    projects.forEach(function (p) {
+      (p.shipments || []).filter(function (s) { return s.status === 'IN_TRANSIT'; }).forEach(function (s) {
         transit.push([
           s.shipmentType === 'AIR' ? '✈️ 항공' : '🚢 선박',
           p.code,
           s.shipDate,
           s.arrivalDate,
-          s.qty.toLocaleString() + '개',
+          (s.qty || 0).toLocaleString() + '개',
         ]);
       });
     });
@@ -169,22 +305,30 @@ const MOCK = {
       headers: ['수단','프로젝트','출항일','입항예정','수량'],
       rows: transit.length > 0 ? transit : [['-','입항 대기 없음','-','-','-']],
     };
-  })(),
-  material_split: (function () {
-    const projects = (typeof window !== 'undefined' ? window.PROCUREMENT_PROJECTS : null) || [];
-    const totals = { 원단:0, 부자재:0, 제품:0 };
-    projects.forEach(p => {
-      const k = { FABRIC:'원단', MATERIAL:'부자재', PRODUCT:'제품' }[p.category];
-      if (k) totals[k] += p.totalQty;
+  },
+
+  get material_split() {
+    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
+    var totals = { 원단: 0, 부자재: 0, 제품: 0 };
+    projects.forEach(function (p) {
+      var k = { FABRIC: '원단', MATERIAL: '부자재', PRODUCT: '제품' }[p.category];
+      if (k) totals[k] += Number(p.totalQty || 0);
     });
     return { labels: Object.keys(totals), data: Object.values(totals) };
-  })(),
-  udi_status: { value: '1건', desc: '4월 보고 대기', change: '3월 보고완료', changeDir: '' },
-  unread_notifications: (function () {
-    const notifs = (typeof window !== 'undefined' ? window.NOTIFICATIONS : null) || [];
-    const unread = notifs.filter(n => !n.readAt).length;
+  },
+
+  get udi_status() {
+    var reports = (window.UDI_REPORTS || []);
+    var pending = reports.filter(function (r) { return r.status === 'PENDING' || !r.submittedAt; }).length;
+    var ym = _yyyymm(new Date());
+    return { value: pending + '건', desc: ym + ' 보고 대기', change: '', changeDir: '' };
+  },
+
+  get unread_notifications() {
+    var notifs = (window.NOTIFICATIONS || []);
+    var unread = notifs.filter(function (n) { return !n.readAt; }).length;
     return { value: unread + '건', desc: '미확인 알림', change: '', changeDir: unread > 0 ? 'up' : '' };
-  })()
+  },
 };
 
 // ── Table column definitions (mock schema) ──
