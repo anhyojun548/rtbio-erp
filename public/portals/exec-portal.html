@@ -1865,31 +1865,73 @@ function renderExecDashboard() {
 
  // 영업팀 #1 (2026-04): 월 수금액 + 월 미수금 KPI 추가
  // 4 카드: 월 매출 / 월 수금액 / 월 미수금 / 활성 거래처
+ // — window.* 진짜 데이터 기반 (mock 변수 안 씀)
  const monthlyKpi = document.getElementById('exec-monthly-kpi');
  if (monthlyKpi) {
- const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
- // 월 수금액 = 이번 달 매출 - 이번 달 미수 잔액 (간단 mock)
- const monthlyCollected = MONTHLY_REVENUE - totalReceivables;
- monthlyKpi.innerHTML = `
+   // 데이터의 가장 최신 월 찾기 (현재 월에 거래 없을 수도)
+   // data-loader 가 INVOICE_HISTORY / RECEIVABLES 변수명 사용
+   const invoices = window.INVOICE_HISTORY || window.INVOICES || [];
+   const payments = window.RECEIVABLES || window.PAYMENTS || [];
+   const ledgers = window.LEDGERS || [];
+   const clients = window.CLIENTS || [];
+
+   let latestYM = new Date().toISOString().slice(0, 7);
+   if (invoices.length) {
+     latestYM = invoices.reduce((max, i) => {
+       const d = (i.issueDate || '').slice(0, 7);
+       return d > max ? d : max;
+     }, '');
+     if (!latestYM) latestYM = new Date().toISOString().slice(0, 7);
+   }
+
+   // 이번 달 매출 (ISSUED+SENT 합)
+   const monthlySales = invoices
+     .filter(i => (i.status === 'ISSUED' || i.status === 'SENT' || i._statusEnum === 'ISSUED' || i._statusEnum === 'SENT') && (i.issueDate || '').startsWith(latestYM))
+     .reduce((s, i) => s + Number(i.totalAmount || 0), 0);
+
+   // 이번 달 수금 (PAID 합)
+   const monthlyCollected = payments
+     .filter(p => (p.status === 'PAID' || p._statusEnum === 'PAID') && (p.paidAt || '').startsWith(latestYM))
+     .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+   // 미수금 = 가장 최근 월 ledger balance 합
+   const latestLedgerMonth = ledgers.reduce((max, l) => {
+     const m = l.closingMonth || '';
+     return m > max ? m : max;
+   }, '');
+   const totalAR = ledgers
+     .filter(l => l.closingMonth === latestLedgerMonth)
+     .reduce((s, l) => s + Number(l.balance || 0), 0);
+   const arClientCount = ledgers
+     .filter(l => l.closingMonth === latestLedgerMonth && Number(l.balance || 0) > 0)
+     .length;
+
+   const activeClients = clients.filter(c => c.active !== false);
+   const dealer = activeClients.filter(c => c.type === '대리점' || c._typeEnum === 'AGENCY').length;
+   const hospital = activeClients.filter(c => c.type === '병원' || c._typeEnum === 'HOSPITAL').length;
+
+   const fmt = typeof formatCurrency === 'function' ? formatCurrency : (n => '₩' + Math.round(n).toLocaleString());
+
+   monthlyKpi.innerHTML = `
  <div class="stat-card stat-primary">
  <div class="stat-label"> 월 매출 현황</div>
- <div class="stat-value">${formatCurrency(MONTHLY_REVENUE)}</div>
- <div class="stat-sub">목표 대비 95.7%</div>
+ <div class="stat-value">${fmt(monthlySales)}</div>
+ <div class="stat-sub">${latestYM} 누적</div>
  </div>
  <div class="stat-card stat-success">
  <div class="stat-label"> 월 수금액 현황</div>
- <div class="stat-value">${formatCurrency(monthlyCollected)}</div>
- <div class="stat-sub">이번 달 PARTIAL+PAID 합</div>
+ <div class="stat-value">${fmt(monthlyCollected)}</div>
+ <div class="stat-sub">${latestYM} PARTIAL+PAID 합</div>
  </div>
  <div class="stat-card stat-danger">
  <div class="stat-label"> 월 미수금 현황</div>
- <div class="stat-value">${formatCurrency(totalReceivables)}</div>
- <div class="stat-sub">연체 ${overdueCount}건 · 거래처 ${RECEIVABLES.length}개</div>
+ <div class="stat-value">${fmt(totalAR)}</div>
+ <div class="stat-sub">${latestLedgerMonth || '—'} · 거래처 ${arClientCount}개</div>
  </div>
  <div class="stat-card stat-accent">
  <div class="stat-label"> 담당 거래처</div>
- <div class="stat-value">${CLIENTS.length}개</div>
- <div class="stat-sub">대리점 ${CLIENTS.filter(c=>c.type==='대리점').length} / 병원 ${CLIENTS.filter(c=>c.type==='병원').length}</div>
+ <div class="stat-value">${activeClients.length}개</div>
+ <div class="stat-sub">대리점 ${dealer} / 병원 ${hospital}</div>
  </div>
  `;
  }

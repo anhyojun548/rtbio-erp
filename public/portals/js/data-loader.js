@@ -164,8 +164,10 @@
       if (clients)      window.CLIENTS             = (Array.isArray(clients)    ? clients    : (clients.data    ?? [])).map(normalizeClient);
       if (products)     window.PRODUCTS            = Array.isArray(products)   ? products   : (products.data   ?? []);
       if (orders)       window.ORDERS              = (Array.isArray(orders)     ? orders     : (orders.data     ?? [])).map(normalizeOrder);
-      if (invoices)     window.INVOICE_HISTORY     = Array.isArray(invoices)   ? invoices   : (invoices.data   ?? []);
-      if (payments)     window.RECEIVABLES         = Array.isArray(payments)   ? payments   : (payments.data   ?? []);
+      if (invoices)   { window.INVOICE_HISTORY     = Array.isArray(invoices)   ? invoices   : (invoices.data   ?? []);
+                        window.INVOICES            = window.INVOICE_HISTORY; }  // alias
+      if (payments)   { window.RECEIVABLES         = Array.isArray(payments)   ? payments   : (payments.data   ?? []);
+                        window.PAYMENTS            = window.RECEIVABLES; }  // alias
       if (ledger)       window.LEDGERS             = Array.isArray(ledger)     ? ledger     : (ledger.data     ?? []);
       if (notices)      window.NOTICES             = Array.isArray(notices)    ? notices    : (notices.data    ?? []);
       if (udi)          window.UDI_REPORTS         = Array.isArray(udi)        ? udi        : (udi.data        ?? []);
