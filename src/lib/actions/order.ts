@@ -235,6 +235,7 @@ export async function listOrders(filter: OrderListFilter = {}) {
     take: filter.limit ?? 200,
     include: {
       client: { select: { id: true, code: true, name: true } },
+      items: true, // prototype 호환 — 발주확정/칸반/대시보드가 order.items 직접 참조
       _count: { select: { items: true } },
     },
   });

@@ -616,9 +616,6 @@
  설정
  </div>
  </nav>
- <div class="sidebar-footer">
- <a href="index.html">&larr; 역할 선택</a>
- </div>
  </aside>
 
  <!-- ═══ Mobile Overlay ═══ -->
@@ -947,7 +944,7 @@
  <div class="grid-actions">
  <button class="btn btn-outline btn-sm" onclick="addReceivingRow()">+ 행 추가</button>
  <button class="btn btn-ghost btn-sm" onclick="showToast('임시저장 되었습니다', 'info')">임시저장</button>
- <button class="btn btn-primary btn-sm" onclick="showToast('입고가 확정되었습니다')">입고 확정</button>
+ <button class="btn btn-primary btn-sm" onclick="submitReceiving()">입고 확정</button>
  </div>
 
  <!-- Recent History -->
@@ -1005,7 +1002,7 @@
  </table>
  </div>
  <div class="grid-actions">
- <button class="btn btn-primary btn-sm" onclick="showToast('재고 조정이 확정되었습니다')">조정 확정</button>
+ <button class="btn btn-primary btn-sm" onclick="submitAdjustment()">조정 확정</button>
  </div>
 
  <!-- Adjustment History -->
@@ -1462,32 +1459,78 @@ function showConfirmModal(orderId) {
  </div>
  `;
 
- showModal('발주 확정', bodyHTML, () => {
+ showModal('발주 확정', bodyHTML, async () => {
  const staffId = document.getElementById('modal-staff-select')?.value;
  if (!staffId) {
  showToast('담당자를 배정해주세요', 'error');
  return;
  }
- // Animate out
+ // 1) DB 전이: SUBMITTED → CONFIRMED (재고 RESERVE 자동)
+ const ok = await _qcTransitionOrder(order, 'CONFIRMED');
+ if (!ok) return;
+ // ⭐ ENH-3: 확정 직후 Shipment 자동 시작 → order.shipmentId 박음 (이후 moveToNextStage 에서 사용)
+ try {
+  const r = await fetch(`/api/shipments/${order.id}/transition`, {
+   method: 'POST', credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ to: 'START', note: `확정 자동시작 — 담당 ${staffId}` }),
+  });
+  if (r.ok) {
+   const res = await r.json();
+   order.shipmentId     = res.shipmentId;
+   order.currentStageId = res.stageId;  // 첫 컬럼 (접수대기) DB cuid
+  } else {
+   const err = await r.json().catch(() => ({}));
+   console.warn('[startShipment] 자동 시작 실패:', err.error);
+  }
+ } catch (e) { console.warn('[startShipment] 네트워크 오류', e); }
+ // 2) 시각 효과 + in-memory 보조 데이터 (담당자/타임스탬프는 prototype 표시용)
  const card = document.getElementById('card-' + orderId);
  if (card) card.classList.add('fade-out');
-
  setTimeout(() => {
- order.status = '확정';
  order.stage = 'waiting';
  order.assigneeId = staffId;
- // Record start timestamp
  orderTimestamps[order.id] = { start: TODAY + ' ' + getTimeInfo().current, end: null };
- // Initialize assignees
  if (!orderAssignees[order.id]) orderAssignees[order.id] = [];
  orderAssignees[order.id].push({ staffId, stage: 'waiting' });
- // Clear hold if was held
  if (holdOrders[order.id]) delete holdOrders[order.id];
  showToast('발주가 확정되었습니다');
  renderConfirmPage();
  renderKanban();
  }, 350);
  });
+}
+
+// ══════════════════════════════════════
+// 발주 전이 공통 헬퍼 — POST /api/orders/[id]/transition
+// 응답 후 ORDERS 의 status/_statusEnum/rejectedReason/heldReason 갱신.
+// ══════════════════════════════════════
+async function _qcTransitionOrder(order, to, reason) {
+ const STATUS_MAP = { DRAFT:'임시저장', SUBMITTED:'접수', CONFIRMED:'확정', SHIPPING:'출고중', COMPLETED:'완료', CANCELLED:'취소', HELD:'보류', REJECTED:'반려' };
+ try {
+  const res = await fetch(`/api/orders/${order.id}/transition`, {
+   method: 'POST',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ to, reason: reason || undefined }),
+  });
+  if (!res.ok) {
+   const err = await res.json().catch(() => ({}));
+   showToast(err.error || `상태 전환 실패 (${res.status})`, 'error');
+   return false;
+  }
+  // ORDERS in-place 갱신
+  order._statusEnum = to;
+  order.status = STATUS_MAP[to] || to;
+  if (to === 'REJECTED') order.rejectedReason = reason;
+  if (to === 'HELD')     order.heldReason     = reason;
+  if (to === 'RESUMED' || to === 'SUBMITTED') { order.heldReason = null; }
+  return true;
+ } catch (e) {
+  console.error('[transition]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+  return false;
+ }
 }
 
 function showRejectModal(orderId) {
@@ -1511,18 +1554,17 @@ function showRejectModal(orderId) {
  </div>
  `;
 
- showModal('발주 반려', bodyHTML, () => {
+ showModal('발주 반려', bodyHTML, async () => {
  const reason = document.getElementById('modal-reject-reason')?.value?.trim();
  if (!reason) {
  showToast('반려 사유를 입력해주세요', 'error');
  return;
  }
- // Animate out
+ const ok = await _qcTransitionOrder(order, 'REJECTED', reason);
+ if (!ok) return;
  const card = document.getElementById('card-' + orderId);
  if (card) card.classList.add('fade-out');
-
  setTimeout(() => {
- order.status = '반려';
  showToast('발주가 반려되었습니다', 'info');
  renderConfirmPage();
  }, 350);
@@ -1561,17 +1603,17 @@ function showHoldModal(orderId) {
  </div>
  `;
 
- showModal('⏸ 발주 보류', bodyHTML, () => {
+ showModal('⏸ 발주 보류', bodyHTML, async () => {
  const reason = document.getElementById('modal-hold-reason')?.value?.trim();
  if (!reason) {
  showToast('보류 사유를 입력해주세요', 'error');
  return;
  }
+ const ok = await _qcTransitionOrder(order, 'HELD', reason);
+ if (!ok) return;
  const card = document.getElementById('card-' + orderId);
  if (card) card.classList.add('fade-out');
-
  setTimeout(() => {
- order.status = '보류';
  holdOrders[orderId] = { reason, date: TODAY };
  showToast('발주가 보류되었습니다', 'info');
  renderConfirmPage();
@@ -1596,10 +1638,11 @@ function toggleHoldSection() {
 }
 
 // ── Restore from hold ──
-function restoreFromHold(orderId) {
+async function restoreFromHold(orderId) {
  const order = ORDERS.find(o => o.id === orderId);
  if (!order) return;
- order.status = '접수';
+ const ok = await _qcTransitionOrder(order, 'RESUMED');
+ if (!ok) return;
  delete holdOrders[orderId];
  showToast('보류가 해제되었습니다');
  renderConfirmPage();
@@ -2195,18 +2238,40 @@ function moveToNextStage(orderId) {
 
  const staffName = getStaffName(newStaffId);
 
- // 서버 동기화 — shipment id 는 order.shipmentId 가 있으면 사용 (서버 연동 시)
- if (window.apiClient && typeof window.apiClient.post === 'function' && order.shipmentId) {
+ // ⭐ ENH-4: prototype mock stage id (waiting/barcode/setting/packing/shipping/done) → DB KanbanColumn cuid 매핑
+ // window.KANBAN_DB_COLUMNS 는 sortOrder asc 6개 (data-loader 가 채움).
+ // SHIP_STAGES 인덱스 == KANBAN_DB_COLUMNS 인덱스 (둘 다 sortOrder 1..6).
+ if (order.shipmentId) {
    try {
-     await window.apiClient.post('/api/shipments/' + order.shipmentId + '/transition', {
-       to: 'MOVE',
-       stageId: nextStage.id,
-       note: `담당: ${staffName}`,
-     });
+     const dbCols = (window.KANBAN_DB_COLUMNS || []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0));
+     const dbStageId = dbCols[currentIdx + 1]?.id;
+     if (!dbStageId) {
+       console.warn('[qc-portal] DB stage 매핑 실패 — index', currentIdx + 1);
+     } else {
+       const moveRes = await fetch('/api/shipments/' + order.shipmentId + '/transition', {
+         method: 'POST', credentials: 'same-origin',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ to: 'MOVE', stageId: dbStageId, note: `담당: ${staffName}` }),
+       });
+       if (!moveRes.ok) {
+         const err = await moveRes.json().catch(() => ({}));
+         console.warn('[qc-portal] shipment MOVE 실패:', err.error);
+         showToast(err.error || '서버 동기화 실패 — 로컬만 이동', 'warning');
+       } else {
+         // terminal 진입 → Order=COMPLETED 자동 (서버 SHIP 트랜잭션)
+         order.currentStageId = dbStageId;
+         if (dbCols[currentIdx + 1]?.isTerminal) {
+           order.status = '완료';
+           order._statusEnum = 'COMPLETED';
+         }
+       }
+     }
    } catch (err) {
-     // 서버 오류는 경고만 — 로컬 이동은 이미 반영됨
      console.warn('[qc-portal] shipment transition failed:', err && err.message);
    }
+ } else {
+   // shipmentId 없으면 로컬만 이동 — confirm 자동 START 가 안 됐던 경우
+   console.warn('[qc-portal] order.shipmentId 없음 — 로컬만 이동 (DB 비반영)');
  }
 
  showToast(`${nextStage.icon} ${nextStage.name} 이동 — 담당: ${staffName}`);
@@ -2219,23 +2284,44 @@ function moveToNextStage(orderId) {
  }, 20);
 }
 
-function moveToPrevStage(orderId) {
+async function moveToPrevStage(orderId) {
  const order = ORDERS.find(o => o.id === orderId);
  if (!order) return;
  const currentIdx = SHIP_STAGES.findIndex(s => s.id === order.stage);
- if (currentIdx > 0) {
+ if (currentIdx <= 0) return;
  const prevStage = SHIP_STAGES[currentIdx - 1];
+
+ // ⭐ DB MOVE 역방향 — server moveShipmentStage 는 toStageId 만 받고 방향 검증 없음 → 정상 동작
+ if (order.shipmentId) {
+   try {
+     const dbCols = (window.KANBAN_DB_COLUMNS || []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0));
+     const dbStageId = dbCols[currentIdx - 1]?.id;
+     if (dbStageId) {
+       const res = await fetch('/api/shipments/' + order.shipmentId + '/transition', {
+         method: 'POST', credentials: 'same-origin',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ to: 'MOVE', stageId: dbStageId, note: '되돌림' }),
+       });
+       if (!res.ok) {
+         const e = await res.json().catch(() => ({}));
+         showToast(e.error || '되돌림 실패', 'error');
+         return;
+       }
+       order.currentStageId = dbStageId;
+     }
+   } catch (e) { console.warn('[moveToPrevStage]', e); }
+ }
+
  order.stage = prevStage.id;
- // Clear end timestamp if moving back from done
  if (orderTimestamps[orderId] && orderTimestamps[orderId].end) {
- orderTimestamps[orderId].end = null;
+   orderTimestamps[orderId].end = null;
  }
- showToast(`${orderId} ← ${prevStage.icon} ${prevStage.name} (되돌림)`);
+ showToast(`${order.orderNumber || orderId} ← ${prevStage.icon} ${prevStage.name} (되돌림)`);
  renderKanban();
- }
 }
 
 // ── Badge Picker ──
+// TODO: 백엔드 ShipmentBadge 모델 신설 후 wire-up — 현재는 in-memory orderBadges 만 사용.
 function showBadgePicker(orderId) {
  const existing = orderBadges[orderId] || [];
  const existingHTML = existing.length > 0
@@ -2281,6 +2367,7 @@ function selectBadgeColor(el, idx) {
 }
 
 function removeBadge(orderId, badgeIdx) {
+ // TODO: 백엔드 ShipmentBadge 모델 신설 후 wire-up — 현재는 in-memory orderBadges 만 사용.
  if (orderBadges[orderId]) {
  orderBadges[orderId].splice(badgeIdx, 1);
  closeModal();
@@ -2298,11 +2385,10 @@ function showMemoPicker(orderId) {
  ${existing ? '<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteMemo(\'' + orderId + '\')"> 메모 삭제</button></div>' : ''}
  `;
 
- showModal(' 메모 — ' + orderId, bodyHTML, () => {
+ showModal(' 메모 — ' + orderId, bodyHTML, async () => {
  const text = document.getElementById('memoTextInput')?.value.trim();
  if (text) {
- orderMemos[orderId] = text;
- showToast('메모가 저장되었습니다');
+  await _saveOrderMemo(orderId, text);
  }
  renderKanban();
  });
@@ -2312,11 +2398,39 @@ function showMemoPicker(orderId) {
  }, 10);
 }
 
-function deleteMemo(orderId) {
+async function deleteMemo(orderId) {
+ await _saveOrderMemo(orderId, '');
  delete orderMemos[orderId];
  closeModal();
  showToast('메모가 삭제되었습니다', 'info');
  renderKanban();
+}
+
+// 공통: Order.note 컬럼에 메모 저장 — DB updateOrder 는 DRAFT 에서만 허용된다.
+// 비-DRAFT 인 경우 서버에서 400 응답 → 클라이언트 메모리에만 저장 (UI 표시 유지).
+async function _saveOrderMemo(orderId, text) {
+ const order = (window.ORDERS || ORDERS).find(o => o.id === orderId);
+ const apiId = order?._dbId || orderId;
+ try {
+  const res = await fetch(`/api/orders/${encodeURIComponent(apiId)}`, {
+   method: 'PATCH',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ note: text }),
+  });
+  if (!res.ok) {
+   // DRAFT 가 아닌 경우는 정상 시나리오 — 인메모리만 갱신하고 silent fallback.
+   const err = await res.json().catch(() => ({}));
+   console.warn('[saveOrderMemo] DB 저장 실패, 인메모리만 갱신:', err.error || res.status);
+  } else if (order) {
+   order.note = text;
+  }
+ } catch (e) {
+  console.error('[saveOrderMemo]', e);
+ }
+ // 인메모리는 항상 갱신 (UI 일관성)
+ if (text) orderMemos[orderId] = text;
+ if (text) showToast('메모가 저장되었습니다');
 }
 
 // ── Detail Modal (with prev/next buttons + assignee management) ──
@@ -2623,7 +2737,10 @@ function printOrderInvoice(orderId) {
 }
 
 // ── Assignee management from detail modal ──
-function addAssigneeFromDetail(orderId, stage) {
+// DB wire-up: POST /api/shipments/{shipmentId}/assignees · DELETE /api/shipments/{shipmentId}/assignees/{assigneeId}
+// order.shipmentId 가 있어야 DB 동기화. 없으면 (CONFIRMED 자동 START 가 실패한 경우) in-memory 만 갱신.
+// staffId(QC_STAFF mock 코드) 는 그대로 userId 로 전송 — 서버에서 거부되면 toast.
+async function addAssigneeFromDetail(orderId, stage) {
  const select = document.getElementById('detail-add-staff');
  if (!select || !select.value) { showToast('담당자를 선택하세요', 'error'); return; }
  const staffId = select.value;
@@ -2631,7 +2748,33 @@ function addAssigneeFromDetail(orderId, stage) {
  const existing = orderAssignees[orderId].filter(a => a.stage === stage);
  if (existing.length >= 3) { showToast('최대 3명까지 배정 가능합니다', 'warning'); return; }
  if (existing.some(a => a.staffId === staffId)) { showToast('이미 배정된 담당자입니다', 'warning'); return; }
- orderAssignees[orderId].push({ staffId, stage });
+
+ const order = (window.ORDERS || ORDERS).find(o => o.id === orderId);
+ const shipmentId = order && order.shipmentId;
+ let newId = null;
+ if (shipmentId) {
+  try {
+   const res = await fetch('/api/shipments/' + encodeURIComponent(shipmentId) + '/assignees', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stage, userId: staffId }),
+   });
+   if (res.ok) {
+    const body = await res.json().catch(() => ({}));
+    newId = body.id || null;
+   } else {
+    const err = await res.json().catch(() => ({}));
+    console.warn('[addAssignee] DB 저장 실패, 인메모리만 갱신:', err.error || res.status);
+   }
+  } catch (e) {
+   console.warn('[addAssignee] 네트워크 오류 — 인메모리만 갱신:', e);
+  }
+ } else {
+  console.warn('[addAssignee] order.shipmentId 없음 — 인메모리만 갱신 (DB 비반영)');
+ }
+
+ orderAssignees[orderId].push({ id: newId, staffId, stage });
  const staffName = getStaffName(staffId);
  showToast(`${staffName} 담당자가 배정되었습니다`);
  closeModal();
@@ -2639,8 +2782,25 @@ function addAssigneeFromDetail(orderId, stage) {
  setTimeout(() => showKanbanDetail(orderId), 250);
 }
 
-function removeAssignee(orderId, stage, staffId) {
+async function removeAssignee(orderId, stage, staffId) {
  if (!orderAssignees[orderId]) return;
+ const target = orderAssignees[orderId].find(a => a.stage === stage && a.staffId === staffId);
+ const order = (window.ORDERS || ORDERS).find(o => o.id === orderId);
+ const shipmentId = order && order.shipmentId;
+ if (shipmentId && target && target.id) {
+  try {
+   const res = await fetch(
+    '/api/shipments/' + encodeURIComponent(shipmentId) + '/assignees/' + encodeURIComponent(target.id),
+    { method: 'DELETE', credentials: 'same-origin' },
+   );
+   if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.warn('[removeAssignee] DB 삭제 실패, 인메모리만 갱신:', err.error || res.status);
+   }
+  } catch (e) {
+   console.warn('[removeAssignee] 네트워크 오류 — 인메모리만 갱신:', e);
+  }
+ }
  orderAssignees[orderId] = orderAssignees[orderId].filter(a => !(a.stage === stage && a.staffId === staffId));
  const staffName = getStaffName(staffId);
  showToast(`${staffName} 담당자가 해제되었습니다`, 'info');
@@ -2720,12 +2880,28 @@ function openColumnEditor() {
  }, 10);
 }
 
-function _colEditorDelete(idx) {
+async function _colEditorDelete(idx) {
  if (SHIP_STAGES.length <= 2) { showToast('최소 2개 열은 유지해야 합니다', 'warning'); return; }
  const stage = SHIP_STAGES[idx];
- // save current input values before re-opening
  _colEditorSaveInputs();
  if (!confirm(`"${stage.name}" 열을 삭제할까요?\n해당 열의 카드는 이전 열로 이동됩니다.`)) return;
+
+ // ⭐ DB DELETE — KANBAN_DB_COLUMNS 같은 인덱스의 cuid 사용
+ const dbCols = (window.KANBAN_DB_COLUMNS || []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0));
+ const dbCol = dbCols[idx];
+ if (dbCol && dbCol.id) {
+   try {
+     const res = await fetch('/api/shipments/columns/' + dbCol.id, { method: 'DELETE', credentials: 'same-origin' });
+     if (!res.ok) {
+       const e = await res.json().catch(() => ({}));
+       showToast(e.error || '컬럼 삭제 실패 (사용 중일 수 있음)', 'error');
+       return;
+     }
+     dbCols.splice(idx, 1);
+     window.KANBAN_DB_COLUMNS = dbCols;
+   } catch (e) { console.warn('[colDelete]', e); }
+ }
+
  const prevId = idx > 0 ? SHIP_STAGES[idx - 1].id : SHIP_STAGES[1].id;
  ORDERS.forEach(o => { if (o.stage === stage.id) o.stage = prevId; });
  SHIP_STAGES.splice(idx, 1);
@@ -2734,17 +2910,38 @@ function _colEditorDelete(idx) {
  openColumnEditor();
 }
 
-function _colEditorAdd() {
+async function _colEditorAdd() {
  if (SHIP_STAGES.length >= MAX_KANBAN_COLS) {
  showToast(`열은 최대 ${MAX_KANBAN_COLS}개까지 추가할 수 있습니다`, 'warning');
  return;
  }
  _colEditorSaveInputs();
- SHIP_STAGES.push({ id: 'custom_' + Date.now(), name: '새 단계', icon: '', color: '#6B7280' });
+
+ // ⭐ DB POST — key 자동생성, sortOrder = max+1, isTerminal=false
+ const dbCols = (window.KANBAN_DB_COLUMNS || []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0));
+ const maxSort = dbCols.reduce((m, c) => Math.max(m, c.sortOrder || 0), 0);
+ const newKey = 'CUSTOM_' + Date.now();
+ let newCol = null;
+ try {
+   const res = await fetch('/api/shipments/columns', {
+     method: 'POST', credentials: 'same-origin',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ key: newKey, label: '새 단계', sortOrder: maxSort + 1, isTerminal: false }),
+   });
+   if (!res.ok) {
+     const e = await res.json().catch(() => ({}));
+     showToast(e.error || '컬럼 추가 실패', 'error');
+     return;
+   }
+   newCol = await res.json();
+   dbCols.push(newCol);
+   window.KANBAN_DB_COLUMNS = dbCols;
+ } catch (e) { console.warn('[colAdd]', e); }
+
+ SHIP_STAGES.push({ id: newCol?.id || ('custom_' + Date.now()), name: '새 단계', icon: '', color: '#6B7280' });
  closeModal();
  renderKanban();
  openColumnEditor();
- // focus on the new row's name input after modal opens
  setTimeout(() => {
  const last = SHIP_STAGES.length - 1;
  const el = document.getElementById('colName' + last);
@@ -3140,12 +3337,31 @@ function confirmDeleteProduct(productId) {
  showModal('제품 삭제 확인', body, () => deleteProduct(productId));
 }
 
-function deleteProduct(productId) {
+async function deleteProduct(productId) {
  const idx = PRODUCTS.findIndex(p => p.id === productId);
  if (idx === -1) return;
- const removed = PRODUCTS.splice(idx, 1)[0];
- renderInventory();
- showToast(`${removed.name} 삭제 완료`);
+ const target = PRODUCTS[idx];
+ // DB 의 cuid 는 _dbId 에 매핑돼 있을 수 있다 (data-loader). 없으면 fallback 으로 productId 사용.
+ const apiId = target._dbId || productId;
+ try {
+  const res = await fetch(`/api/products/${encodeURIComponent(apiId)}`, {
+   method: 'DELETE',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+   const err = await res.json().catch(() => ({}));
+   showToast(err.error || `제품 삭제 실패 (${res.status})`, 'error');
+   return;
+  }
+  // 응답: { active: false } — 소프트 삭제. 인메모리 목록에서도 제거해 UI 즉시 반영.
+  const removed = PRODUCTS.splice(idx, 1)[0];
+  renderInventory();
+  showToast(`${removed.name} 삭제 완료`);
+ } catch (e) {
+  console.error('[deleteProduct]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+ }
 }
 
 
@@ -3422,7 +3638,7 @@ function showNewProductForm() {
 
  const submitBtn = document.getElementById('pf-submit-btn');
  if (submitBtn) {
- submitBtn.onclick = () => {
+ submitBtn.onclick = async () => {
  const name = document.getElementById('pf-name')?.value?.trim();
  if (!name) {
  showToast('제품명을 입력해주세요', 'error');
@@ -3433,9 +3649,55 @@ function showNewProductForm() {
  showToast('카테고리를 선택해주세요', 'error');
  return;
  }
- // Close modal
- document.querySelector('.modal-overlay .modal-cancel')?.click();
- showToast('제품이 등록되었습니다', 'success');
+ const sku = document.getElementById('pf-sku')?.value?.trim() || '';
+ const price = parseFloat(document.getElementById('pf-price')?.value || '0');
+ const sizes = Array.from(document.querySelectorAll('.pf-size:checked')).map(cb => cb.value);
+
+ // DB code 는 대문자+숫자+-_ 만 허용 (제품 validator regex).
+ // SKU 가 비어 있거나 규칙에 안 맞으면 timestamp 기반 자동 코드.
+ const codeFromSku = sku.toUpperCase().replace(/[^A-Z0-9\-_]/g, '');
+ const code = (codeFromSku && codeFromSku.length >= 2)
+  ? codeFromSku
+  : ('NEW-' + Date.now().toString().slice(-8));
+
+ const body = { code, name, category: cat, basePrice: price };
+
+ submitBtn.disabled = true;
+ try {
+  const res = await fetch('/api/products', {
+   method: 'POST',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+   const err = await res.json().catch(() => ({}));
+   showToast(err.error || `제품 등록 실패 (${res.status})`, 'error');
+   return;
+  }
+  const created = await res.json().catch(() => ({}));
+  // 프로토타입 PRODUCTS 형태로 매핑 후 unshift — 즉시 UI 반영.
+  PRODUCTS.unshift({
+   id: created.code || code,
+   _dbId: created.id,
+   cat,
+   name,
+   sku: sku || code,
+   sizes,
+   basePrice: price,
+   setQty: parseInt(document.getElementById('pf-setqty')?.value || '1', 10),
+   side: document.getElementById('pf-side')?.value || '-',
+   stock: parseInt(document.getElementById('pf-stock')?.value || '0', 10),
+  });
+  document.querySelector('.modal-overlay .modal-cancel')?.click();
+  renderInventory();
+  showToast('제품이 등록되었습니다', 'success');
+ } catch (e) {
+  console.error('[createProduct]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+ } finally {
+  submitBtn.disabled = false;
+ }
  };
  }
  }, 10);
@@ -3460,15 +3722,47 @@ function showEditProductForm(productId) {
 
  const submitBtn = document.getElementById('pf-submit-btn');
  if (submitBtn) {
- submitBtn.onclick = () => {
+ submitBtn.onclick = async () => {
  const name = document.getElementById('pf-name')?.value?.trim();
  if (!name) {
  showToast('제품명을 입력해주세요', 'error');
  return;
  }
- // Close modal
- document.querySelector('.modal-overlay .modal-cancel')?.click();
- showToast('제품 정보가 수정되었습니다', 'success');
+ const cat = document.getElementById('pf-cat')?.value;
+ const price = parseFloat(document.getElementById('pf-price')?.value || '0');
+
+ const apiId = product._dbId || product.id;
+ const body = { name, category: cat || undefined, basePrice: price };
+
+ submitBtn.disabled = true;
+ try {
+  const res = await fetch(`/api/products/${encodeURIComponent(apiId)}`, {
+   method: 'PATCH',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+   const err = await res.json().catch(() => ({}));
+   showToast(err.error || `제품 수정 실패 (${res.status})`, 'error');
+   return;
+  }
+  // in-place PRODUCTS 갱신
+  product.name = name;
+  if (cat) product.cat = cat;
+  product.basePrice = price;
+  product.sizes = Array.from(document.querySelectorAll('.pf-size:checked')).map(cb => cb.value);
+  product.setQty = parseInt(document.getElementById('pf-setqty')?.value || '1', 10);
+  product.side = document.getElementById('pf-side')?.value || product.side;
+  document.querySelector('.modal-overlay .modal-cancel')?.click();
+  renderInventory();
+  showToast('제품 정보가 수정되었습니다', 'success');
+ } catch (e) {
+  console.error('[updateProduct]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+ } finally {
+  submitBtn.disabled = false;
+ }
  };
  }
  }, 10);
@@ -3792,7 +4086,7 @@ function resetSampleGrid() {
  renderSampleGrid();
 }
 
-function submitSampleGrid() {
+async function submitSampleGrid() {
  const clientId = document.getElementById('sample-grid-client')?.value;
  if (!clientId) { showToast('거래처를 선택하세요', 'error'); return; }
  const reason = document.getElementById('sample-grid-reason')?.value.trim();
@@ -3806,21 +4100,56 @@ function submitSampleGrid() {
 
  if (!confirm(`샘플 출고를 등록하시겠습니까?\n\n거래처: ${clientName}\n품목수: ${lines.length}\n총 수량: ${totalQty}\n사유: ${reason}`)) return;
 
- // SAMPLE_HISTORY 에 추가 (renderSampleHistory 가 사용)
- if (typeof SAMPLE_HISTORY !== 'undefined') {
- const now = new Date();
- const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ // 1) prototype 그룹 productId+size → DB ProductSize.id 해석
  const items = lines.map(([key, qty]) => {
- const [productId, size] = key.split('|');
- return { productId, size, qty };
+  const [productId, size] = key.split('|');
+  const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === productId);
+  const productSizeId = p && p._sizeRealSize ? p._sizeRealSize[size] : null;
+  return { productId, size, qty, productSizeId };
  });
- SAMPLE_HISTORY.unshift({
- id: 'SMP-' + Date.now().toString().slice(-6),
- date: dateStr,
- clientId,
- reason,
- items,
- });
+ const missing = items.filter(it => !it.productSizeId);
+ if (missing.length > 0) {
+  showToast(`DB 매핑 누락: ${missing.length}개 라인`, 'error');
+  return;
+ }
+
+ // 2) 라인별로 /api/inventory/adjustment 호출 (재고 차감은 라인별 트랜잭션)
+ try {
+  const results = await Promise.all(items.map(it =>
+   fetch('/api/inventory/adjustment', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+     type: '샘플출고',
+     productSizeId: it.productSizeId,
+     qty: -Math.abs(it.qty), // 샘플출고는 음수 강제
+     note: `[샘플] ${clientName} — ${reason}`,
+    }),
+   }).then(r => r.json().then(j => ({ ok: r.ok, body: j })))
+  ));
+  const failed = results.filter(r => !r.ok);
+  if (failed.length > 0) {
+   showToast(`샘플 출고 일부 실패 (${failed.length}/${items.length}): ${failed[0].body?.error || ''}`, 'error');
+   return;
+  }
+ } catch (e) {
+  console.error('[submitSampleGrid]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+  return;
+ }
+
+ // 3) 인메모리 이력 갱신
+ if (typeof SAMPLE_HISTORY !== 'undefined') {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  SAMPLE_HISTORY.unshift({
+   id: 'SMP-' + Date.now().toString().slice(-6),
+   date: dateStr,
+   clientId,
+   reason,
+   items: items.map(({ productId, size, qty }) => ({ productId, size, qty })),
+  });
  }
  _sampleGridQty = {};
  renderSampleGrid();
@@ -3946,7 +4275,7 @@ function renderSampleCart() {
  `;
 }
 
-function submitSample() {
+async function submitSample() {
  const clientId = document.getElementById('sample-client').value;
  const reason = document.getElementById('sample-reason').value.trim();
 
@@ -3957,14 +4286,52 @@ function submitSample() {
  const clientObj = CLIENTS.find(c => c.id === clientId);
  const totalQty = sampleCart.reduce((s, i) => s + i.qty, 0);
 
+ // 1) productSize.id 해석
+ const items = sampleCart.map(it => {
+  const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === it.productId);
+  const productSizeId = p && p._sizeRealSize ? p._sizeRealSize[it.size] : null;
+  return { ...it, productSizeId };
+ });
+ const missing = items.filter(it => !it.productSizeId);
+ if (missing.length > 0) {
+  showToast(`DB 매핑 누락: ${missing.length}개 라인`, 'error');
+  return;
+ }
+
+ // 2) 라인별 /api/inventory/adjustment 호출
+ try {
+  const results = await Promise.all(items.map(it =>
+   fetch('/api/inventory/adjustment', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+     type: '샘플출고',
+     productSizeId: it.productSizeId,
+     qty: -Math.abs(it.qty),
+     note: `[샘플] ${clientObj?.name || clientId} — ${reason}`,
+    }),
+   }).then(r => r.json().then(j => ({ ok: r.ok, body: j })))
+  ));
+  const failed = results.filter(r => !r.ok);
+  if (failed.length > 0) {
+   showToast(`샘플 출고 일부 실패 (${failed.length}/${items.length}): ${failed[0].body?.error || ''}`, 'error');
+   return;
+  }
+ } catch (e) {
+  console.error('[submitSample]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+  return;
+ }
+
  SAMPLE_HISTORY.unshift({
- id: 'SMP-' + String(SAMPLE_HISTORY.length + 1).padStart(3, '0'),
- date: TODAY,
- clientId: clientId,
- items: [...sampleCart],
- reason: reason.split(' - ')[0] || reason,
- status: '처리중',
- staffId: 'S002',
+  id: 'SMP-' + String(SAMPLE_HISTORY.length + 1).padStart(3, '0'),
+  date: TODAY,
+  clientId: clientId,
+  items: [...sampleCart],
+  reason: reason.split(' - ')[0] || reason,
+  status: '처리중',
+  staffId: 'S002',
  });
 
  showToast(`${clientObj.name} — ${sampleCart.length}개 품목 ${totalQty}개 샘플 출고 등록 완료`);
@@ -4146,6 +4513,74 @@ function addReceivingRow() {
  showToast('행이 추가되었습니다', 'info');
 }
 
+// 품질팀: 입고 확정 — RECV_ROWS 의 유효 행들을 DB 로 일괄 RECEIVE.
+async function submitReceiving() {
+ const note = document.getElementById('recv-note')?.value?.trim() || '';
+ // qty>0 & productId 가 있는 행만 선별
+ const valid = RECV_ROWS.filter(r => r.productId && r.qty > 0 && r.size && r.size !== '-');
+ if (valid.length === 0) {
+  showToast('입고할 품목이 없습니다 (제품·사이즈·수량 확인)', 'error');
+  return;
+ }
+
+ // prototype 그룹 productId+size → DB ProductSize.id 매핑
+ const items = valid.map(r => {
+  const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === r.productId);
+  const productSizeId = p && p._sizeRealSize ? p._sizeRealSize[r.size] : null;
+  return { row: r, productSizeId, name: p?.name || r.productId };
+ });
+ const missing = items.filter(it => !it.productSizeId);
+ if (missing.length > 0) {
+  showToast(`DB 매핑 누락: ${missing.length}개 라인`, 'error');
+  return;
+ }
+
+ try {
+  const results = await Promise.all(items.map(it =>
+   fetch('/api/inventory/adjustment', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+     type: 'RECEIVE',
+     productSizeId: it.productSizeId,
+     qty: Math.abs(it.row.qty),
+     note: note || `${it.name} ${it.row.size} 입고`,
+    }),
+   }).then(r => r.json().then(j => ({ ok: r.ok, body: j, name: it.name })))
+  ));
+  const failed = results.filter(r => !r.ok);
+  if (failed.length > 0) {
+   showToast(`입고 일부 실패 (${failed.length}/${items.length}): ${failed[0].body?.error || ''}`, 'error');
+   return;
+  }
+ } catch (e) {
+  console.error('[submitReceiving]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+  return;
+ }
+
+ // 인메모리 history 갱신 + 입력 행 초기화
+ const totalQty = items.reduce((s, it) => s + it.row.qty, 0);
+ if (typeof RECV_HISTORY !== 'undefined') {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  RECV_HISTORY.unshift({
+   date: dateStr,
+   supplier: document.getElementById('recv-supplier')?.value || '직접 입력',
+   itemCount: items.length,
+   totalQty,
+   staff: (window.CURRENT_USER?.name) || '품질관리',
+   status: '확정',
+  });
+ }
+ // 빈 행 1줄만 남기고 리셋
+ RECV_ROWS.length = 0;
+ RECV_ROWS.push({ productId: '', size: '-', qty: 0, currentStock: 0 });
+ renderReceiving();
+ showToast(`입고 확정 — ${items.length}개 품목 / 총 ${totalQty}개`, 'success');
+}
+
 // 품질팀 #4 (2026-05): 입고 폼 — 제품/사이즈/수량 변경 핸들러
 function onRecvProductChange(rowIdx, productId) {
  const row = RECV_ROWS[rowIdx];
@@ -4234,25 +4669,25 @@ function renderAdjustment() {
  const reasons = ['실사조정', '반품', '파손', '분실', '기타'];
 
  return `
- <tr>
+ <tr data-adj-row="${idx}">
  <td style="text-align:center; color:var(--text-muted);">${idx + 1}</td>
  <td>
- <select class="form-select" style="font-size:13px;">
+ <select class="form-select" style="font-size:13px;" data-adj-field="productId" data-adj-row="${idx}" onchange="ADJ_ROWS[${idx}].productId=this.value">
  <option value="">제품 선택</option>
  ${PRODUCTS.map(pr => `<option value="${pr.id}" ${pr.id === row.productId ? 'selected' : ''}>${pr.name}</option>`).join('')}
  </select>
  </td>
  <td style="text-align:center;">${row.size}</td>
  <td class="auto-calc">${formatNumber(row.systemStock)}</td>
- <td><input type="number" value="${row.actualStock}" min="0" style="text-align:right;"></td>
+ <td><input type="number" value="${row.actualStock}" min="0" style="text-align:right;" data-adj-field="actualStock" data-adj-row="${idx}" oninput="ADJ_ROWS[${idx}].actualStock=Math.max(0,parseInt(this.value,10)||0)"></td>
  <td style="text-align:right;"><span class="${diffClass}">${diffText}</span></td>
  <td>
- <select class="form-select" style="font-size:13px;">
+ <select class="form-select" style="font-size:13px;" data-adj-field="reason" data-adj-row="${idx}" onchange="ADJ_ROWS[${idx}].reason=this.value">
  ${reasons.map(r => `<option value="${r}" ${r === row.reason ? 'selected' : ''}>${r}</option>`).join('')}
  </select>
  </td>
  <td>
- <input type="text" class="form-input" style="font-size:13px;" placeholder="예: 사이즈 불량 반품" value="${row.note || ''}">
+ <input type="text" class="form-input" style="font-size:13px;" placeholder="예: 사이즈 불량 반품" value="${row.note || ''}" data-adj-field="note" data-adj-row="${idx}" oninput="ADJ_ROWS[${idx}].note=this.value">
  </td>
  </tr>
  `;
@@ -4275,6 +4710,90 @@ function renderAdjustment() {
  </tr>
  `;
  }).join('');
+}
+
+// 품질팀: 재고조정 확정 — ADJ_ROWS 의 diff(=actual-system) 가 0 아닌 행만 DB 로 일괄 전송.
+// reason 화이트리스트 (DB validator): 반품/폐기/실사조정/입고보정/샘플출고. UI 의 '파손'·'분실' 은
+// '폐기' 로 매핑 (모두 음수), '기타' 는 diff 부호에 따라 실사조정/입고보정 으로 폴백.
+async function submitAdjustment() {
+ const UI_TO_DB_REASON = (uiReason, diff) => {
+  if (uiReason === '반품') return diff >= 0 ? '반품' : '폐기'; // 반품은 +qty
+  if (uiReason === '파손' || uiReason === '분실') return '폐기'; // 항상 음수
+  if (uiReason === '실사조정') return '실사조정';
+  if (uiReason === '기타') return diff >= 0 ? '입고보정' : '실사조정';
+  return '실사조정';
+ };
+
+ const items = ADJ_ROWS.map((row, idx) => {
+  const diff = (row.actualStock || 0) - (row.systemStock || 0);
+  return { row, idx, diff };
+ }).filter(it => it.diff !== 0 && it.row.productId);
+ if (items.length === 0) {
+  showToast('조정할 변경이 없습니다 (실사 재고 ≠ 시스템 재고 인 행이 없음)', 'error');
+  return;
+ }
+
+ // prototype 그룹 productId+size → DB ProductSize.id 매핑
+ const mapped = items.map(it => {
+  const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === it.row.productId);
+  const productSizeId = p && p._sizeRealSize ? p._sizeRealSize[it.row.size] : null;
+  const dbReason = UI_TO_DB_REASON(it.row.reason, it.diff);
+  // 폐기/샘플출고는 음수, 반품/입고보정은 양수 (validator superRefine)
+  let qty = it.diff;
+  if (dbReason === '폐기') qty = -Math.abs(qty);
+  if (dbReason === '반품' || dbReason === '입고보정') qty = Math.abs(qty);
+  return { ...it, productSizeId, dbReason, qty, name: p?.name || it.row.productId };
+ });
+ const missing = mapped.filter(it => !it.productSizeId);
+ if (missing.length > 0) {
+  showToast(`DB 매핑 누락: ${missing.length}개 라인`, 'error');
+  return;
+ }
+
+ try {
+  const results = await Promise.all(mapped.map(it =>
+   fetch('/api/inventory/adjustment', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+     type: it.dbReason,
+     productSizeId: it.productSizeId,
+     qty: it.qty,
+     note: it.row.note || `${it.row.reason} - ${it.name} ${it.row.size}`,
+    }),
+   }).then(r => r.json().then(j => ({ ok: r.ok, body: j, name: it.name })))
+  ));
+  const failed = results.filter(r => !r.ok);
+  if (failed.length > 0) {
+   showToast(`조정 일부 실패 (${failed.length}/${mapped.length}): ${failed[0].body?.error || ''}`, 'error');
+   return;
+  }
+ } catch (e) {
+  console.error('[submitAdjustment]', e);
+  showToast('네트워크 오류: ' + (e.message || e), 'error');
+  return;
+ }
+
+ // 인메모리 history 갱신 — 조정 행들은 systemStock 을 actual 로 sync
+ if (typeof ADJ_HISTORY !== 'undefined') {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  mapped.forEach(it => {
+   ADJ_HISTORY.unshift({
+    date: dateStr,
+    product: it.name,
+    size: it.row.size,
+    adjQty: it.diff,
+    reason: it.row.reason,
+    note: it.row.note || '',
+    staff: (window.CURRENT_USER?.name) || '품질관리',
+   });
+   it.row.systemStock = it.row.actualStock;
+  });
+ }
+ renderAdjustment();
+ showToast(`재고 조정 확정 — ${mapped.length}건 적용`, 'success');
 }
 
 

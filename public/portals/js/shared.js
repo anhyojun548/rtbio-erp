@@ -17,12 +17,16 @@ function goTo(pageId) {
 }
 
 // ── Currency Formatting ──
+// 한국 원화는 소수점 없음. Decimal/float 입력 들어와도 항상 정수로 반올림 후 콤마.
 function formatCurrency(num) {
-  if (num === 0) return '₩0';
-  return '₩' + num.toLocaleString('ko-KR');
+  const n = Number(num);
+  if (!Number.isFinite(n) || n === 0) return '₩0';
+  return '₩' + Math.round(n).toLocaleString('ko-KR');
 }
 function formatNumber(num) {
-  return num.toLocaleString('ko-KR');
+  const n = Number(num);
+  if (!Number.isFinite(n)) return '0';
+  return Math.round(n).toLocaleString('ko-KR');
 }
 
 // ── Date Formatting ──

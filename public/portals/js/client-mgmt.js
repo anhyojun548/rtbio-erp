@@ -30,7 +30,8 @@ function buildClientMgmtPageHTML() {
           <option value="병원">병원</option>
           <option value="기타">기타</option>
         </select>
-        <button class="btn btn-outline btn-sm" onclick="showAddClientTypeForm()">+ 유형 추가</button>
+        <!-- 거래처 유형은 enum(HOSPITAL/AGENCY/OTHER) 고정 — 자유 추가 비활성 (2026-05) -->
+        <!-- <button class="btn btn-outline btn-sm" onclick="showAddClientTypeForm()">+ 유형 추가</button> -->
         <button class="btn btn-primary" onclick="showNewClientForm()">+ 신규 거래처 등록</button>
       </div>
       <div class="text-sm text-muted mb-16" id="clients-summary"></div>
@@ -257,12 +258,48 @@ function showDiscountMatrix(clientId) {
       <b>참고</b> · 병원 거래처는 100% (MSRP 그대로), 대리점은 보통 45~65% 범위. xlsx 거래처별 할인율 단가 자료 기준.
     </div>
   `;
-  showModal('할인율 매트릭스 - ' + c.name, body, () => {
+  showModal('할인율 매트릭스 - ' + c.name, body, async () => {
+    // 1) 폼 값 수집 → matrix 갱신 (인메모리)
+    const nextMatrix = { ...c.discountMatrix };
     document.querySelectorAll('.dm-rate').forEach(el => {
       const key = el.dataset.key;
       const v = Math.max(0, Math.min(100, parseInt(el.value, 10) || 0)) / 100;
-      c.discountMatrix[key] = v;
+      nextMatrix[key] = v;
     });
+
+    // 2) 서버 upsert (ClientDiscount, category=matrixKey, discountRate=1-rate).
+    //    매트릭스의 "rate" 는 MSRP 대비 공급 비율(예: 0.55 = 55% 지불)이므로
+    //    실제 할인율 = 1 - rate (예: 0.45 = 45% 할인).
+    //    rate >= 1.0 (할인 없음) 행은 스킵, rate <= 0 (100% 할인) 은 서버가 거부.
+    const failures = [];
+    const keys = Object.keys(nextMatrix);
+    for (const key of keys) {
+      const rate = nextMatrix[key];
+      if (rate >= 1 || rate <= 0) continue; // 0%/100% 할인은 row 무의미 또는 금지
+      const discountRate = (1 - rate).toFixed(4);
+      try {
+        const r = await fetch('/api/clients/' + c.id + '/discounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ category: key, discountRate }),
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          failures.push(key + ': ' + (e.error || r.status));
+        }
+      } catch (err) {
+        failures.push(key + ': ' + (err.message || 'network error'));
+      }
+    }
+
+    if (failures.length > 0) {
+      showToast('일부 행 저장 실패: ' + failures.join(', '), 'error');
+      return false;
+    }
+
+    // 3) 성공 — 인메모리 반영 + 재렌더
+    c.discountMatrix = nextMatrix;
     if (typeof renderClients === 'function') {
       renderClients(document.getElementById('client-search')?.value || '');
     }
@@ -476,6 +513,25 @@ function renderClientAddressRows(c) {
   `).join('');
 }
 
+/**
+ * 배송지 객체 — 백엔드(recipientName) ↔ prototype(recipient) 필드 어댑터.
+ * renderClientAddressRows() 는 prototype-shape(a.recipient) 를 읽으므로
+ * 백엔드 응답을 받자마자 변환해서 c.addresses 에 넣어야 한다.
+ */
+function _addrFromApi(row) {
+  return {
+    id: row.id,
+    label: row.label,
+    recipient: row.recipientName || '',
+    phone: row.phone || '',
+    address: row.address || '',
+    addressDetail: row.addressDetail || '',
+    postalCode: row.postalCode || '',
+    memo: row.memo || '',
+    isDefault: !!row.isDefault,
+  };
+}
+
 function openClientAddressForm(clientId, addressId) {
   const c = getClient(clientId);
   if (!c) return;
@@ -512,52 +568,119 @@ function openClientAddressForm(clientId, addressId) {
         <span>기본 배송지로 설정</span>
       </label>
     </div>`,
-    function() {
+    async function() {
       const label = document.getElementById('ca-label').value.trim();
       const address = document.getElementById('ca-address').value.trim();
       if (!label || !address) { showToast('별칭과 주소를 입력해주세요.', 'error'); return false; }
-      const payload = {
-        id: a ? a.id : 'A-' + clientId + '-' + Date.now(),
+
+      // 백엔드 스키마: { label, recipientName, phone, address, addressDetail?, postalCode?, memo, isDefault }
+      const apiPayload = {
         label,
-        recipient: document.getElementById('ca-recipient').value.trim(),
+        recipientName: document.getElementById('ca-recipient').value.trim(),
         phone: document.getElementById('ca-phone').value.trim(),
         address,
         memo: document.getElementById('ca-memo').value.trim(),
         isDefault: document.getElementById('ca-default').checked,
       };
-      if (payload.isDefault) c.addresses.forEach(x => x.isDefault = false);
-      if (isEdit) {
-        const idx = c.addresses.findIndex(x => x.id === a.id);
-        c.addresses[idx] = { ...c.addresses[idx], ...payload };
-      } else {
-        if (c.addresses.length === 0) payload.isDefault = true;
-        c.addresses.push(payload);
+
+      try {
+        let row;
+        if (isEdit) {
+          const r = await fetch('/api/clients/' + clientId + '/addresses/' + a.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(apiPayload),
+          });
+          if (!r.ok) {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.error || '배송지 수정 실패', 'error');
+            return false;
+          }
+          // 서버 응답엔 id 만 있을 수 있어 인메모리는 form 값으로 갱신
+          row = { id: a.id, ...apiPayload };
+          const idx = c.addresses.findIndex(x => x.id === a.id);
+          if (idx !== -1) c.addresses[idx] = { ...c.addresses[idx], ..._addrFromApi(row) };
+        } else {
+          const r = await fetch('/api/clients/' + clientId + '/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(apiPayload),
+          });
+          if (!r.ok) {
+            const e = await r.json().catch(() => ({}));
+            showToast(e.error || '배송지 추가 실패', 'error');
+            return false;
+          }
+          const created = await r.json();
+          row = { ...apiPayload, id: created.id };
+          // 첫 배송지면 서버가 자동으로 isDefault=true 강제
+          if (c.addresses.length === 0) row.isDefault = true;
+          c.addresses.push(_addrFromApi(row));
+        }
+
+        // isDefault 토글 시 다른 행 동기화 (서버 트랜잭션과 일치)
+        if (apiPayload.isDefault) {
+          c.addresses.forEach(x => { if (x.id !== (row && row.id)) x.isDefault = false; });
+        }
+
+        showClientDetail(clientId);
+        showToast((isEdit ? '수정' : '추가') + ' 완료: ' + label, 'success');
+      } catch (err) {
+        showToast(err.message || '배송지 저장 실패', 'error');
+        return false;
       }
-      showClientDetail(clientId);
-      showToast((isEdit ? '수정' : '추가') + ' 완료: ' + label, 'success');
     }
   );
 }
 
-function setDefaultClientAddress(clientId, addressId) {
+async function setDefaultClientAddress(clientId, addressId) {
   const c = getClient(clientId);
   if (!c || !c.addresses) return;
-  c.addresses.forEach(a => a.isDefault = (a.id === addressId));
-  showClientDetail(clientId);
-  showToast('기본 배송지 변경', 'success');
+  try {
+    const r = await fetch('/api/clients/' + clientId + '/addresses/' + addressId + '/default', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      showToast(e.error || '기본 배송지 변경 실패', 'error');
+      return;
+    }
+    c.addresses.forEach(a => { a.isDefault = (a.id === addressId); });
+    showClientDetail(clientId);
+    showToast('기본 배송지 변경', 'success');
+  } catch (err) {
+    showToast(err.message || '기본 배송지 변경 실패', 'error');
+  }
 }
 
-function deleteClientAddress(clientId, addressId) {
+async function deleteClientAddress(clientId, addressId) {
   const c = getClient(clientId);
   if (!c || !c.addresses) return;
   const a = c.addresses.find(x => x.id === addressId);
   if (!a) return;
   if (!confirm(`배송지 "${a.label}" 을(를) 삭제하시겠습니까?\n(이 배송지로 진행된 과거 주문은 유지됩니다)`)) return;
-  const wasDefault = a.isDefault;
-  c.addresses = c.addresses.filter(x => x.id !== addressId);
-  if (wasDefault && c.addresses.length > 0) c.addresses[0].isDefault = true;
-  showClientDetail(clientId);
-  showToast('배송지 삭제됨: ' + a.label, 'success');
+  try {
+    const r = await fetch('/api/clients/' + clientId + '/addresses/' + addressId, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      showToast(e.error || '배송지 삭제 실패', 'error');
+      return;
+    }
+    const wasDefault = a.isDefault;
+    c.addresses = c.addresses.filter(x => x.id !== addressId);
+    // 서버는 가장 오래된 활성 배송지를 자동 승격 — 인메모리도 동일 규칙 (createdAt 정보가 없으면 첫 행)
+    if (wasDefault && c.addresses.length > 0) c.addresses[0].isDefault = true;
+    showClientDetail(clientId);
+    showToast('배송지 삭제됨: ' + a.label, 'success');
+  } catch (err) {
+    showToast(err.message || '배송지 삭제 실패', 'error');
+  }
 }
 
 // ── 거래처 등록/수정 폼 ────────────────────────────────────────────
@@ -733,6 +856,7 @@ async function _submitClientForm(clientId, isEdit) {
   if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
 
   try {
+    let savedId = clientId;
     if (isEdit && clientId) {
       // PATCH /api/clients/:id
       const updated = await window.apiClient.patch('/api/clients/' + clientId, payload);
@@ -743,6 +867,34 @@ async function _submitClientForm(clientId, isEdit) {
       // POST /api/clients
       const created = await window.apiClient.post('/api/clients', payload);
       (window.CLIENTS = window.CLIENTS || []).push(created || payload);
+      savedId = (created && created.id) || null;
+    }
+
+    // 카테고리별 할인율 (openDiscountPopup 결과) 별도 upsert.
+    // discountRate 0~1 미만, 0% 는 row 무의미하므로 스킵.
+    if (savedId) {
+      const catDiscounts = {
+        knee:   payload.discounts.knee,
+        upper:  payload.discounts.upper,
+        lower:  payload.discounts.lower,
+        sprint: payload.discounts.sprint,
+      };
+      for (const [cat, pct] of Object.entries(catDiscounts)) {
+        const rate = (pct || 0) / 100;
+        if (rate <= 0 || rate >= 1) continue;
+        try {
+          const r = await fetch('/api/clients/' + savedId + '/discounts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ category: cat, discountRate: rate.toFixed(4) }),
+          });
+          if (!r.ok) {
+            const e = await r.json().catch(() => ({}));
+            if (typeof showToast === 'function') showToast('할인율(' + cat + ') 저장 실패: ' + (e.error || r.status), 'error');
+          }
+        } catch (_) { /* 단일 카테고리 실패는 전체 저장 흐름 막지 않음 */ }
+      }
     }
 
     document.querySelector('.modal-overlay')?.remove();

@@ -121,14 +121,14 @@ model SystemSetting {
 // ----------------------------------------------------------------------------
 
 model Product {
-  id           String   @id @default(cuid())
-  code         String   @unique // 자체 제품코드
+  id           String  @id @default(cuid())
+  code         String  @unique // 자체 제품코드
   name         String
   brand        String?
   category     String? // 카테고리 (할인율 테이블 키)
   part         String? // 부위 (예: 상완, 하지)
-  basePrice    Decimal  @db.Decimal(12, 2)
-  active       Boolean  @default(true)
+  basePrice    Decimal @db.Decimal(12, 2)
+  active       Boolean @default(true)
   expiryMonths Int? // 유통기한(개월) — R19
 
   // ── UDI (의료기기 고유식별, 식약처 의료기기통합정보시스템 udiportal.mfds.go.kr) ──
@@ -136,11 +136,11 @@ model Product {
   // udiCode 가 NULL 인 제품은 공급내역 보고에서 제외 (미등록 = 보고 불가).
   udiCode           String?   @unique // UDI-DI 14자리 (예: 08801234567890)
   udiRegisteredAt   DateTime? // 식약처 UDI 등록 완료일
-  udiCertificateUrl String?   // 등록증 PDF 경로 (선택, Blob Storage)
+  udiCertificateUrl String? // 등록증 PDF 경로 (선택, Blob Storage)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdBy    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
 
   sizes       ProductSize[]
   orderItems  OrderItem[]
@@ -220,6 +220,7 @@ model Client {
   postalCode     String?
   paymentTerms   String? // 결제조건 (예: "월말 25일 발주, 다음달 말 입금")
   salesRepId     String? // 담당 영업사원
+  note           String? // 경쟁업체 / 단가 협상 / 특이사항 등 영업 메모 (자유 텍스트)
   active         Boolean    @default(true)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

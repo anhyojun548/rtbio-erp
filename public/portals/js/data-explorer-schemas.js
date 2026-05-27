@@ -48,6 +48,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'id',
     sourceVar: 'CLIENTS',
+    apiBase: '/api/clients',
     columns: [
       { id: 'id',             label: '코드',         type: 'text',     required: true, width: '70px', filter: true },
       { id: 'name',           label: '거래처명',     type: 'text',     required: true, width: '140px', filter: true },
@@ -95,6 +96,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'id',
     sourceVar: 'PRODUCTS',
+    apiBase: '/api/products',
     columns: [
       { id: 'id',             label: 'ID',          type: 'text',     required: true, width: '70px'},
       { id: 'sku',            label: 'SKU',         type: 'text',     required: true, width: '120px', filter: true },
@@ -125,6 +127,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'id',
     sourceVar: 'ORDERS',
+    apiBase: null,  // read-only — DataExplorer 편집 비활성, 발주는 전용 페이지에서 처리
     columns: [
       { id: 'id',           label: '발주번호',  type: 'text',     required: true, width: '130px', filter: true },
       { id: 'clientId',     label: '거래처',    type: 'fk',       targetTable: 'client', targetKey: 'id', displayField: 'name', required: true, width: '130px', filter: true },
@@ -155,6 +158,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'key',  // composite: productId|size
     sourceVar: 'INVENTORY_FLAT',  // 별도 flatten 함수로 생성
+    apiBase: null,  // composite pkField — 단순 PATCH 불가. 재고 조정은 별도 경로(/api/inventory/adjustment)
     columns: [
       { id: 'productId',     label: '제품ID',      type: 'fk',       targetTable: 'product', targetKey: 'id', displayField: 'name', required: true, width: '70px', filter: true },
       { id: 'productName',   label: '제품명',       type: 'readonly', width: '180px'},
@@ -186,6 +190,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'txnId',
     sourceVar: 'INVENTORY_TXNS',
+    apiBase: '/api/data-explorer',  // 41K 거래원장 — 이미 wired
     columns: [
       { id: 'txnId',         label: '거래번호',  type: 'text',     width: '110px' },
       { id: 'date',          label: '일자',      type: 'date',     width: '100px', filter: true, sort: true },
@@ -224,6 +229,7 @@ const DE_SCHEMAS = {
     },
     pkField: 'id',
     sourceVar: 'INVOICE_HISTORY',
+    apiBase: '/api/invoices',  // PATCH 만 의미있음 (DRAFT 편집). DELETE 는 서버에서 거부될 수 있음 (cancelInvoice 권장)
     columns: [
       { id: 'id',           label: '명세서번호',  type: 'text',     required: true, width: '160px', filter: true },
       { id: 'clientId',     label: '거래처',      type: 'fk',       targetTable: 'client', targetKey: 'id', displayField: 'name', required: true, width: '130px', filter: true },

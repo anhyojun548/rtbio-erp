@@ -630,9 +630,6 @@
  시스템설정
  </div>
  </nav>
- <div class="sidebar-footer">
- <a href="index.html">&larr; 역할 선택</a>
- </div>
  </aside>
 
  <!-- ── Mobile Topbar ── -->
@@ -755,7 +752,8 @@
  <option value="병원">병원</option>
  <option value="기타">기타</option>
  </select>
- <button class="btn btn-outline btn-sm" onclick="showAddClientTypeForm()">+ 유형 추가</button>
+ <!-- 거래처 유형은 현재 enum(HOSPITAL/AGENCY/OTHER) 고정 — 자유 추가는 도메인 변경이 필요해 prototype 에서 숨김 (2026-05) -->
+ <!-- <button class="btn btn-outline btn-sm" onclick="showAddClientTypeForm()">+ 유형 추가</button> -->
  <button class="btn btn-primary" onclick="showNewClientForm()">+ 신규 거래처 등록</button>
  </div>
  <div class="text-sm text-muted mb-16" id="clients-summary"></div>
@@ -979,6 +977,11 @@
  <div class="main-title">매입관리</div>
  <div class="main-subtitle">매입 데이터 입력 및 이력 관리</div>
  </div>
+ </div>
+
+ <!-- 2026-05: Purchase 도메인 미구현 — 이 페이지는 mock UI 입니다 -->
+ <div style="margin-bottom:16px;padding:14px 18px;background:#fff3e0;border-left:4px solid #F57C00;border-radius:4px;color:#5d4037;">
+   <strong>안내</strong> — 매입관리 모듈은 정식 도메인 구현 전 단계입니다. 아래 입력 폼은 시연용 UI 이며, "임시저장/확정 저장" 클릭 시 데이터가 영구 저장되지 않습니다.
  </div>
 
  <!-- Top Filters -->
@@ -3600,11 +3603,17 @@ function renderPayments() {
  `;
 
  // Payment register rows (은행 입금 수기)
- const registerData = [
- { client: 'C002', bank: '신한은행', payer: '메디팜 의료기', amount: 1870000, date: '2026-04-11', note: '4월 정산', status: '입금완료', expected: 1870000 },
- { client: 'C004', bank: '국민은행', payer: '(주)미래의료', amount: 980000, date: '2026-04-10', note: '4월 정산', status: '입금완료', expected: 980000 },
- { client: 'C001', bank: '우리은행', payer: '대한메디칼', amount: 1500000, date: '2026-04-11', note: '부분입금', status: '일부입금', expected: 3200000 },
- ];
+ // 2026-05: mock 시드 fixture 제거 — 실제 입금 등록은 사이드바 "수금 등록" 폼으로 진행 (이미 /api/payments wired)
+ const registerData = (window.RECEIVABLES || []).slice(0, 5).map(p => ({
+   client: p.clientId,
+   bank: p.bankName || '-',
+   payer: p.payer || (window.CLIENTS||[]).find(c => c.id === p.clientId)?.name || '-',
+   amount: Number(p.amount || 0),
+   date: (p.paidAt || '').slice(0, 10),
+   note: p.note || '',
+   status: p.status === 'PAID' ? '입금완료' : p.status === 'PARTIAL' ? '일부입금' : '미입금',
+   expected: Number(p.expectedAmount || p.amount || 0),
+ }));
  const BANKS = ['신한은행','국민은행','우리은행','하나은행','농협','기업은행','카카오뱅크'];
  document.getElementById('payment-register-body').innerHTML = registerData.map(r => {
  const statusBadge = r.status === '입금완료'
@@ -4914,40 +4923,65 @@ function renderInvoiceHistory() {
 }
 
 // 2026-05-12 미팅: 재발행 시 발행 횟수 증가 + 이력 기록
-function reissueInvoice(invId) {
+async function reissueInvoice(invId) {
+ // ⭐ DB 호출: POST /api/invoices/[id]/issue (DRAFT→ISSUED). 이미 ISSUED 면 issueDate 갱신.
  const inv = (typeof INVOICE_HISTORY !== 'undefined') ? INVOICE_HISTORY.find(x => x.id === invId) : null;
  if (!inv) {
    if (typeof showToast === 'function') showToast(`${invId} 명세서를 찾을 수 없습니다`, 'error');
    return;
  }
- inv.issueCount = (inv.issueCount || 1) + 1;
- if (!inv.issueLog) inv.issueLog = [{ at: inv.issueDate, by: '경영지원팀', type: 'ISSUE' }];
- const now = new Date();
- const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
- inv.issueLog.push({ at: ts, by: '경영지원팀', type: 'REISSUE' });
- renderInvoiceHistory();
- if (typeof pushNotification === 'function') {
-   pushNotification({ type:'INVOICE_RESEND', title:'거래명세서 재발행', urgent:false,
-     message: `${invId} 재발행 (${inv.issueCount}회차)` });
- }
- if (typeof showToast === 'function') {
+ try {
+   const res = await fetch(`/api/invoices/${inv.id}/issue`, {
+     method: 'POST', credentials: 'same-origin',
+   });
+   if (!res.ok) {
+     const err = await res.json().catch(() => ({}));
+     showToast(err.error || '재발행 실패', 'error');
+     return;
+   }
+   const data = await res.json().catch(() => ({}));
+   if (data && data.issueDate) inv.issueDate = data.issueDate;
+   inv.issueCount = (inv.issueCount || 1) + 1;
+   inv.status = data.status || inv.status || 'ISSUED';
+   if (!inv.issueLog) inv.issueLog = [];
+   const now = new Date();
+   const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+   inv.issueLog.push({ at: ts, by: '경영지원팀', type: 'REISSUE' });
+   renderInvoiceHistory();
    showToast(`거래명세서 ${invId} 재발행 완료 (${inv.issueCount}회차)`, 'success');
+ } catch (e) {
+   console.error('[reissueInvoice]', e);
+   showToast('네트워크 오류: ' + (e.message || e), 'error');
  }
 }
 
-function markInvoiceSent(invId) {
+async function markInvoiceSent(invId) {
+ // ⭐ DB 호출: POST /api/invoices/[id]/send (ISSUED→SENT + sentAt 기록).
  const inv = (typeof INVOICE_HISTORY !== 'undefined') ? INVOICE_HISTORY.find(x => x.id === invId) : null;
  if (!inv) return;
  const isResend = inv.status === 'SENT';
  if (!confirm(`거래명세서 ${invId} 를 ${isResend ? '재발송' : '발송 완료로 표시'} 하시겠습니까?`)) return;
- inv.status = 'SENT';
- inv.sendCount = (inv.sendCount || 0) + 1;
- const now = new Date();
- inv.sentAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
- if (!inv.issueLog) inv.issueLog = [];
- inv.issueLog.push({ at: inv.sentAt, by: '경영지원팀', type: isResend ? 'RESEND' : 'SEND' });
- renderInvoiceHistory();
- if (typeof showToast === 'function') showToast(`${isResend ? '재발송' : '발송'} 완료 (${inv.sendCount}회차)`, 'success');
+ try {
+   const res = await fetch(`/api/invoices/${inv.id}/send`, {
+     method: 'POST', credentials: 'same-origin',
+   });
+   if (!res.ok) {
+     const err = await res.json().catch(() => ({}));
+     showToast(err.error || '발송 처리 실패', 'error');
+     return;
+   }
+   const data = await res.json().catch(() => ({}));
+   inv.status = 'SENT';
+   inv.sendCount = (inv.sendCount || 0) + 1;
+   inv.sentAt = data?.sentAt || new Date().toISOString().slice(0, 16).replace('T', ' ');
+   if (!inv.issueLog) inv.issueLog = [];
+   inv.issueLog.push({ at: inv.sentAt, by: '경영지원팀', type: isResend ? 'RESEND' : 'SEND' });
+   renderInvoiceHistory();
+   showToast(`${isResend ? '재발송' : '발송'} 완료 (${inv.sendCount}회차)`, 'success');
+ } catch (e) {
+   console.error('[markInvoiceSent]', e);
+   showToast('네트워크 오류: ' + (e.message || e), 'error');
+ }
 }
 
 // 2026-05-12 미팅: 발행/발송 이력 상세 보기 (플로팅 팝업)
@@ -5427,48 +5461,52 @@ function editOrderItem(orderId, clientId) {
       <label>수정 사유 *</label>
       <input type="text" class="form-input" id="edit-order-reason" placeholder="예: 거래처 요청 수량 변경 / 반품 / 오류 수정">
     </div>
-  `, () => {
+  `, async () => {
     const reason = document.getElementById('edit-order-reason').value.trim();
     if (!reason) { showToast('수정 사유는 필수입니다', 'error'); return; }
     if (!order) { showToast('mock 발주는 실제 수정되지 않습니다', 'info'); return; }
     const rows = document.querySelectorAll('#edit-order-table tbody tr');
     const now = new Date().toISOString().slice(0,16).replace('T',' ');
+    // ⭐ DB 호출: 각 라인별 PATCH (qty 변경) 또는 DELETE (삭제). 백엔드: updateOrderItem/deleteOrderItem
+    const updates = [];
     rows.forEach(row => {
       const idx = parseInt(row.dataset.idx, 10);
       const item = order.items[idx];
       if (!item) return;
       const removed = row.dataset.removed === '1';
-      if (removed) {
-        (window.ORDER_EDIT_HISTORY = window.ORDER_EDIT_HISTORY || []).push({
-          id:'EH-'+Date.now()+'-'+idx, orderId, editedAt: now, editedBy:'경영지원팀',
-          action:'ITEM_REMOVE', before:{ productId: item.productId, size: item.size, qty: item.qty }, after: null, reason,
-        });
-        return;
-      }
-      const newQty = parseInt(row.querySelector('.edit-qty').value, 10) || 0;
-      if (newQty !== item.qty) {
-        (window.ORDER_EDIT_HISTORY = window.ORDER_EDIT_HISTORY || []).push({
-          id:'EH-'+Date.now()+'-'+idx, orderId, editedAt: now, editedBy:'경영지원팀',
-          action:'QTY_UPDATE', before:{ productId: item.productId, size: item.size, qty: item.qty },
-          after:{ productId: item.productId, size: item.size, qty: newQty }, reason,
-        });
-        item.qty = newQty;
-      }
+      const newQty = parseInt(row.querySelector('.edit-qty')?.value, 10) || 0;
+      if (removed) updates.push({ action: 'delete', itemId: item.id, before: { ...item } });
+      else if (newQty !== item.qty) updates.push({ action: 'update', itemId: item.id, newQty, before: { ...item } });
     });
-    // 삭제된 행 실제 제거
-    order.items = order.items.filter((_, idx) => {
-      const row = document.querySelector(`#edit-order-table tbody tr[data-idx="${idx}"]`);
-      return !(row && row.dataset.removed === '1');
-    });
-    // 칸반 카드 알림 (QC 팀)
-    if (typeof pushNotification === 'function') {
-      pushNotification({
-        type:'ORDER_EDIT', urgent:true, title:'발주 수정 알림 (경영지원)',
-        message:`${orderId} 수정됨 — ${reason}`,
-        targetTeam:'QC', relatedId: orderId,
-      });
+    let success = 0, failed = 0;
+    for (const u of updates) {
+      try {
+        const url = `/api/orders/${order.id}/items/${u.itemId}`;
+        const opts = u.action === 'delete'
+          ? { method: 'DELETE', credentials: 'same-origin' }
+          : { method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quantity: u.newQty, note: reason }) };
+        const r = await fetch(url, opts);
+        if (r.ok) success++; else { failed++; const e = await r.json().catch(() => ({})); console.warn('[orderItem]', e.error); }
+      } catch (e) { failed++; console.error('[orderItem] network', e); }
     }
-    showToast(`${orderId} 수정 완료 — 품질팀에 알림 발송됨`, 'success');
+    if (failed > 0 && success === 0) {
+      showToast(`발주 수정 실패 (${failed}건)`, 'error');
+      return;
+    }
+    // in-memory 동기화 + 이력
+    updates.forEach((u, i) => {
+      const idx = order.items.findIndex(it => it.id === u.itemId);
+      if (idx < 0) return;
+      if (u.action === 'delete') order.items.splice(idx, 1);
+      else order.items[idx].qty = u.newQty;
+      (window.ORDER_EDIT_HISTORY = window.ORDER_EDIT_HISTORY || []).push({
+        id: 'EH-' + Date.now() + '-' + i, orderId: order.id, editedAt: now, editedBy: '경영지원팀',
+        action: u.action === 'delete' ? 'ITEM_REMOVE' : 'QTY_UPDATE',
+        before: u.before, after: u.action === 'delete' ? null : { ...u.before, qty: u.newQty }, reason,
+      });
+    });
+    showToast(`${order.orderNumber || orderId} 수정 완료 (DB 반영: ${success}건${failed?'/실패 '+failed:''})`, failed ? 'warning' : 'success');
     renderJournal(currentJournalTab);
   });
 

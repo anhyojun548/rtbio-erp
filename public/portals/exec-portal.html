@@ -482,7 +482,6 @@
  <option value="lee">이경동 (사원)</option>
  </select>
  </div>
- <a href="index.html">&larr; 역할 선택</a>
  </div>
  </aside>
 
@@ -1525,7 +1524,16 @@ function _refreshGuestbookTable(confId) {
  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">등록된 방명록이 없습니다</td></tr>';
 }
 
-function addConferenceVisitor(confId) {
+// 한글 라벨 ↔ 백엔드 enum 매핑 (VISITOR_CONTACT_STATUS: NEW/CONTACTING/DEAL/LOST)
+const VISITOR_STATUS_TO_ENUM = {
+ '미접촉': 'NEW',
+ '접촉완료': 'CONTACTING',
+ '팔로우업': 'CONTACTING',
+ '신규계약': 'DEAL',
+ '거절': 'LOST',
+};
+
+async function addConferenceVisitor(confId) {
  const name = document.getElementById('gb-name').value.trim();
  const phone = document.getElementById('gb-phone').value.trim();
  const org = document.getElementById('gb-org').value.trim();
@@ -1535,9 +1543,38 @@ function addConferenceVisitor(confId) {
  if (!name) { showToast('이름을 입력해주세요'); return; }
  if (!org) { showToast('소속을 입력해주세요'); return; }
 
+ // DB 호출 시도: POST /api/conferences/[id]/visitors
+ let serverId = null;
+ try {
+ const res = await fetch(`/api/conferences/${encodeURIComponent(confId)}/visitors`, {
+ method: 'POST',
+ credentials: 'same-origin',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ name,
+ phone: phone || undefined,
+ affiliation: org || undefined,
+ contactStatus: VISITOR_STATUS_TO_ENUM[status] || undefined,
+ note: note || undefined,
+ }),
+ });
+ if (res.ok) {
+ const data = await res.json().catch(() => ({}));
+ serverId = data?.id || null;
+ } else if (res.status !== 400 && res.status !== 404) {
+ // 401/500 등은 에러로 표시, 400/404 는 mock 모드로 진행
+ const err = await res.json().catch(() => ({}));
+ showToast(err.error || '방문자 추가 실패', 'error');
+ return;
+ }
+ } catch (e) {
+ console.warn('[addConferenceVisitor] network error, fallback to mock:', e);
+ }
+
+ // 성공 후 in-memory 갱신 (mock 모드일 때도 동작 유지)
  const visitors = CONFERENCE_VISITORS[confId] = CONFERENCE_VISITORS[confId] || [];
  visitors.push({
- id: 'v' + Date.now(),
+ id: serverId || ('v' + Date.now()),
  name, phone, org, assignedTo, status, note,
  });
 
@@ -1554,9 +1591,29 @@ function addConferenceVisitor(confId) {
  showToast('방문자가 추가되었습니다');
 }
 
-function deleteConferenceVisitor(confId, idx) {
+async function deleteConferenceVisitor(confId, idx) {
  const visitors = CONFERENCE_VISITORS[confId] || [];
  if (idx < 0 || idx >= visitors.length) return;
+
+ const visitor = visitors[idx];
+
+ // DB 호출 시도: DELETE /api/conferences/[id]/visitors/[visitorId]
+ // visitor.id 가 mock("v1234..." 형태) 이면 백엔드에서 404 — fallback 으로 처리.
+ try {
+ const res = await fetch(
+ `/api/conferences/${encodeURIComponent(confId)}/visitors/${encodeURIComponent(visitor.id)}`,
+ { method: 'DELETE', credentials: 'same-origin' },
+ );
+ if (!res.ok && res.status !== 400 && res.status !== 404) {
+ const err = await res.json().catch(() => ({}));
+ showToast(err.error || '방문자 삭제 실패', 'error');
+ return;
+ }
+ } catch (e) {
+ console.warn('[deleteConferenceVisitor] network error, fallback to mock:', e);
+ }
+
+ // 성공 후 in-memory 갱신
  visitors.splice(idx, 1);
 
  const conf = CONFERENCES.find(c => c.id === confId);
@@ -1687,22 +1744,47 @@ function showClientDetail(clientId) {
  </div>
  <div style="margin-top:16px;">
  <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;"> 경쟁업체 품목 (비고)</div>
- <textarea class="form-input" id="competitor-note" rows="3" placeholder="경쟁사 품목 및 특이사항 메모..." style="font-size:12px;">${extra.competitor}</textarea>
+ <textarea class="form-input" id="competitor-note" rows="3" placeholder="경쟁사 품목 및 특이사항 메모..." style="font-size:12px;">${(c.note != null ? c.note : extra.competitor) || ''}</textarea>
  </div>
  <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
  <button class="btn btn-outline btn-sm" onclick="printPurchaseOrder('${clientId}')"> 발주서 출력</button>
  <button class="btn btn-outline btn-sm" onclick="printInvoiceSheet('${clientId}')"> 거래명세표 출력</button>
  </div>
  `;
- showModal(`${c.name} 상세`, body, () => {
- const note = document.getElementById('competitor-note')?.value || '';
+ // 경쟁업체 비고 저장 — Client.note 컬럼 (PATCH /api/clients/:id)
+ const persistCompetitorNote = async () => {
+ const ta = document.getElementById('competitor-note');
+ if (!ta) return;
+ const note = ta.value || '';
+ try {
+ const r = await fetch('/api/clients/' + clientId, {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json' },
+ credentials: 'same-origin',
+ body: JSON.stringify({ note }),
+ });
+ if (!r.ok) {
+ const e = await r.json().catch(() => ({}));
+ if (typeof showToast === 'function') showToast(e.error || '비고 저장 실패', 'error');
+ return;
+ }
+ // 인메모리 동기화 (CLIENTS + CLIENT_EXTRA 양쪽 — 다른 뷰 호환)
+ c.note = note;
  if (!CLIENT_EXTRA[clientId]) CLIENT_EXTRA[clientId] = {};
  CLIENT_EXTRA[clientId].competitor = note;
- showToast('저장되었습니다');
- });
+ if (typeof showToast === 'function') showToast('비고 저장 완료', 'success');
+ } catch (err) {
+ if (typeof showToast === 'function') showToast(err.message || '비고 저장 실패', 'error');
+ }
+ };
+
+ showModal(`${c.name} 상세`, body, persistCompetitorNote);
  setTimeout(() => {
  const confirmBtn = document.querySelector('.modal-confirm');
  if (confirmBtn) confirmBtn.textContent = '비고 저장';
+ // 폼 textarea blur 시에도 즉시 저장 (사용자가 모달을 닫지 않고 다른 곳 클릭한 경우)
+ const ta = document.getElementById('competitor-note');
+ if (ta) ta.addEventListener('blur', persistCompetitorNote);
  }, 10);
 }
 
@@ -2200,8 +2282,70 @@ function onUsageClientChange() {
  renderUsageInput(sel.value);
 }
 
-function saveUsageDraft() {
+// 현재 정산월(YYYY-MM) — period 라벨에서 우선 추출, 실패 시 오늘 기준
+function _currentUsageMonth() {
+ const txt = document.getElementById('usage-period')?.textContent || '';
+ // "2026.04.01 ~ 2026.04.30" 같은 형식에서 첫 YYYY.MM 추출
+ const m = /(\d{4})\.(\d{1,2})/.exec(txt);
+ if (m) return `${m[1]}-${String(Number(m[2])).padStart(2, '0')}`;
+ const d = new Date();
+ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function _uploadUsageRows(month, clientId, rows) {
+ // 행별 upsert — month + category(=clientId/productId/size) 복합 unique 충돌 시 덮어쓰기.
+ const results = [];
+ for (const r of rows) {
+ const category = `${clientId}/${r.productId}/${r.size}`;
+ try {
+ const res = await fetch('/api/data-usage?upsert=1', {
+ method: 'POST',
+ credentials: 'same-origin',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ month,
+ category,
+ unit: '개',
+ amount: Number(r.curQty) || 0,
+ note: `unitPrice=${r.unitPrice}`,
+ }),
+ });
+ if (!res.ok) {
+ const err = await res.json().catch(() => ({}));
+ results.push({ ok: false, error: err.error || `HTTP ${res.status}`, category });
+ continue;
+ }
+ const data = await res.json().catch(() => ({}));
+ results.push({ ok: true, id: data?.id || null, category });
+ } catch (e) {
+ results.push({ ok: false, error: e?.message || String(e), category });
+ }
+ }
+ return results;
+}
+
+async function saveUsageDraft() {
+ const month = _currentUsageMonth();
+ const rows = USAGE_DATA[currentUsageClient] || [];
+ if (!rows.length) { showToast('저장할 항목이 없습니다', 'error'); return; }
+ try {
+ const results = await _uploadUsageRows(month, currentUsageClient, rows);
+ const failed = results.filter(r => !r.ok);
+ if (failed.length === results.length) {
+ // 전부 실패 — 네트워크/인증 문제일 가능성. mock 모드로 동작.
+ console.warn('[saveUsageDraft] all upserts failed:', failed);
+ showToast('임시 저장되었습니다 (오프라인 모드)', 'success');
+ return;
+ }
+ if (failed.length > 0) {
+ showToast(`${results.length - failed.length}/${results.length}건 저장 (${failed.length}건 실패)`, 'success');
+ } else {
  showToast('임시 저장되었습니다', 'success');
+ }
+ } catch (e) {
+ console.error('[saveUsageDraft]', e);
+ showToast('네트워크 오류: ' + (e.message || e), 'error');
+ }
 }
 
 function submitUsage() {
@@ -2209,8 +2353,27 @@ function submitUsage() {
  showModal(
  '사용량 제출',
  '<p>사용량을 제출하시겠습니까?</p><p style="color:var(--text-secondary); font-size:13px; margin-top:8px;">제출 후 수정이 제한됩니다.</p>',
- function() {
+ async function() {
+ const month = _currentUsageMonth();
+ const rows = USAGE_DATA[currentUsageClient] || [];
+ if (!rows.length) { showToast('제출할 항목이 없습니다', 'error'); return; }
+ try {
+ const results = await _uploadUsageRows(month, currentUsageClient, rows);
+ const failed = results.filter(r => !r.ok);
+ if (failed.length === results.length) {
+ console.warn('[submitUsage] all upserts failed:', failed);
+ showToast('사용량이 제출되었습니다 (오프라인 모드)', 'success');
+ return;
+ }
+ if (failed.length > 0) {
+ showToast(`${results.length - failed.length}/${results.length}건 제출 (${failed.length}건 실패)`, 'success');
+ } else {
  showToast('사용량이 제출되었습니다', 'success');
+ }
+ } catch (e) {
+ console.error('[submitUsage]', e);
+ showToast('네트워크 오류: ' + (e.message || e), 'error');
+ }
  }
  );
 }

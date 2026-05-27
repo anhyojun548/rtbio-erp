@@ -230,6 +230,29 @@ export async function deleteClientFixedPrice(
 // ─── 조회 헬퍼 ─────────────────────────────────────────────
 
 /**
+ * 특정 거래처의 카테고리별 할인율 목록.
+ */
+export async function listClientDiscounts(clientId: string) {
+  await requireRole("TENANT_OWNER", "ADMIN");
+  return prisma.clientDiscount.findMany({
+    where: { clientId },
+    orderBy: { category: "asc" },
+  });
+}
+
+/**
+ * 특정 거래처의 제품별 고정가 목록 (제품 코드/명 포함).
+ */
+export async function listClientFixedPrices(clientId: string) {
+  await requireRole("TENANT_OWNER", "ADMIN");
+  return prisma.clientFixedPrice.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+    include: { product: { select: { id: true, code: true, name: true, basePrice: true } } },
+  });
+}
+
+/**
  * 제품 카테고리 전체 목록 (할인율 입력용 datalist).
  */
 export async function listProductCategoriesForDiscount(): Promise<string[]> {

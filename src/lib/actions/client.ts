@@ -101,6 +101,7 @@ export async function createClient(
         postalCode: data.postalCode,
         paymentTerms: data.paymentTerms,
         salesRepId: data.salesRepId,
+        note: data.note,
         createdBy: user.id,
       },
       select: { id: true, code: true },

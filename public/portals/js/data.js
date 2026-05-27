@@ -403,8 +403,13 @@ function getClient(clientId) {
 
 // ── Helper: 제품명 조회 ──
 function getProductName(productId) {
+  // 1) 그룹 PRODUCTS (window.PRODUCTS) 우선
   const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === productId);
-  return p ? p.name : productId;
+  if (p) return p.name;
+  // 2) DB 실제 productId 역인덱스 — data-loader 가 채움 (그룹핑 후 OrderItem.productId 매핑)
+  const real = window.PRODUCTS_BY_REAL_ID && window.PRODUCTS_BY_REAL_ID[productId];
+  if (real) return real.name;
+  return productId;
 }
 
 // ── Helper: 직원명 조회 ──
@@ -414,7 +419,8 @@ function getStaffName(staffId) {
 }
 
 // ── 오늘 통계 (대시보드용) ──
-const TODAY = '2026-04-11';
+// 2026-05 동적화 — 칸반 "오늘" 필터, 대시보드 today stats 가 실 데이터 기준 동작하도록.
+const TODAY = new Date().toISOString().slice(0, 10);
 const todayOrders = ORDERS.filter(o => o.date === TODAY);
 const todayRevenue = todayOrders.reduce((sum, o) => sum + calcOrderTotal(o), 0);
 const pendingOrders = ORDERS.filter(o => o.status === '접수').length;

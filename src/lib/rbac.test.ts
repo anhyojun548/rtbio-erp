@@ -32,11 +32,10 @@ describe("canAccessPath — /portals/*.html", () => {
     expect(canAccessPath("CLIENT", "/portals/client-portal.html")).toBe(true);
     expect(canAccessPath("CLIENT", "/portals/admin-portal.html")).toBe(false);
   });
-  it("정적 자원(css/js) 과 index/widget-dashboard 는 인증된 모든 역할 허용", () => {
+  it("정적 자원(css/js) 과 widget-dashboard 는 인증된 모든 역할 허용", () => {
     for (const role of ["TENANT_OWNER", "ADMIN", "QC", "EXEC", "CLIENT", "SUPER_ADMIN"] as const) {
       expect(canAccessPath(role, "/portals/css/shared.css")).toBe(true);
       expect(canAccessPath(role, "/portals/js/data.js")).toBe(true);
-      expect(canAccessPath(role, "/portals/index.html")).toBe(true);
       expect(canAccessPath(role, "/portals/widget-dashboard.html")).toBe(true);
     }
   });

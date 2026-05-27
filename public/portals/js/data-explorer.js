@@ -435,8 +435,15 @@
     return row;
   }
 
+  // ── API helper: JSON 응답 안전 파싱 ──
+  async function parseJsonSafe(res) {
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return null;
+    try { return await res.json(); } catch (e) { return null; }
+  }
+
   // ── 저장 ──
-  function saveRow() {
+  async function saveRow() {
     const schema = State.currentSchema;
     if (!schema) return;
     const form = document.getElementById('de-form');
@@ -470,31 +477,88 @@
     if (!Array.isArray(src)) { alert('데이터 소스 오류'); return; }
     const pk = newRow[schema.pkField];
     const idx = src.findIndex(r => r[schema.pkField] === pk);
-    if (State.panelMode === 'create') {
-      if (idx >= 0) { alert('중복 ID 입니다'); return; }
-      src.push(newRow);
-      auditAdd({ table: schema.key, action: 'CREATE', pk: pk, after: newRow });
-    } else {
-      if (idx < 0) { alert('대상 행을 찾을 수 없습니다'); return; }
-      const before = { ...src[idx] };
-      Object.assign(src[idx], newRow);
-      auditAdd({ table: schema.key, action: 'UPDATE', pk: pk, before, after: newRow });
+
+    // ── 읽기 전용 schema 가드 (apiBase=null) ──
+    if (!schema.apiBase) {
+      showToast('이 데이터는 읽기 전용입니다. 마스터 페이지에서 편집해주세요.', 'warning');
+      return;
     }
 
-    showToast(State.panelMode === 'create'? '추가되었습니다': '저장되었습니다', 'success');
+    // ── 사전 무결성 가드 ──
+    if (State.panelMode === 'create'&& idx >= 0) { alert('중복 ID 입니다'); return; }
+    if (State.panelMode !== 'create'&& idx < 0) { alert('대상 행을 찾을 수 없습니다'); return; }
+
+    // ── DB endpoint dispatch ──
+    const isCreate = State.panelMode === 'create';
+    const url = isCreate ? schema.apiBase : `${schema.apiBase}/${encodeURIComponent(pk)}`;
+    const method = isCreate ? 'POST': 'PATCH';
+    let res;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify(newRow),
+      });
+    } catch (e) {
+      showToast(`네트워크 오류: ${e.message || e}`, 'error');
+      return;
+    }
+    if (!res.ok) {
+      const payload = await parseJsonSafe(res);
+      const msg = (payload && (payload.error || payload.message)) || `${method} 실패 (HTTP ${res.status})`;
+      showToast(msg, 'error');
+      return;
+    }
+    const payload = await parseJsonSafe(res);
+    const savedRow = (payload && (payload.data || payload.row || payload)) || newRow;
+
+    // ── in-memory array 갱신 ──
+    if (isCreate) {
+      src.push({ ...newRow, ...savedRow });
+      auditAdd({ table: schema.key, action: 'CREATE', pk: savedRow[schema.pkField] || pk, after: savedRow });
+    } else {
+      const before = { ...src[idx] };
+      Object.assign(src[idx], newRow, savedRow);
+      auditAdd({ table: schema.key, action: 'UPDATE', pk, before, after: src[idx] });
+    }
+
+    showToast(isCreate ? '추가되었습니다': '저장되었습니다', 'success');
     closePanel();
     renderGrid();
     renderToolbar();
   }
 
   // ── 삭제 ──
-  function deleteRow(pk) {
+  async function deleteRow(pk) {
     const schema = State.currentSchema;
     if (!schema) return;
+
+    // ── 읽기 전용 schema 가드 ──
+    if (!schema.apiBase) {
+      showToast('이 데이터는 읽기 전용입니다. 마스터 페이지에서 삭제해주세요.', 'warning');
+      return;
+    }
+
     if (!confirm(`행 "${pk}"을(를) 정말 삭제하시겠습니까?`)) return;
     const src = window[schema.sourceVar];
     const idx = src.findIndex(r => r[schema.pkField] === pk);
     if (idx < 0) return;
+
+    // ── DB endpoint dispatch ──
+    let res;
+    try {
+      res = await fetch(`${schema.apiBase}/${encodeURIComponent(pk)}`, { method: 'DELETE'});
+    } catch (e) {
+      showToast(`네트워크 오류: ${e.message || e}`, 'error');
+      return;
+    }
+    if (!res.ok) {
+      const payload = await parseJsonSafe(res);
+      const msg = (payload && (payload.error || payload.message)) || `DELETE 실패 (HTTP ${res.status})`;
+      showToast(msg, 'error');
+      return;
+    }
+
     const before = { ...src[idx] };
     src.splice(idx, 1);
     auditAdd({ table: schema.key, action: 'DELETE', pk, before });
@@ -504,22 +568,55 @@
     renderToolbar();
   }
 
-  function deleteSelected() {
+  async function deleteSelected() {
     const checks = document.querySelectorAll('#de-grid-body input[type=checkbox]:checked');
     if (checks.length === 0) { alert('삭제할 행을 선택하세요'); return; }
-    if (!confirm(`선택한 ${checks.length}개 행을 정말 삭제하시겠습니까?`)) return;
     const schema = State.currentSchema;
+    if (!schema) return;
+
+    // ── 읽기 전용 schema 가드 ──
+    if (!schema.apiBase) {
+      showToast('이 데이터는 읽기 전용입니다. 마스터 페이지에서 삭제해주세요.', 'warning');
+      return;
+    }
+
+    if (!confirm(`선택한 ${checks.length}개 행을 정말 삭제하시겠습니까?`)) return;
     const src = window[schema.sourceVar];
     const pks = Array.from(checks).map(c => c.dataset.rowPk);
-    pks.forEach(pk => {
+
+    // ── 순차 DELETE (트랜잭션 가드) ──
+    let okCount = 0;
+    const failures = [];
+    for (let i = 0; i < pks.length; i++) {
+      const pk = pks[i];
+      showToast(`${i + 1}/${pks.length} 삭제 중...`, 'info');
+      let res;
+      try {
+        res = await fetch(`${schema.apiBase}/${encodeURIComponent(pk)}`, { method: 'DELETE'});
+      } catch (e) {
+        failures.push({ pk, msg: e.message || String(e) });
+        continue;
+      }
+      if (!res.ok) {
+        const payload = await parseJsonSafe(res);
+        const msg = (payload && (payload.error || payload.message)) || `HTTP ${res.status}`;
+        failures.push({ pk, msg });
+        continue;
+      }
       const idx = src.findIndex(r => String(r[schema.pkField]) === String(pk));
       if (idx >= 0) {
         const before = { ...src[idx] };
         src.splice(idx, 1);
         auditAdd({ table: schema.key, action: 'DELETE', pk, before });
       }
-    });
-    showToast(`${pks.length}개 행 삭제됨`, 'success');
+      okCount++;
+    }
+
+    if (failures.length === 0) {
+      showToast(`${okCount}개 행 삭제됨`, 'success');
+    } else {
+      showToast(`${okCount}건 완료, ${failures.length}건 실패`, 'error');
+    }
     renderGrid();
     renderToolbar();
   }

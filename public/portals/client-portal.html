@@ -11,7 +11,13 @@
 <style>
 /* ── Page-specific overrides ── */
 .page { padding-bottom: 0; }
-.page:not(#page-login) { padding-bottom: calc(80px + var(--safe-bottom)); }
+.page:not(#page-login):not(#page-loading) { padding-bottom: calc(80px + var(--safe-bottom)); }
+/* 로딩 화면 — NextAuth 세션 확인 + data-loader 데이터 적재 동안 표시.
+   active 클래스가 있을 때만 flex 로 표시 (그 외에는 .page { display:none } 우선) */
+#page-loading.active { display: flex !important; align-items: center; justify-content: center; min-height: 100vh; }
+#page-loading .spinner-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--text-secondary); }
+#page-loading .spinner { width: 36px; height: 36px; border: 3px solid #e5e7eb; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Dashboard Mini Cards ── */
 .dash-welcome {
@@ -244,7 +250,14 @@
 <!-- ═══════════════════════════════════════════════════
  Screen 1: P01 — Login
  ═══════════════════════════════════════════════════ -->
-<div class="page active" id="page-login">
+<div class="page active" id="page-loading">
+ <div class="spinner-wrap">
+  <div class="spinner"></div>
+  <div>거래처 정보를 불러오는 중...</div>
+ </div>
+</div>
+
+<div class="page" id="page-login">
  <div class="login-page">
  <div class="login-card">
  <div class="login-logo">
@@ -290,6 +303,7 @@
  <a data-page="page-dashboard" class="active" onclick="goTo('page-dashboard');updateNav(this)">홈</a>
  <a data-page="page-order" onclick="goTo('page-order');updateNav(this)">발주하기</a>
  <a data-page="page-history" onclick="goTo('page-history');updateNav(this)">발주내역</a>
+ <a data-page="page-notice" onclick="goTo('page-notice');updateNav(this);renderClientNoticeList()">공지사항</a>
  </nav>
  <button class="user-btn" id="user-btn" onclick="showUserMenu()" title="사용자 메뉴">김</button>
 </div>
@@ -323,7 +337,16 @@
  </div>
  </div>
 
- <div class="recent-orders-title">최근 발주</div>
+ <!-- 공지사항 미니 섹션 -->
+ <div id="dash-notices-section" style="margin-top:20px;">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+ <div class="recent-orders-title" style="margin:0;">공지사항</div>
+ <a onclick="goTo('page-notice');highlightNav('page-notice');renderClientNoticeList()" style="font-size:12px;color:var(--primary);cursor:pointer;text-decoration:none;">전체보기 ›</a>
+ </div>
+ <div id="dash-notices"></div>
+ </div>
+
+ <div class="recent-orders-title" style="margin-top:20px;">최근 발주</div>
  <div id="dash-recent-orders"></div>
  </div>
 </div>
@@ -513,6 +536,30 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════
+ Screen 4b: 공지사항 페이지
+ ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-notice">
+ <div class="client-content">
+ <h2 class="text-h1" style="margin-bottom:16px;">공지사항</h2>
+ <div id="client-notice-list"></div>
+ </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+ Screen 4c: 내 계정 / 로그아웃
+ ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-account">
+ <div class="client-content">
+ <h2 class="text-h1" style="margin-bottom:16px;">내 계정</h2>
+ <div id="account-info" style="background:var(--surface);border-radius:8px;padding:20px;line-height:2;margin-bottom:16px;"></div>
+ <button class="btn btn-outline btn-full btn-lg" onclick="doLogout()" style="border-color:#dc2626;color:#dc2626;">
+ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+ 로그아웃
+ </button>
+ </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
  Screen 5: P05 — 출고 상태
  ═══════════════════════════════════════════════════ -->
 <div class="page" id="page-status">
@@ -582,9 +629,14 @@
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
  <span>내역</span>
  </a>
- <a data-page="page-status" onclick="if(currentViewOrder){goTo('page-status');highlightNav('page-status');}">
- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
- <span>출고</span>
+ <a data-page="page-notice" onclick="goTo('page-notice');highlightNav('page-notice');renderClientNoticeList()" style="position:relative;">
+ <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+ <span>공지</span>
+ <span id="notice-unread-badge" style="display:none;position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#dc2626;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;">0</span>
+ </a>
+ <a data-page="page-account" onclick="goTo('page-account');highlightNav('page-account');renderAccountPage()">
+ <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+ <span>계정</span>
  </a>
 </nav>
 
@@ -599,27 +651,64 @@
 <script src="js/notice.js"></script>
 <script src="js/ai-assistant.js"></script>
 <script>
-// ── FIX-B2: NextAuth 세션이 있으면 prototype 자체 login 화면을 건너뜀 ──
-(async function skipLoginIfAuthenticated() {
-  try {
-    const r = await fetch('/api/me');
-    if (r.ok) {
-      const me = await r.json();
-      window.CURRENT_USER = me;
-      const loginPage    = document.getElementById('page-login');
-      const dashboardPage = document.getElementById('page-dashboard');
-      const appHeader    = document.getElementById('app-header');
-      const appNav       = document.getElementById('app-nav');
-      if (loginPage)    loginPage.classList.remove('active');
-      if (dashboardPage) dashboardPage.classList.add('active');
-      if (appHeader)    appHeader.style.display = '';
-      if (appNav)       appNav.style.display = '';
-      console.info('[client-portal] session active — skipping login page', me.email || me.name);
-    }
-  } catch (e) {
-    // 인증 없으면 login 유지
+// ── FIX-B2 (v2): NextAuth 세션 + window.CURRENT_USER 기반 전체 init ──
+// data-loader.js 가 DOMContentLoaded 를 가로채서 /api/* 를 모두 받은 뒤 큐를 flush 하므로,
+// 이 핸들러는 window.CURRENT_USER / window.CLIENTS 가 채워진 상태로 실행된다.
+document.addEventListener('DOMContentLoaded', function clientPortalBootstrap() {
+  const me = window.CURRENT_USER;
+  const loadingPage   = document.getElementById('page-loading');
+  const loginPage     = document.getElementById('page-login');
+  const dashboardPage = document.getElementById('page-dashboard');
+  const appHeader     = document.getElementById('app-header');
+  const appNav        = document.getElementById('app-nav');
+
+  if (!me) {
+    // 세션 없음 — Next.js 가 미들웨어로 차단했어야 정상. 안전망으로 /login 이동
+    window.location.href = '/login';
+    return;
   }
-})();
+  if (me.role !== 'CLIENT' || !me.clientId) {
+    // CLIENT 가 아닌 사용자가 이 페이지에 접근한 경우 → 자기 포털로 이동
+    const map = { TENANT_OWNER:'/ceo', SUPER_ADMIN:'/ceo', ADMIN:'/admin', EXEC:'/exec', QC:'/qc' };
+    window.location.href = map[me.role] || '/login';
+    return;
+  }
+
+  // CURRENT_USER.clientId 에 매칭되는 거래처 찾기
+  const client = (window.CLIENTS || []).find(c => c.id === me.clientId);
+  if (!client) {
+    console.error('[client-portal] CLIENT 유저의 clientId 가 window.CLIENTS 에 없음', me.clientId);
+    if (loadingPage) loadingPage.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">거래처 정보를 불러올 수 없습니다.<br>관리자에게 문의하세요.</div>';
+    return;
+  }
+
+  // prototype 호환 필드 보강 (initApp 이 currentClient.manager 등을 참조)
+  // 주의: normalizeClient 가 '-' 를 fallback 으로 채워두므로, '-' 도 미설정 취급해야 me.name 으로 갱신됨
+  if (!client.manager || client.manager === '-') client.manager = (me.name || '담당자');
+  if (!client.email   || client.email   === '-') client.email   = (me.email || '-');
+  client.paymentType   = client.paymentType   || client.paymentMethod || '계좌이체';
+  client.closingPeriod = client.closingPeriod || '월말마감';
+
+  // 로딩/로그인 페이지 숨기고 대시보드 표시
+  if (loadingPage) loadingPage.classList.remove('active');
+  if (loginPage)   loginPage.classList.remove('active');
+  if (dashboardPage) dashboardPage.classList.add('active');
+  if (appHeader) appHeader.style.display = '';
+  if (appNav)    appNav.style.display = '';
+
+  // prototype 의 상태 변수에 client 주입 + 전체 초기화
+  currentClient = client;
+  try {
+    initApp();
+  } catch (err) {
+    console.error('[client-portal] initApp 실패', err);
+  }
+
+  // 공지 미읽음 배지 업데이트
+  try { updateNoticeUnreadBadge(); } catch (e) {}
+
+  console.info('[client-portal] bootstrap complete', me.email, '→', client.name);
+});
 
 // ── State ──
 let currentClient = null;
@@ -798,11 +887,26 @@ function initDashboard() {
  document.getElementById('dash-company').textContent = currentClient.name;
 
  const myOrders = ORDERS.filter(o => o.clientId === currentClient.id);
- const monthOrders = myOrders.filter(o => o.date.startsWith('2026-04'));
+ // 이번 달 = 데이터의 최신 월 (실 거래 데이터가 과거에 분포돼 있어도 안전)
+ const allMonths = myOrders.map(o => (o.date || '').slice(0, 7)).filter(Boolean).sort();
+ const latestMonth = allMonths.length ? allMonths[allMonths.length - 1] : new Date().toISOString().slice(0, 7);
+ const monthOrders = myOrders.filter(o => (o.date || '').startsWith(latestMonth));
  const monthTotal = monthOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
+
+ // 라벨도 동적화 — "이번 달" 대신 실제 표시 월 표시
+ const monthLabelEl = document.querySelector('#dash-stats .dash-stat:nth-child(1) .label');
+ const amtLabelEl   = document.querySelector('#dash-stats .dash-stat:nth-child(2) .label');
+ if (latestMonth) {
+   const [yy, mm] = latestMonth.split('-');
+   if (monthLabelEl) monthLabelEl.textContent = `${yy}년 ${parseInt(mm, 10)}월 발주`;
+   if (amtLabelEl)   amtLabelEl.textContent   = `${yy}년 ${parseInt(mm, 10)}월 금액`;
+ }
 
  document.getElementById('dash-order-count').textContent = monthOrders.length + '건';
  document.getElementById('dash-order-amount').textContent = formatCurrency(monthTotal);
+
+ // 대시보드 공지 미니 리스트 (상위 3건)
+ renderDashboardNotices();
 
  // Recent orders (max 3)
  const recent = myOrders.slice(0, 3);
@@ -817,7 +921,7 @@ function initDashboard() {
  return `
  <div class="order-card" onclick="viewOrderStatus('${o.id}')">
  <div class="order-card-header">
- <span class="order-id">${o.id}</span>
+ <span class="order-id">${o.orderNumber || o.id}</span>
  ${statusBadge(o.status)}
  </div>
  <div class="order-items-summary">${truncate(itemsSummary, 40)}</div>
@@ -1068,12 +1172,19 @@ function getOrderItems() {
  p.sizes.forEach(sz => {
  const qty = quantities[p.id + '_' + sz] || 0;
  if (qty > 0) {
+ // group id (display) + DB 실 productId/productSizeId 매핑
+ // data-loader.js 의 _sizeMap / _sizeRealSize 가 채워둔 매핑 사용.
+ const realProductId   = (p._sizeMap     && p._sizeMap[sz])     || null;
+ const realProductSizeId = (p._sizeRealSize && p._sizeRealSize[sz]) || null;
  items.push({
- productId: p.id,
+ productId: p.id,              // 그룹 id (UI 표시용)
+ realProductId,                // DB Product.id (서버 전송용)
+ realProductSizeId,            // DB ProductSize.id
  size: sz,
  qty: qty,
  unitPrice: priceInfo.price,
- cat: p.cat
+ cat: p.cat,
+ name: p.name + (sz !== 'Free' ? ' ' + sz : ''), // 확인 페이지 표시용
  });
  }
  });
@@ -1167,6 +1278,9 @@ function renderConfirmPage(items) {
 
  // ── 배송지 목록 렌더 ──
  renderAddressList();
+ // 이중 안전망: 이전 발주 시 disabled 채로 남았을 수 있는 제출 버튼 reset
+ const submitBtn = document.querySelector('#page-confirm button[onclick="submitOrder()"]');
+ if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '발주 제출'; }
 }
 
 function renderAddressList() {
@@ -1267,39 +1381,123 @@ function getSelectedShipTo() {
  };
 }
 
-function submitOrder() {
+async function submitOrder() {
  const items = getOrderItems();
  if (items.length === 0) return;
  const shipTo = getSelectedShipTo();
  if (!shipTo || !shipTo.address) { showToast('배송지를 선택하거나 입력해주세요.', 'error'); return; }
- const total = items.reduce((s, i) => s + i.unitPrice * i.qty, 0) + calculateShipping(items);
  const method = document.querySelector('input[name="ship-method"]:checked').value;
+ const notes  = document.getElementById('confirm-notes')?.value || '';
 
- showModal(
- '발주 완료',
- `<div style="text-align:center;">
- <div style="font-size:48px; margin-bottom:12px;">✅</div>
- <div style="font-size:18px; font-weight:700; margin-bottom:8px;">발주가 성공적으로 접수되었습니다</div>
- <div style="font-size:14px; color:var(--text-secondary); margin-bottom:16px;">
- ${items.length}개 품목 | ${method} | ${formatCurrency(total)}
- </div>
- <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:13px; color:var(--text-secondary); text-align:left;">
- <strong style="color:var(--primary);">주문번호: ORD-0411-NEW</strong><br>
- <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">
- <div style="font-weight:600; color:var(--text);"> 배송지: ${shipTo.label}</div>
- <div style="margin-top:2px;">${shipTo.address}</div>
- <div style="margin-top:2px; font-size:12px;">${shipTo.recipient} · ${shipTo.phone || '-'}</div>
- ${shipTo.memo ? `<div style="margin-top:4px; color:var(--warning); font-size:12px;"> ${shipTo.memo}</div>` : ''}
- </div>
- <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">택배 마감 15:30 이전 접수분은 당일 출고됩니다.</div>
- </div>
- </div>`,
- function() {
- initOrderForm();
- goTo('page-history');
- highlightNav('page-history');
+ // 라인 단가는 server-side 에서 pricing.ts 로 재계산되므로 보내지 않아도 됨.
+ // realProductId/realProductSizeId 가 핵심.
+ const missingRefs = items.filter(i => !i.realProductId || !i.realProductSizeId);
+ if (missingRefs.length > 0) {
+  showToast('일부 제품의 DB 연결이 누락됐습니다. 페이지를 새로고침해주세요.', 'error');
+  console.error('[submitOrder] missing realProductId/Size', missingRefs);
+  return;
  }
- );
+
+ // 제출 버튼 비활성화 (중복 클릭 방지)
+ const submitBtn = document.querySelector('#page-confirm button[onclick="submitOrder()"]');
+ if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '발주 처리 중...'; }
+
+ try {
+  const res = await fetch('/api/client-portal/orders', {
+   method: 'POST',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({
+    items: items.map(i => ({
+     productId: i.realProductId,
+     productSizeId: i.realProductSizeId,
+     qty: i.qty,
+    })),
+    shipTo: {
+     addressId: shipTo.id || null,
+     label: shipTo.label || null,
+     recipient: shipTo.recipient || null,
+     phone: shipTo.phone || null,
+     postalCode: shipTo.postalCode || null,
+     address: shipTo.address,
+     addressDetail: shipTo.addressDetail || null,
+     memo: shipTo.memo || null,
+    },
+    shippingMethod: method,
+    notes,
+   }),
+  });
+
+  if (!res.ok) {
+   const errBody = await res.json().catch(() => ({}));
+   showToast(errBody.error || `발주 등록 실패 (${res.status})`, 'error');
+   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '발주 제출'; }
+   return;
+  }
+
+  const result = await res.json();
+  const newOrder = result.order;
+
+  // 발주 즉시 ORDERS array 에 추가 (prototype renderHistory 가 그룹 PRODUCTS_BY_REAL_ID 로 제품명 매핑)
+  // prototype 호환 필드 alias 부여 (data-loader 의 normalize 와 동일 로직)
+  try {
+   const dateStr = newOrder.orderDate ? new Date(newOrder.orderDate).toISOString().slice(0,10) : '';
+   const STATUS_MAP = { DRAFT:'임시저장', SUBMITTED:'접수', CONFIRMED:'확정', SHIPPING:'출고중', COMPLETED:'완료', CANCELLED:'취소', HELD:'보류', REJECTED:'반려' };
+   const normalized = Object.assign({}, newOrder, {
+    status: STATUS_MAP[newOrder.status] || newOrder.status,
+    _statusEnum: newOrder.status,
+    date: dateStr,
+    time: '00:00',
+    shippingType: method,
+    items: (newOrder.items || []).map(it => Object.assign({}, it, {
+     qty: Number(it.quantity),
+     unitPrice: Number(it.unitPrice),
+     basePriceAtOrder: Number(it.basePriceAtOrder),
+     lineTotal: Number(it.lineTotal),
+    })),
+   });
+   if (Array.isArray(ORDERS)) ORDERS.unshift(normalized);
+   if (Array.isArray(window.ORDERS)) window.ORDERS.unshift(normalized);
+  } catch (e) {
+   console.warn('[submitOrder] ORDERS 갱신 실패 — 새로고침 시 반영됨', e);
+  }
+
+  // 모달 — 진짜 발주번호 + 라인수 + 합계 표시
+  const lineCount = newOrder.items?.length || items.length;
+  const totalDisplay = (newOrder.items || []).reduce((s, it) => s + Number(it.lineTotal || 0), 0);
+  showModal(
+   '발주 완료',
+   `<div style="text-align:center;">
+    <div style="font-size:18px; font-weight:700; margin-bottom:8px;">발주가 성공적으로 접수되었습니다</div>
+    <div style="font-size:14px; color:var(--text-secondary); margin-bottom:16px;">
+     ${lineCount}개 품목 | ${method} | ${formatCurrency(totalDisplay)}
+    </div>
+    <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:13px; color:var(--text-secondary); text-align:left;">
+     <strong style="color:var(--primary);">주문번호: ${newOrder.orderNumber}</strong><br>
+     <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border);">
+      <div style="font-weight:600; color:var(--text);">배송지: ${shipTo.label || '직접입력'}</div>
+      <div style="margin-top:2px;">${shipTo.address}${shipTo.addressDetail ? ' ' + shipTo.addressDetail : ''}</div>
+      <div style="margin-top:2px; font-size:12px;">${shipTo.recipient || '-'} · ${shipTo.phone || '-'}</div>
+      ${shipTo.memo ? `<div style="margin-top:4px; color:var(--warning); font-size:12px;">${shipTo.memo}</div>` : ''}
+     </div>
+     <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">택배 마감 15:30 이전 접수분은 당일 출고됩니다.</div>
+    </div>
+   </div>`,
+   function() {
+    initOrderForm();
+    renderHistory();
+    initDashboard();
+    goTo('page-history');
+    highlightNav('page-history');
+   }
+  );
+  // 성공 후에도 버튼 상태 복원 — 다음 발주 시 다시 사용 가능 (중복 클릭 가드는 성공 직후라 안전)
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '발주 제출'; }
+ } catch (err) {
+  console.error('[submitOrder]', err);
+  showToast('네트워크 오류: ' + (err.message || err), 'error');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '발주 제출'; }
+ }
 }
 
 // ══════════════════════════════════════
@@ -1383,7 +1581,7 @@ function renderHistory() {
 
  return `<div class="order-card" onclick="viewOrderStatus('${o.id}')">
  <div class="order-card-header">
- <span class="order-id">${o.id}</span>
+ <span class="order-id">${o.orderNumber || o.id}</span>
  ${clientStatusBadge(o)}
  </div>
  <div class="order-items-summary">${summary} | ${o.shippingType}</div>
@@ -1401,7 +1599,7 @@ function renderHistory() {
 // ══════════════════════════════════════
 // 2026-05-12 미팅: 발주 취소 요청 (포장 단계 전까지)
 // ══════════════════════════════════════
-function cancelClientOrder(orderId) {
+async function cancelClientOrder(orderId) {
   const order = ORDERS.find(o => o.id === orderId);
   if (!order) return;
   const canCancel = !order.stage || ['waiting','barcode','setting'].includes(order.stage);
@@ -1411,21 +1609,30 @@ function cancelClientOrder(orderId) {
   }
   const reason = prompt('발주 취소 사유를 입력하세요:');
   if (!reason || !reason.trim()) return;
-  // Mock: 상태 변경 + 알림
-  order.status = '취소요청';
-  order.cancelReason = reason.trim();
-  order.cancelledAt = new Date().toISOString().slice(0,16).replace('T',' ');
-  if (typeof pushNotification === 'function') {
-    pushNotification({
-      type:'ORDER_EDIT', urgent:true,
-      title:'거래처 발주 취소 요청',
-      message:`${getClientName(order.clientId)} — ${orderId} 취소 요청 (사유: ${reason.trim().slice(0,30)})`,
-      targetTeam:'QC', relatedId: orderId,
+  // ⭐ DB 전이: SUBMITTED/CONFIRMED → CANCELLED + reason 기록 (RESERVE 라면 RELEASE 자동)
+  try {
+    const res = await fetch(`/api/orders/${order.id}/transition`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: 'CANCELLED', reason: reason.trim() }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.error || '발주 취소 실패', 'error');
+      return;
+    }
+    // in-memory 갱신
+    order.status = '취소';
+    order._statusEnum = 'CANCELLED';
+    order.cancelReason = reason.trim();
+    order.cancelledAt = new Date().toISOString().slice(0,16).replace('T',' ');
+    showToast(`${order.orderNumber || orderId} 취소 완료 — 알티바이오 시스템에 반영되었습니다`, 'success');
+    viewOrderStatus(orderId);
+    renderHistory();
+  } catch (e) {
+    console.error('[cancelClientOrder]', e);
+    showToast('네트워크 오류: ' + (e.message || e), 'error');
   }
-  showToast(`${orderId} 취소 요청 — 알티바이오에 통보되었습니다`, 'success');
-  viewOrderStatus(orderId);
-  renderHistory();
 }
 
 // ══════════════════════════════════════
@@ -1623,14 +1830,152 @@ function showUserMenu() {
  );
 }
 
-function doLogout() {
- currentClient = null;
- document.getElementById('app-header').style.display = 'none';
- document.getElementById('app-nav').style.display = 'none';
- document.getElementById('order-bar').classList.remove('show');
- // Close modal
- document.querySelector('.modal-overlay')?.remove();
- goTo('page-login');
+async function doLogout() {
+ // NextAuth signOut — CSRF 토큰 받아 POST /api/auth/signout
+ try {
+  const csrfRes = await fetch('/api/auth/csrf', { credentials: 'same-origin' });
+  const { csrfToken } = await csrfRes.json();
+  await fetch('/api/auth/signout', {
+   method: 'POST',
+   credentials: 'same-origin',
+   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+   body: new URLSearchParams({ csrfToken, callbackUrl: '/login', json: 'true' }),
+  });
+ } catch (err) {
+  console.warn('[doLogout] signOut 호출 실패 — 강제 이동', err);
+ }
+ // 세션 쿠키 무효화 완료 후 /login 으로
+ window.location.href = '/login';
+}
+
+// ══════════════════════════════════════
+// 공지사항 페이지 (page-notice)
+// ══════════════════════════════════════
+function _isNoticeApplicableToMe(n) {
+ if (!currentClient) return false;
+ const today = new Date().toISOString().slice(0, 10);
+ if (n.expiresAt && n.expiresAt < today) return false;
+ if (n.target === 'ALL') return true;
+ if (n.target === 'DEALER'   && currentClient.type === '대리점') return true;
+ if (n.target === 'HOSPITAL' && currentClient.type === '병원')   return true;
+ if (n.target === 'SPECIFIC' && Array.isArray(n.targetIds) && n.targetIds.includes(currentClient.id)) return true;
+ return false;
+}
+
+function renderClientNoticeList() {
+ const container = document.getElementById('client-notice-list');
+ if (!container) return;
+ const notices = (window.NOTICES || []).filter(_isNoticeApplicableToMe);
+ if (notices.length === 0) {
+  container.innerHTML = '<div style="background:var(--surface);border-radius:8px;padding:40px;text-align:center;color:var(--text-muted);">받은 공지사항이 없습니다.</div>';
+  return;
+ }
+ // 정렬: pinned + HIGH 우선, 그다음 최신
+ notices.sort((a, b) => {
+  const pri = (x) => (x.pinned ? 2 : 0) + (x.priority === 'HIGH' ? 1 : 0);
+  if (pri(b) !== pri(a)) return pri(b) - pri(a);
+  return (b.createdAt || '').localeCompare(a.createdAt || '');
+ });
+ const myId = currentClient.id;
+ container.innerHTML = notices.map(n => {
+  const am = (typeof NoticeModule !== 'undefined')
+   ? NoticeModule.getAuthorMeta(n.createdBy)
+   : { color: '#1B3A5C', bg: '#E3F2FD', icon: '' };
+  const isUnread = !((n.readBy || []).includes(myId));
+  return `
+  <div style="background:var(--surface);border-radius:8px;padding:16px;margin-bottom:12px;border-left:4px solid ${am.color};">
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
+    <div style="flex:1;">
+     <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:4px;">
+      ${n.pinned ? '[고정] ' : ''}${n.priority === 'HIGH' ? '[중요] ' : ''}${escapeHtmlSafe(n.title)}
+      ${isUnread ? '<span style="background:#dc2626;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;">NEW</span>' : ''}
+     </div>
+     <div style="font-size:12px;color:var(--text-muted);">
+      ${escapeHtmlSafe(n.createdBy || '')} · ${n.createdAt || ''}${n.expiresAt ? ' · 만료 ' + n.expiresAt : ''}
+     </div>
+    </div>
+   </div>
+   <div style="font-size:14px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;">${escapeHtmlSafe(n.body || '')}</div>
+  </div>`;
+ }).join('');
+ // 페이지 진입 시 모든 미읽음 공지를 읽음 처리 (앱-레벨)
+ notices.forEach(n => {
+  n.readBy = n.readBy || [];
+  if (!n.readBy.includes(myId)) n.readBy.push(myId);
+ });
+ updateNoticeUnreadBadge();
+}
+
+// 홈 대시보드 상단 공지 미니 리스트 (상위 3건)
+function renderDashboardNotices() {
+ const container = document.getElementById('dash-notices');
+ if (!container) return;
+ const notices = (window.NOTICES || []).filter(_isNoticeApplicableToMe);
+ if (notices.length === 0) {
+  container.innerHTML = '<div style="background:var(--surface);border-radius:8px;padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">받은 공지가 없습니다</div>';
+  return;
+ }
+ notices.sort((a, b) => {
+  const pri = (x) => (x.pinned ? 2 : 0) + (x.priority === 'HIGH' ? 1 : 0);
+  if (pri(b) !== pri(a)) return pri(b) - pri(a);
+  return (b.createdAt || '').localeCompare(a.createdAt || '');
+ });
+ const myId = currentClient.id;
+ const top3 = notices.slice(0, 3);
+ container.innerHTML = top3.map(n => {
+  const am = (typeof NoticeModule !== 'undefined')
+   ? NoticeModule.getAuthorMeta(n.createdBy)
+   : { color: '#1B3A5C', bg: '#E3F2FD', icon: '' };
+  const isUnread = !((n.readBy || []).includes(myId));
+  const dateStr = (n.createdAt || '').slice(0, 10);
+  return `
+  <div onclick="goTo('page-notice');highlightNav('page-notice');renderClientNoticeList()"
+       style="background:var(--surface);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;border-left:3px solid ${am.color};display:flex;justify-content:space-between;align-items:center;gap:12px;">
+   <div style="flex:1;min-width:0;">
+    <div style="font-weight:600;font-size:14px;color:var(--text-primary);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+     ${n.pinned ? '[고정] ' : ''}${n.priority === 'HIGH' ? '[중요] ' : ''}${escapeHtmlSafe(n.title)}
+     ${isUnread ? '<span style="background:#dc2626;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;">NEW</span>' : ''}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);">${escapeHtmlSafe(n.createdBy || '')} · ${dateStr}</div>
+   </div>
+   <div style="color:var(--text-muted);font-size:14px;flex-shrink:0;">›</div>
+  </div>`;
+ }).join('');
+}
+
+function updateNoticeUnreadBadge() {
+ const badge = document.getElementById('notice-unread-badge');
+ if (!badge || !currentClient) return;
+ const myId = currentClient.id;
+ const unreadCount = (window.NOTICES || [])
+  .filter(_isNoticeApplicableToMe)
+  .filter(n => !((n.readBy || []).includes(myId)))
+  .length;
+ if (unreadCount > 0) {
+  badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+  badge.style.display = 'inline-block';
+ } else {
+  badge.style.display = 'none';
+ }
+}
+
+// ══════════════════════════════════════
+// 내 계정 페이지 (page-account)
+// ══════════════════════════════════════
+function renderAccountPage() {
+ const el = document.getElementById('account-info');
+ if (!el || !currentClient) return;
+ const c = currentClient;
+ el.innerHTML = `
+  <div style="font-size:18px;font-weight:700;margin-bottom:12px;">${escapeHtmlSafe(c.name || '-')}</div>
+  <div><strong>담당자</strong> · ${escapeHtmlSafe(c.manager || '-')}</div>
+  <div><strong>유형</strong> · ${escapeHtmlSafe(c.type || '-')}</div>
+  <div><strong>이메일</strong> · ${escapeHtmlSafe(c.email || '-')}</div>
+  <div><strong>전화</strong> · ${escapeHtmlSafe(c.phone || '-')}</div>
+  <div><strong>결제조건</strong> · ${escapeHtmlSafe(c.paymentType || c.paymentMethod || '-')}</div>
+  <div><strong>마감기간</strong> · ${escapeHtmlSafe(c.closingPeriod || '-')}</div>
+  <div><strong>주소</strong> · ${escapeHtmlSafe(c.address || '-')}</div>
+ `;
 }
 
 // ── Override goTo to handle bar visibility ──

@@ -734,6 +734,10 @@ function loadDefaultLayout() {
 }
 
 // ── Save / Load Dashboard ──
+// 2026-05-27: DB API sync 추가. localStorage 는 즉시 UX 보장용 fallback.
+//   - saveDashboard()  : localStorage 즉시 + DB bulk POST (3초 debounce)
+//   - loadDashboard()  : async — DB GET 우선, 빈/실패 시 localStorage 폴백
+//   - _applyItemsToGrid: prototype 형식 items[] 을 GridStack 에 복원 (공용)
 function saveDashboard() {
   var items = grid.getGridItems().map(function (el) {
     var node = el.gridstackNode;
@@ -745,37 +749,110 @@ function saveDashboard() {
       x: node.x, y: node.y, w: node.w, h: node.h
     };
   });
-  localStorage.setItem('rtbio_dashboard', JSON.stringify(items));
+  // 1) localStorage 즉시 저장 (즉각적 UX, DB sync 실패에도 살아남음)
+  try { localStorage.setItem('rtbio_dashboard', JSON.stringify(items)); } catch (e) {}
+  // 2) DB sync — debounced 3초 (GridStack onChange 가 잦으므로)
+  _scheduleDashboardSync(items);
 }
 
-function loadDashboard() {
+var _saveTimer = null;
+function _scheduleDashboardSync(items) {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function () {
+    _saveTimer = null;
+    var payload = {
+      items: items
+        .filter(function (it) { return it && it.preset; }) // 빈 위젯은 DB 동기화 제외
+        .map(function (it, idx) {
+          return {
+            preset: String(it.preset).slice(0, 100),
+            position: idx,
+            width: Number(it.w) || 6,
+            height: Number(it.h) || 4,
+            overrideDateRange: it.dateOverride ? String(it.dateOverride).slice(0, 50) : null,
+            config: {
+              x: Number(it.x) || 0,
+              y: Number(it.y) || 0,
+              title: (it.title || '').slice(0, 200),
+              type: (it.type || '').slice(0, 50),
+            },
+          };
+        }),
+    };
+    fetch('/api/dashboard/widgets/bulk', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(function (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[dashboard] DB sync 실패 — localStorage 만 유지', e);
+    });
+  }, 3000);
+}
+
+function _applyItemsToGrid(items) {
+  grid.removeAll();
+  items.forEach(function (item) {
+    widgetCounter++;
+    var id = 'widget-' + widgetCounter;
+    var bodyId = 'wbody-' + widgetCounter;
+    var content =
+      '<div class="widget-header">' +
+        '<span class="widget-title">' + (item.title || '') + '</span>' +
+        '<button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button>' +
+      '</div>' +
+      '<div class="widget-body" id="' + bodyId + '"></div>';
+    grid.addWidget({
+      id: id, x: item.x, y: item.y, w: item.w, h: item.h, content: content
+    });
+    var el = document.querySelector('[gs-id="' + id + '"]');
+    if (el) {
+      el.dataset.widgetType = item.type || '';
+      el.dataset.widgetPreset = item.preset || '';
+      el.dataset.widgetTitle = item.title || '';
+      el.dataset.widgetDateOverride = item.dateOverride || '';
+    }
+    setTimeout(function () { renderWidgetContent(item.type, item.preset, bodyId); }, 50);
+  });
+}
+
+async function loadDashboard() {
+  // 1) DB 시도
+  try {
+    var r = await fetch('/api/dashboard/widgets', { credentials: 'same-origin' });
+    if (r.ok) {
+      var data = await r.json();
+      if (Array.isArray(data) && data.length > 0) {
+        // DB 응답을 prototype 형식으로 복원
+        var items = data.map(function (w) {
+          var cfg = w.config || {};
+          return {
+            type: cfg.type || 'kpi',
+            title: cfg.title || w.preset,
+            preset: w.preset,
+            dateOverride: w.overrideDateRange || '',
+            x: cfg.x != null ? cfg.x : 0,
+            y: cfg.y != null ? cfg.y : 0,
+            w: w.width,
+            h: w.height,
+          };
+        });
+        _applyItemsToGrid(items);
+        return true;
+      }
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[dashboard] DB 조회 실패 — localStorage 폴백', e);
+  }
+
+  // 2) localStorage 폴백
   var saved = localStorage.getItem('rtbio_dashboard');
   if (saved) {
     try {
-      var items = JSON.parse(saved);
-      grid.removeAll();
-      items.forEach(function (item) {
-        widgetCounter++;
-        var id = 'widget-' + widgetCounter;
-        var bodyId = 'wbody-' + widgetCounter;
-        var content =
-          '<div class="widget-header">' +
-            '<span class="widget-title">' + item.title + '</span>' +
-            '<button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button>' +
-          '</div>' +
-          '<div class="widget-body" id="' + bodyId + '"></div>';
-        grid.addWidget({
-          id: id, x: item.x, y: item.y, w: item.w, h: item.h, content: content
-        });
-        var el = document.querySelector('[gs-id="' + id + '"]');
-        if (el) {
-          el.dataset.widgetType = item.type;
-          el.dataset.widgetPreset = item.preset || '';
-          el.dataset.widgetTitle = item.title;
-          el.dataset.widgetDateOverride = item.dateOverride || '';
-        }
-        setTimeout(function () { renderWidgetContent(item.type, item.preset, bodyId); }, 50);
-      });
+      var items2 = JSON.parse(saved);
+      _applyItemsToGrid(items2);
       return true;
     } catch (e) { return false; }
   }
@@ -896,7 +973,7 @@ window.setDashboardRole = function (role) {
 };
 
 // ── Init ──
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   // 2026-05-22: body[data-dashboard-role] 또는 window._dashboardRole 로 role 주입
   var roleAttr = document.body && document.body.getAttribute('data-dashboard-role');
   if (roleAttr) _currentDashboardRole = roleAttr;
@@ -905,8 +982,9 @@ document.addEventListener('DOMContentLoaded', function () {
   initGrid();
   renderPicker();
 
-  // Load saved or default
-  if (!loadDashboard()) {
+  // Load saved or default — 2026-05-27: DB 우선, 폴백 localStorage, 둘 다 없으면 default.
+  var loaded = await loadDashboard();
+  if (!loaded) {
     loadDefaultLayout();
   }
 
@@ -1010,7 +1088,16 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('btnReset').addEventListener('click', function () {
     kebabMenu.classList.remove('open');
     if (confirm('기본 레이아웃으로 초기화할까요? 현재 배치가 사라집니다.')) {
-      localStorage.removeItem('rtbio_dashboard');
+      // localStorage + DB 양쪽 모두 초기화
+      try { localStorage.removeItem('rtbio_dashboard'); } catch (e) {}
+      // DB reset 은 fire-and-forget — 실패해도 default layout 은 그려진다.
+      fetch('/api/dashboard/widgets/reset', {
+        method: 'POST', credentials: 'same-origin'
+      }).catch(function (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[dashboard] DB reset 실패', e);
+      });
+      // pending debounced sync 가 reset 직후 기본 레이아웃을 다시 DB 에 푸시한다.
       loadDefaultLayout();
       showToast('기본 레이아웃으로 초기화했습니다');
     }

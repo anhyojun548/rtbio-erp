@@ -28,11 +28,11 @@ const PORTAL_HTML_ACCESS: Record<string, UserRole[]> = {
  * 매트릭스에 없는 경로는 기본 허용 (페이지별 guard 로 위임).
  */
 export function canAccessPath(role: UserRole, pathname: string): boolean {
-  // 1) 정적 자원(css/js)·index·widget-dashboard: 인증된 모든 역할 허용
+  // 1) 정적 자원(css/js)·widget-dashboard: 인증된 모든 역할 허용
+  //    (prototype index.html 역할 선택 페이지는 2026-05 제거됨 — NextAuth 로그아웃으로 대체)
   if (
     pathname.startsWith("/portals/css/") ||
     pathname.startsWith("/portals/js/") ||
-    pathname === "/portals/index.html" ||
     pathname === "/portals/widget-dashboard.html"
   ) {
     return true;

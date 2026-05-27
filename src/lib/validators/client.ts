@@ -35,6 +35,13 @@ export const clientCreateSchema = z.object({
   postalCode: optionalString,
   paymentTerms: optionalString,
   salesRepId: z.string().trim().min(1).optional().or(z.literal("").transform(() => undefined)),
+  // 경쟁업체 / 단가 협상 / 특이사항 등 영업 메모 (자유 텍스트, 최대 2000자)
+  note: z
+    .string()
+    .trim()
+    .max(2000, "메모는 2000자 이하")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 export type ClientCreateInput = z.infer<typeof clientCreateSchema>;
 

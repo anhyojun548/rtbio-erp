@@ -538,7 +538,7 @@
  </a>
  </nav>
  <div class="sidebar-footer">
- <a href="index.html">&larr; 역할 선택</a>
+ <a href="#" onclick="event.preventDefault(); ceoSignOutForRoleSwitch();" style="cursor:pointer;">&larr; 역할 전환 (로그아웃)</a>
  </div>
  </aside>
 
@@ -1250,6 +1250,24 @@ document.addEventListener('DOMContentLoaded', function() {
  renderStaffMetrics();
  goTo('page-ceo-dashboard');
 });
+
+// 역할 전환 — NextAuth signout 후 /login 으로 이동.
+// 대표(TENANT_OWNER) / 임원(SUPER_ADMIN) 만 ceo-portal 접근 가능하므로 이 함수는 그 두 역할에서만 호출됨.
+async function ceoSignOutForRoleSwitch() {
+  try {
+    const csrfRes = await fetch('/api/auth/csrf', { credentials: 'same-origin' });
+    const { csrfToken } = await csrfRes.json();
+    await fetch('/api/auth/signout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ csrfToken, callbackUrl: '/login', json: 'true' }),
+    });
+  } catch (e) {
+    console.warn('[ceoSignOutForRoleSwitch] signout 실패 — 강제 이동', e);
+  }
+  window.location.href = '/login';
+}
 </script>
 </body>
 </html>
