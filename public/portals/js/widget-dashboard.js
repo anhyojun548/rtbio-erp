@@ -675,6 +675,286 @@ function renderWidgetContent(type, preset, elId) {
   }
 }
 
+/* ══════════════════════════════════════════
+   Spec Widget Renderer (executeWidgetSpec 결과)
+   ──────────────────────────────────────────
+   prototype MOCK 위젯과 공존. config.spec 이 있는 위젯만 이 경로로 렌더.
+   GET /api/dashboard/widgets/{id}/data → WidgetResult { kind, value?, series?, rows?, comparison? }
+   ══════════════════════════════════════════ */
+
+var _HAS_CHART = (typeof Chart !== 'undefined');
+
+// ── format 적용 (spec.format.value) ──
+function _fmtSpecValue(n, format) {
+  var v = Number(n) || 0;
+  var f = (format && format.value) || {};
+  var locale = f.locale || 'ko-KR';
+  var decimals = (typeof f.decimals === 'number') ? f.decimals : 0;
+  var out;
+  if (f.compact) {
+    // 큰 수 축약 (₩1.2억 / 3.4만)
+    var abs = Math.abs(v);
+    if (abs >= 1e8) out = (v / 1e8).toFixed(1).replace(/\.0$/, '') + '억';
+    else if (abs >= 1e4) out = (v / 1e4).toFixed(1).replace(/\.0$/, '') + '만';
+    else out = v.toLocaleString(locale);
+  } else if (f.type === 'percent') {
+    out = v.toFixed(decimals) + '%';
+  } else {
+    out = v.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  return (f.prefix || '') + out + (f.suffix || '');
+}
+
+// ── thresholds → 색상 선택 (gauge/kpi) ──
+function _pickThresholdColor(value, style, fallback) {
+  if (!style || !Array.isArray(style.thresholds) || !style.thresholds.length) return fallback;
+  var chosen = fallback;
+  // value 이상인 threshold 중 가장 큰 것의 색
+  style.thresholds
+    .slice()
+    .sort(function (a, b) { return a.value - b.value; })
+    .forEach(function (t) { if (value >= t.value) chosen = t.color; });
+  return chosen;
+}
+
+function _escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── div-bar 폴백 (Chart.js 없을 때 bar/hbar/line/pie/donut) ──
+function _renderBarFallback(el, series, color) {
+  var max = series.reduce(function (m, p) { return Math.max(m, Number(p.value) || 0); }, 0) || 1;
+  var html = '<div class="spec-bar-fallback" style="display:flex;flex-direction:column;gap:6px;padding:4px 2px;overflow:auto;flex:1;">';
+  series.forEach(function (p) {
+    var pct = Math.max(2, Math.round((Number(p.value) || 0) / max * 100));
+    html += '' +
+      '<div style="display:flex;align-items:center;gap:8px;font-size:11px;">' +
+        '<span style="flex:0 0 80px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + _escapeHtml(p.label) + '">' + _escapeHtml(p.label) + '</span>' +
+        '<span style="flex:1;background:#eef1f4;border-radius:4px;height:14px;position:relative;">' +
+          '<span style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:' + (color || COLORS.accent) + ';border-radius:4px;"></span>' +
+        '</span>' +
+        '<span style="flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text);">' + (Number(p.value) || 0).toLocaleString() + '</span>' +
+      '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── series 차트 (bar / hbar / line / pie / donut) ──
+function _renderSpecChart(el, kind, series, style) {
+  var color = (style && style.color) || COLORS.accent;
+  if (!series || !series.length) {
+    el.innerHTML = '<div class="kpi-desc" style="padding:16px;text-align:center;">데이터 없음</div>';
+    return;
+  }
+  if (!_HAS_CHART) { _renderBarFallback(el, series, color); return; }
+
+  el.innerHTML = '<div class="chart-container"><canvas></canvas></div>';
+  var ctx = el.querySelector('canvas').getContext('2d');
+  var labels = series.map(function (p) { return p.label; });
+  var values = series.map(function (p) { return Number(p.value) || 0; });
+
+  if (kind === 'pie' || kind === 'donut') {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: COLORS.chart.slice(0, labels.length), borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: kind === 'donut' ? '65%' : '0%',
+        plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } }
+      }
+    });
+  } else if (kind === 'line') {
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: labels, datasets: [{ data: values, borderColor: color, backgroundColor: 'rgba(0,168,181,0.1)', fill: true, tension: 0.3, pointRadius: 3 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 } } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+      }
+    });
+  } else {
+    // bar / hbar
+    var isH = (kind === 'hbar');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: isH ? COLORS.chart.slice(0, labels.length) : color,
+          borderRadius: 4, barPercentage: 0.7,
+        }]
+      },
+      options: {
+        indexAxis: isH ? 'y' : 'x',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: isH
+          ? { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+          : { y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 } } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+      }
+    });
+  }
+}
+
+// ── gauge (value = 0~100 가정, 아니면 0 으로 클램프 표시) ──
+function _renderSpecGauge(el, value, style, format) {
+  var pct = Math.max(0, Math.min(100, Number(value) || 0));
+  var color = _pickThresholdColor(pct, style, (style && style.color) || COLORS.accent);
+  el.innerHTML =
+    '<div class="gauge-wrapper">' +
+      '<div class="gauge-canvas-wrap"><canvas width="160" height="90"></canvas></div>' +
+      '<div class="gauge-label">' + _fmtSpecValue(value, format) + '</div>' +
+      '<div class="gauge-sub">달성률</div>' +
+    '</div>';
+  if (!_HAS_CHART) {
+    // 폴백: 막대형 진행률
+    el.querySelector('.gauge-canvas-wrap').innerHTML =
+      '<div style="width:140px;height:14px;background:#E5E7EB;border-radius:7px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';"></div>' +
+      '</div>';
+    return;
+  }
+  var ctx = el.querySelector('canvas').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: [pct, 100 - pct], backgroundColor: [color, '#E5E7EB'], borderWidth: 0 }] },
+    options: { responsive: false, circumference: 180, rotation: -90, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+  });
+}
+
+// ── KPI (value + comparison ▲▼ deltaPercent) ──
+function _renderSpecKpi(el, result, payload) {
+  var format = payload.format;
+  var style = payload.style;
+  var color = (style && style.color) || '';
+  var valueStr = _fmtSpecValue(result.value, format);
+  var html = '<div class="kpi-value"' + (color ? ' style="color:' + color + ';"' : '') + '>' + (style && style.icon ? style.icon + ' ' : '') + valueStr + '</div>';
+  html += '<div class="kpi-desc">' + _escapeHtml(payload.subtitle || payload.title || '') + '</div>';
+
+  // comparison: result.comparison.deltaPercent (null 가능)
+  var cmp = result.comparison;
+  if (cmp && cmp.deltaPercent != null) {
+    var up = cmp.deltaPercent >= 0;
+    var dp = Math.abs(cmp.deltaPercent).toFixed(1);
+    html += '<div class="kpi-change ' + (up ? 'up' : 'down') + '">' + (up ? '▲' : '▼') + ' ' + dp + '%</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── table (rows: Record<string,unknown>[]) ──
+function _renderSpecTable(el, rows) {
+  if (!rows || !rows.length) {
+    el.innerHTML = '<div class="kpi-desc" style="padding:16px;text-align:center;">데이터 없음</div>';
+    return;
+  }
+  // 열 = 첫 행의 키 (id/createdBy 등 잡음 제거: 최대 6열)
+  var keys = Object.keys(rows[0]).filter(function (k) {
+    return ['createdBy', 'updatedAt'].indexOf(k) === -1;
+  }).slice(0, 6);
+  var html = '<div style="overflow:auto;flex:1;"><table class="widget-table"><thead><tr>';
+  keys.forEach(function (k) { html += '<th>' + _escapeHtml(k) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  rows.forEach(function (row) {
+    html += '<tr>';
+    keys.forEach(function (k) {
+      var v = row[k];
+      if (v != null && typeof v === 'object') v = JSON.stringify(v);
+      html += '<td>' + _escapeHtml(v) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+// ── spec 위젯 1개 렌더 (fetch → kind 분기) ──
+async function renderSpecWidget(elId, widgetId) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  try {
+    var r = await fetch('/api/dashboard/widgets/' + encodeURIComponent(widgetId) + '/data', { credentials: 'same-origin' });
+    var payload = await r.json();
+    if (!r.ok || !payload.ok) {
+      el.innerHTML = '<div class="kpi-value">—</div><div class="kpi-desc">' + _escapeHtml((payload && payload.error) || '데이터 조회 실패') + '</div>';
+      return;
+    }
+    var result = payload.result || {};
+    var kind = result.kind || payload.kind;
+    switch (kind) {
+      case 'kpi':
+        _renderSpecKpi(el, result, payload);
+        break;
+      case 'gauge':
+        _renderSpecGauge(el, result.value, payload.style, payload.format);
+        break;
+      case 'table':
+        _renderSpecTable(el, result.rows);
+        break;
+      case 'bar':
+      case 'hbar':
+      case 'line':
+      case 'pie':
+      case 'donut':
+        _renderSpecChart(el, kind, result.series, payload.style);
+        break;
+      default:
+        el.innerHTML = '<div class="kpi-desc">알 수 없는 위젯 종류: ' + _escapeHtml(kind) + '</div>';
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="kpi-value">—</div><div class="kpi-desc">데이터 조회 오류</div>';
+    // eslint-disable-next-line no-console
+    console.warn('[dashboard] spec 위젯 렌더 실패', widgetId, e);
+  }
+}
+
+/* ══════════════════════════════════════════
+   실시간 갱신 — Tier 2 (폴링) + Tier 3 (액션 후)
+   ══════════════════════════════════════════ */
+
+// 모든 위젯 재계산/재fetch. spec 위젯은 data 재fetch, prototype 위젯은 MOCK 재계산.
+function refreshAllWidgets() {
+  if (typeof grid === 'undefined' || !grid) return;
+  grid.getGridItems().forEach(function (el) {
+    var bodyEl = el.querySelector('.widget-body');
+    if (!bodyEl) return;
+    if (el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
+      renderSpecWidget(bodyEl.id, el.dataset.widgetId);
+    } else {
+      // prototype 위젯: MOCK getter 가 window.* 최신값으로 재계산
+      renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
+    }
+  });
+}
+
+// Tier 3: 외부 액션(발주/확정 등) 후 호출 가능한 전역 함수
+window.refreshDashboardWidgets = refreshAllWidgets;
+
+// Tier 2: 60초 폴링 (페이지 visible 일 때만). visibilitychange 로 일시정지/재개.
+var _pollTimer = null;
+function _startWidgetPolling() {
+  if (_pollTimer) return;
+  _pollTimer = setInterval(function () {
+    if (document.visibilityState === 'visible') refreshAllWidgets();
+  }, 60000);
+}
+function _stopWidgetPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') {
+    refreshAllWidgets();   // 복귀 즉시 1회 갱신
+    _startWidgetPolling();
+  } else {
+    _stopWidgetPolling();  // 숨김 상태에서는 폴링 중지 (불필요한 요청 방지)
+  }
+});
+window.addEventListener('beforeunload', _stopWidgetPolling);
+
 // ── Add Widget to Grid ──
 function addWidget(type, title, preset, w, h) {
   widgetCounter++;
@@ -741,13 +1021,22 @@ function loadDefaultLayout() {
 function saveDashboard() {
   var items = grid.getGridItems().map(function (el) {
     var node = el.gridstackNode;
-    return {
+    var item = {
       type: el.dataset.widgetType,
       title: el.dataset.widgetTitle,
       preset: el.dataset.widgetPreset,
       dateOverride: el.dataset.widgetDateOverride || '',
       x: node.x, y: node.y, w: node.w, h: node.h
     };
+    // spec 위젯: spec/widgetId 보존 (DB sync 시 config.spec 유실 방지)
+    if (el.dataset.widgetSpec === '1') {
+      item.isSpec = true;
+      if (el.dataset.widgetId) item.widgetId = el.dataset.widgetId;
+      if (window._specCache && el.dataset.widgetId && window._specCache[el.dataset.widgetId]) {
+        item.spec = window._specCache[el.dataset.widgetId];
+      }
+    }
+    return item;
   });
   // 1) localStorage 즉시 저장 (즉각적 UX, DB sync 실패에도 살아남음)
   try { localStorage.setItem('rtbio_dashboard', JSON.stringify(items)); } catch (e) {}
@@ -764,31 +1053,72 @@ function _scheduleDashboardSync(items) {
       items: items
         .filter(function (it) { return it && it.preset; }) // 빈 위젯은 DB 동기화 제외
         .map(function (it, idx) {
+          var config = {
+            x: Number(it.x) || 0,
+            y: Number(it.y) || 0,
+            title: (it.title || '').slice(0, 200),
+            type: (it.type || '').slice(0, 50),
+          };
+          // spec 위젯: config.spec 보존 (bulk endpoint passthrough → 재로드 시 복원)
+          if (it.isSpec && it.spec) config.spec = it.spec;
           return {
             preset: String(it.preset).slice(0, 100),
             position: idx,
             width: Number(it.w) || 6,
             height: Number(it.h) || 4,
             overrideDateRange: it.dateOverride ? String(it.dateOverride).slice(0, 50) : null,
-            config: {
-              x: Number(it.x) || 0,
-              y: Number(it.y) || 0,
-              title: (it.title || '').slice(0, 200),
-              type: (it.type || '').slice(0, 50),
-            },
+            config: config,
           };
         }),
     };
+    var hasSpec = payload.items.some(function (it) { return it.config && it.config.spec; });
     fetch('/api/dashboard/widgets/bulk', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }).then(function () {
+      // bulk 은 deleteMany→create 라 spec 위젯의 DB id 가 바뀐다.
+      // data endpoint 는 id 기반이므로, sync 후 새 id 로 dataset 을 갱신 (DOM 재생성 X).
+      if (hasSpec) _resyncSpecWidgetIds();
     }).catch(function (e) {
       // eslint-disable-next-line no-console
       console.warn('[dashboard] DB sync 실패 — localStorage 만 유지', e);
     });
   }, 3000);
+}
+
+// bulk sync 후 spec 위젯의 새 DB id 를 재매핑 (stale id 방지).
+// DB rows(position asc) ↔ 화면 위젯(sync 와 동일 필터/순서)을 position 으로 zip.
+async function _resyncSpecWidgetIds() {
+  try {
+    var r = await fetch('/api/dashboard/widgets', { credentials: 'same-origin' });
+    if (!r.ok) return;
+    var rows = await r.json();
+    if (!Array.isArray(rows)) return;
+    // position → DB row
+    var byPos = {};
+    rows.forEach(function (w) { byPos[w.position] = w; });
+
+    // sync 와 동일하게: preset 있는 위젯만, GridStack 기본 순서대로 position 0..n 부여
+    var pos = 0;
+    grid.getGridItems().forEach(function (el) {
+      if (!el.dataset.widgetPreset) return; // 빈 위젯은 sync 제외 → position 미부여
+      var row = byPos[pos];
+      pos++;
+      if (!row) return;
+      if (el.dataset.widgetSpec === '1' && row.config && row.config.spec) {
+        var oldId = el.dataset.widgetId;
+        el.dataset.widgetId = row.id;
+        window._specCache = window._specCache || {};
+        window._specCache[row.id] = row.config.spec;
+        if (oldId && oldId !== row.id && window._specCache[oldId]) delete window._specCache[oldId];
+      }
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[dashboard] spec id 재동기화 실패', e);
+  }
 }
 
 function _applyItemsToGrid(items) {
@@ -812,8 +1142,22 @@ function _applyItemsToGrid(items) {
       el.dataset.widgetPreset = item.preset || '';
       el.dataset.widgetTitle = item.title || '';
       el.dataset.widgetDateOverride = item.dateOverride || '';
+      // spec 위젯이면 DB id 보관 (data endpoint fetch 용)
+      if (item.spec && item.widgetId) {
+        el.dataset.widgetId = item.widgetId;
+        el.dataset.widgetSpec = '1';
+        // spec 원본 캐시 — DB sync 시 config.spec 유실 방지
+        window._specCache = window._specCache || {};
+        window._specCache[item.widgetId] = item.spec;
+      }
     }
-    setTimeout(function () { renderWidgetContent(item.type, item.preset, bodyId); }, 50);
+    if (item.spec && item.widgetId) {
+      (function (bid, wid) {
+        setTimeout(function () { renderSpecWidget(bid, wid); }, 50);
+      })(bodyId, item.widgetId);
+    } else {
+      setTimeout(function () { renderWidgetContent(item.type, item.preset, bodyId); }, 50);
+    }
   });
 }
 
@@ -827,10 +1171,14 @@ async function loadDashboard() {
         // DB 응답을 prototype 형식으로 복원
         var items = data.map(function (w) {
           var cfg = w.config || {};
+          // spec 위젯: config.spec 존재 → executeWidgetSpec endpoint 로 그림
+          var spec = cfg.spec || null;
           return {
-            type: cfg.type || 'kpi',
-            title: cfg.title || w.preset,
+            type: spec ? 'spec' : (cfg.type || 'kpi'),
+            title: (spec && spec.title) || cfg.title || w.preset,
             preset: w.preset,
+            spec: spec,             // spec 위젯 마커 (있으면 spec 렌더)
+            widgetId: w.id,         // DB id — /widgets/{id}/data fetch 용
             dateOverride: w.overrideDateRange || '',
             x: cfg.x != null ? cfg.x : 0,
             y: cfg.y != null ? cfg.y : 0,
@@ -988,6 +1336,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     loadDefaultLayout();
   }
 
+  // 실시간 Tier 2 — 60초 폴링 시작 (spec 위젯 data refresh + prototype 재계산)
+  _startWidgetPolling();
+
   // ── C-1: Global Date Range Selector ──
   var globalSel = document.getElementById('globalDateRange');
   var fromInput = document.getElementById('globalDateFrom');
@@ -1034,11 +1385,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       saveDashboard();
       showToast('전역 기간: ' + DATE_LABELS[newRange] + ' (위젯 override 리셋됨)');
 
-      // 전 위젯 리렌더
-      grid.getGridItems().forEach(function (el) {
-        var bodyEl = el.querySelector('.widget-body');
-        if (bodyEl) renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
-      });
+      // 전 위젯 리렌더 (spec 위젯은 data 재fetch, prototype 은 MOCK 재계산)
+      refreshAllWidgets();
     });
 
     [fromInput, toInput].forEach(function (inp) {
@@ -1145,7 +1493,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (el) {
         var bodyEl = el.querySelector('.widget-body');
         if (bodyEl) {
-          renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
+          if (el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
+            renderSpecWidget(bodyEl.id, el.dataset.widgetId);
+          } else {
+            renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
+          }
           showToast('위젯을 새로고침했습니다');
         }
       }
