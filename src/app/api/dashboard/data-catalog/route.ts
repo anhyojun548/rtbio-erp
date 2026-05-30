@@ -1,7 +1,7 @@
 /**
  * GET /api/dashboard/data-catalog
  *
- * Flowise(LLM) agent 의 tool — "어떤 데이터·필드·집계가 가능한가" 를 알려준다.
+ * windyflo(LLM) agent 의 tool — "어떤 데이터·필드·집계가 가능한가" 를 알려준다.
  * LLM 은 이 카탈로그를 먼저 조회해서 올바른 WidgetSpec.data 를 작성한다.
  *
  * 반환: 각 source 별 조회 가능 필드 + 타입 + 설명 + 집계 가능 여부.

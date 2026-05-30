@@ -1,7 +1,7 @@
 /**
  * GET /api/dashboard/widget-schema
  *
- * Flowise(LLM) agent 의 tool — WidgetSpec JSON 형식 + few-shot examples 제공.
+ * windyflo(LLM) agent 의 tool — WidgetSpec JSON 형식 + few-shot examples 제공.
  * LLM 은 이 형식을 보고 사용자 자연어 요청을 WidgetSpec JSON 으로 작성한다.
  *
  * data-catalog (어떤 데이터) + widget-schema (어떤 형식) 두 tool 을 조합하면

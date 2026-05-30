@@ -5,10 +5,10 @@
  *  - **self-describing**: 모든 필드가 명시적 — LLM 이 schema 만 보고 spec 작성 가능
  *  - **composable**: source + filter + aggregate 조합으로 무한 위젯
  *  - **safe**: source 는 whitelist, read-only 만. 임의 SQL 불가
- *  - **Flowise tool 친화적**: 이 Zod schema 를 JSON Schema 로 추출해 Flowise agent 의 tool 정의에 사용
+ *  - **windyflo tool 친화적**: 이 Zod schema 를 JSON Schema 로 추출해 windyflo agent 의 tool 정의에 사용
  *
  * 데이터 흐름:
- *  Flowise(LLM) → POST /api/dashboard/widgets (이 spec JSON)
+ *  windyflo(LLM) → POST /api/dashboard/widgets (이 spec JSON)
  *    → widgetSpecSchema 검증 → executeWidgetSpec(spec) dry-run → DB 저장
  *    → 대시보드 로드 시 executeWidgetSpec(spec) 실시간 query → 렌더
  */
@@ -245,7 +245,7 @@ export const widgetSpecSchema = z
     permissions: widgetPermissionSchema.optional(),
     llm: z
       .object({
-        createdBy: z.string().optional().describe("생성 모델 (예: flowise/claude-3.7)"),
+        createdBy: z.string().optional().describe("생성 모델 (예: windyflo/claude-3.7)"),
         userPrompt: z.string().optional().describe("원본 자연어 요청"),
         confidence: z.number().min(0).max(1).optional(),
       })
@@ -253,7 +253,7 @@ export const widgetSpecSchema = z
       .describe("LLM 생성 메타데이터 (선택)"),
   })
   .describe(
-    "RTBIO 대시보드 위젯 정의 v1.0. LLM(Flowise) 이 자연어 요청을 이 JSON 으로 변환해 POST /api/dashboard/widgets 로 저장.",
+    "RTBIO 대시보드 위젯 정의 v1.0. LLM(windyflo) 이 자연어 요청을 이 JSON 으로 변환해 POST /api/dashboard/widgets 로 저장.",
   );
 
 export type WidgetSpec = z.infer<typeof widgetSpecSchema>;
@@ -269,7 +269,7 @@ export function validateWidgetSpec(input: unknown): SpecValidation {
   const parsed = widgetSpecSchema.safeParse(input);
   if (parsed.success) return { ok: true, spec: parsed.data };
 
-  // Flowise/LLM 이 교정하기 좋은 형태로 에러 변환
+  // windyflo/LLM 이 교정하기 좋은 형태로 에러 변환
   const errors = parsed.error.issues.map((iss) => {
     const path = iss.path.join(".");
     let hint: string | undefined;

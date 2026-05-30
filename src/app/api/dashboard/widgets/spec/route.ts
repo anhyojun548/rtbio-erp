@@ -1,7 +1,7 @@
 /**
  * POST /api/dashboard/widgets/spec
  *
- * Flowise(LLM) agent 의 메인 tool — full WidgetSpec JSON 을 받아 저장.
+ * windyflo(LLM) agent 의 메인 tool — full WidgetSpec JSON 을 받아 저장.
  *
  * 처리:
  *  1. validateWidgetSpec — Zod 검증, 실패 시 LLM 교정 힌트 반환 (어떤 필드가 왜 틀렸는지)
@@ -11,7 +11,7 @@
  * 렌더 시: config.spec 이 있으면 executeWidgetSpec 로 실시간 데이터 계산.
  *
  * GET ?dryRun=1 형태가 아니라, body.dryRunOnly=true 면 저장 없이 검증+실행 결과만 반환
- * (Flowise 가 미리보기 시 사용).
+ * (windyflo 가 미리보기 시 사용).
  *
  * RBAC: 인증 사용자 (자기 대시보드)
  */

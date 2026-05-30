@@ -7,7 +7,7 @@
  * 두 가지 역할:
  *  1. **하위호환** — DB 에 저장된 기존 `DashboardWidget.preset` 키를 spec 으로 매핑해
  *     `executeWidgetSpec` 으로 렌더 가능.
- *  2. **LLM few-shot** — Flowise agent 가 자연어→spec 변환 시 모범 예시로 사용.
+ *  2. **LLM few-shot** — windyflo agent 가 자연어→spec 변환 시 모범 예시로 사용.
  *
  * 타입 전략:
  *  - 저작 편의를 위해 각 prefab 은 `z.input` 형(=defaults 생략 가능)으로 작성하고,
