@@ -137,6 +137,7 @@ function buildStaffMgmtPageHTML() {
           <option value="false">비활성</option>
         </select>
         <button class="btn btn-primary" onclick="showNewStaffForm()">+ 신규 직원</button>
+        <button class="btn btn-outline" id="staff-orgopt-btn" style="display:none;" onclick="showOrgOptionsModal()">⚙ 부서·직급 관리</button>
       </div>
       <div class="text-sm text-muted mb-16" id="staff-summary"></div>
       <div id="staff-list"></div>
@@ -244,6 +245,14 @@ async function renderStaff(searchTerm) {
     </table>
     </div>
   `;
+  _gateOrgOptBtn();
+}
+
+// 부서·직급 관리 버튼은 metaAdmin(ADMIN/TENANT_OWNER)에게만 노출
+function _gateOrgOptBtn() {
+  const u = window.CURRENT_USER;
+  const btn = document.getElementById('staff-orgopt-btn');
+  if (btn && u && ['ADMIN', 'TENANT_OWNER'].includes(u.role)) btn.style.display = '';
 }
 
 function filterStaff(term) {
@@ -478,6 +487,72 @@ async function _submitEditStaff(id, canEditRole) {
     _setFormError(err.message || '수정 실패 (네트워크 오류)');
     if (btn) { btn.disabled = false; btn.textContent = '저장'; }
   }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 부서·직급 옵션 관리 모달 (metaAdmin — ADMIN/TENANT_OWNER)
+// GET /api/org-options (목록) · POST (추가) · DELETE /api/org-options/[id]
+// ════════════════════════════════════════════════════════════════════
+async function showOrgOptionsModal() {
+  await _loadOrgOptions();
+  const section = (kind, title) => {
+    const opts = _ORG_OPTIONS[kind] || [];
+    const rows = opts.length
+      ? opts.map((o) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span>${_esc(o.label)}</span>
+          <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px;padding:2px 8px;" onclick="removeOrgOption('${o.id}')">삭제</button>
+        </div>`).join('')
+      : `<div class="text-sm text-muted" style="padding:8px 0;">항목 없음</div>`;
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:700;margin-bottom:6px;">${title}</div>
+        <div id="orgopt-list-${kind}">${rows}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input type="text" class="form-input" id="orgopt-input-${kind}" placeholder="${title} 추가..." style="flex:1;">
+          <button class="btn btn-primary btn-sm" onclick="addOrgOption('${kind}')">추가</button>
+        </div>
+      </div>`;
+  };
+  _openStaffFormModal('부서 · 직급 관리', `
+    <div class="modal-form">
+      <div id="orgopt-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;"></div>
+      ${section('DEPARTMENT', '부서')}
+      ${section('JOB_TITLE', '직급')}
+      <div class="form-actions"><button class="btn btn-outline" onclick="_closeTopModal()">닫기</button></div>
+    </div>
+  `);
+}
+
+async function addOrgOption(kind) {
+  const input = document.getElementById('orgopt-input-' + kind);
+  const label = (input?.value || '').trim();
+  const errEl = document.getElementById('orgopt-error');
+  if (errEl) errEl.style.display = 'none';
+  if (!label) return;
+  try {
+    const r = await fetch('/api/org-options', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ kind, label }),
+    });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    const data = ct.includes('application/json') ? await r.json().catch(() => null) : null;
+    if (!r.ok || (data && data.ok === false)) {
+      if (errEl) { errEl.textContent = (data && data.error) || '추가 실패'; errEl.style.display = ''; }
+      return;
+    }
+    await showOrgOptionsModal(); // 재렌더 (모달 교체)
+  } catch (e) { if (errEl) { errEl.textContent = e.message || '추가 실패'; errEl.style.display = ''; } }
+}
+
+async function removeOrgOption(id) {
+  if (!confirm('이 항목을 삭제할까요?\n(기존 직원에 입력된 값은 그대로 유지됩니다)')) return;
+  try {
+    const r = await fetch('/api/org-options/' + id, { method: 'DELETE', credentials: 'same-origin' });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    const data = ct.includes('application/json') ? await r.json().catch(() => null) : null;
+    if (!r.ok || (data && data.ok === false)) { showToast((data && data.error) || '삭제 실패', 'error'); return; }
+    await showOrgOptionsModal();
+  } catch (e) { showToast(e.message || '삭제 실패', 'error'); }
 }
 
 // ── 비활성화 (DELETE) ───────────────────────────────────────────────
@@ -762,6 +837,10 @@ if (typeof window !== 'undefined') {
   window.changeMyPasswordUI = changeMyPasswordUI;
   window._submitMyPassword = _submitMyPassword;
   window._assignableRoles = _assignableRoles;
+  // 부서·직급 옵션 관리 (metaAdmin)
+  window.showOrgOptionsModal = showOrgOptionsModal;
+  window.addOrgOption = addOrgOption;
+  window.removeOrgOption = removeOrgOption;
   // 팀 관리자 지정 (ceo-portal)
   window.buildTeamAdminPageHTML = buildTeamAdminPageHTML;
   window.renderTeamAdmins = renderTeamAdmins;
