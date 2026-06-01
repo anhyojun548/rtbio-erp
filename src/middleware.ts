@@ -12,10 +12,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { canAccessPath } from "@/lib/rbac";
-
-// Edge 에서 auth.ts 의 secret 과 동일한 값을 사용해야 함
-const DEV_SECRET =
-  "dev-only-change-in-prod-d8f3a1b9c7e5f2d4a6b8c0e1f3d5a7b9c1e3d5f7a9b1c3e5d7f9a1b3c5e7d9";
+import { getAuthSecret } from "@/lib/auth-secret";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/403", "/_next", "/favicon.ico"];
 
@@ -57,7 +54,7 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET ?? DEV_SECRET,
+    secret: getAuthSecret(),
   });
 
   if (!token) {

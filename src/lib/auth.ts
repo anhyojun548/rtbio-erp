@@ -10,14 +10,12 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { getAuthSecret } from "@/lib/auth-secret";
 import type { UserRole } from "@prisma/client";
-
-const DEV_SECRET =
-  "dev-only-change-in-prod-d8f3a1b9c7e5f2d4a6b8c0e1f3d5a7b9c1e3d5f7a9b1c3e5d7f9a1b3c5e7d9";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 60 * 60 * 8 /* 8h */ },
-  secret: process.env.NEXTAUTH_SECRET ?? DEV_SECRET,
+  secret: getAuthSecret(),
   pages: { signIn: "/login", error: "/login" },
 
   providers: [
