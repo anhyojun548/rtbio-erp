@@ -39,7 +39,7 @@ async function main() {
   const users = await Promise.all([
     prisma.user.upsert({
       where: { email: "owner@altibio.local" },
-      update: {},
+      update: { isTeamAdmin: true },
       create: {
         email: "owner@altibio.local",
         password: defaultPw,
@@ -47,12 +47,13 @@ async function main() {
         role: "TENANT_OWNER",
         tenantId: tenant.id,
         phone: "010-0000-0001",
+        isTeamAdmin: true,
         createdBy: "seed",
       },
     }),
     prisma.user.upsert({
       where: { email: "admin@altibio.local" },
-      update: {},
+      update: { isTeamAdmin: true },
       create: {
         email: "admin@altibio.local",
         password: defaultPw,
@@ -60,6 +61,7 @@ async function main() {
         role: "ADMIN",
         tenantId: tenant.id,
         phone: "010-0000-0002",
+        isTeamAdmin: true,
         createdBy: "seed",
       },
     }),

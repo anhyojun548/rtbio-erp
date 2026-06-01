@@ -66,6 +66,7 @@ model User {
   role        UserRole
   tenantId    String? // null = SUPER_ADMIN
   clientId    String? // CLIENT 역할 유저가 어떤 거래처를 대변하는지 (앱-레벨 FK; 크로스스키마 제약 회피)
+  isTeamAdmin Boolean   @default(false) // 팀 관리자(QC·EXEC 리더 승격). ADMIN/OWNER 는 자동 effectiveTeamAdmin
   phone       String?
   active      Boolean   @default(true)
   lastLoginAt DateTime?
