@@ -155,7 +155,7 @@ export default async function HomePage() {
         <div className="mt-12 text-center text-caption text-ink-muted">
           <p>RTBIO 업무 자동화 시스템 · Phase 5 (2026)</p>
           <p className="mt-1">
-            <Link href="/admin/data-explorer" className="text-primary hover:underline"> 데이터 탐색기 (41K건)</Link> {" · "}
+            <Link href="/admin" className="text-primary hover:underline"> 데이터 탐색기 (41K건)</Link> {" · "}
             <Link href="/api/auth/signout" className="text-ink-muted hover:text-primary hover:underline">로그아웃</Link>
           </p>
         </div>
