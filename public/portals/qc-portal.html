@@ -615,6 +615,8 @@
  <div class="nav-item" data-page="page-settings" onclick="navigateTo('page-settings')">
  설정
  </div>
+ <!-- STAFF-E: 직원 관리 — 팀관리자/메타관리자(ADMIN·TENANT_OWNER)만 노출 (기본 숨김, init 에서 게이트) -->
+ <div class="nav-item" id="nav-staff" data-page="page-staff" onclick="goTo('page-staff')" style="display:none">직원 관리</div>
  </nav>
  </aside>
 
@@ -1096,6 +1098,9 @@
  <!-- 2026-05-18: 거래처관리 (경영지원/영업/품질관리 3개 포털 공통 폼) -->
  <div id="page-clients" class="page"></div>
 
+ <!-- STAFF-E: 직원 관리 (page-clients 와 동일 lazy-init — 진입 시 buildStaffMgmtPageHTML() 주입) -->
+ <div id="page-staff" class="page"></div>
+
  <!-- 2026-05-22: 공지사항 (NoticeModule 공통 모듈, 작성자 = 품질관리팀) -->
  <div id="page-notices" class="page"></div>
 
@@ -1184,6 +1189,7 @@
 <script src="js/shared.js"></script>
 <script src="js/shared-ui.js"></script>
 <script src="js/client-mgmt.js"></script>
+<script src="js/staff-mgmt.js"></script>
 <script src="js/notice.js"></script>
 <script src="js/settings-shared.js"></script>
 <script src="js/ai-assistant.js"></script>
@@ -4824,6 +4830,22 @@ document.addEventListener('DOMContentLoaded', () => {
      if (typeof renderClients === 'function') renderClients('');
    }
  } catch (e) { console.warn('client-mgmt init failed', e); }
+ // STAFF-E: 직원 관리 게이트 + lazy-init (admin-portal 과 동일 — QC 리더는 isTeamAdmin=true 일 때만 통과).
+ try {
+   const u = window.CURRENT_USER;
+   const canStaff = !!(u && (u.isTeamAdmin || ['ADMIN', 'TENANT_OWNER'].includes(u.role)));
+   const navStaff = document.getElementById('nav-staff');
+   if (canStaff) {
+     if (navStaff) navStaff.style.display = '';
+     const host = document.getElementById('page-staff');
+     if (host && typeof buildStaffMgmtPageHTML === 'function') {
+       host.innerHTML = buildStaffMgmtPageHTML();
+       if (typeof renderStaff === 'function') renderStaff('');
+     }
+   } else if (navStaff) {
+     navStaff.style.display = 'none';
+   }
+ } catch (e) { console.warn('staff-mgmt init failed', e); }
  goTo('page-qc-dashboard'); // default page
 });
 </script>
