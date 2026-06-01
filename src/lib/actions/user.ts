@@ -106,7 +106,6 @@ export async function updateUser(id: string, input: unknown) {
       ...(d.name !== undefined && { name: d.name }),
       ...(d.phone !== undefined && { phone: d.phone ?? null }),
       ...(d.role !== undefined && { role: d.role }),
-      ...(d.active !== undefined && { active: d.active }),
     },
     select: SAFE_SELECT,
   });

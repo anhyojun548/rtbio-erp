@@ -19,7 +19,6 @@ export const updateUserSchema = z.object({
   name: nameField.optional(),
   phone: phoneField,
   role: staffRoleEnum.optional(),
-  active: z.boolean().optional(),
 });
 
 export const resetPasswordSchema = z.object({
