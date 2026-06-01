@@ -593,6 +593,8 @@
  <div class="nav-item" data-page="page-clients" onclick="goTo('page-clients')">
  거래처관리
  </div>
+ <!-- STAFF-E: 직원 관리 — 팀관리자/메타관리자(ADMIN·TENANT_OWNER)만 노출 (기본 숨김, init 에서 게이트) -->
+ <div class="nav-item" id="nav-staff" data-page="page-staff" onclick="goTo('page-staff')" style="display:none">직원 관리</div>
  <!-- 경영지원팀 요청 #6 (2026-04-21): "발주관리" 페이지는 폐지 (매입매출장으로 통합).
  메뉴에서는 disabled 처리 — 발주 상세는 매입매출장 행 클릭 시 모달로 표시됨 -->
  <div class="nav-item" style="font-size:13px;color:var(--text-tertiary);opacity:0.5;cursor:not-allowed;pointer-events:none;">
@@ -762,6 +764,12 @@
  <div class="client-cards-grid" id="clients-grid"></div>
  </div>
  </div>
+
+ <!-- ══════════════════════════════════════
+ P08b: 직원 관리 (STAFF-E) — page-clients 와 동일 lazy-init 패턴.
+ 빈 컨테이너로 두고 진입 시 buildStaffMgmtPageHTML() 주입 + renderStaff('')
+ ══════════════════════════════════════ -->
+ <div id="page-staff" class="page"></div>
 
  <!-- ══════════════════════════════════════
  P09: 거래명세서
@@ -1832,6 +1840,7 @@
 <script src="js/shared.js"></script>
 <script src="js/shared-ui.js"></script>
 <script src="js/client-mgmt.js"></script>
+<script src="js/staff-mgmt.js"></script>
 <script src="js/notice.js"></script>
 <script src="js/settings-shared.js"></script>
 <script src="js/ai-assistant.js"></script>
@@ -5611,6 +5620,23 @@ document.addEventListener('DOMContentLoaded', () => {
  try { renderNoticesPage && renderNoticesPage(); } catch(e) {}
  try { renderProjectsPage && renderProjectsPage(); } catch(e) {}
  try { renderUdiPage && renderUdiPage(); } catch(e) {}
+ // STAFF-E: 직원 관리 게이트 + lazy-init (page-clients 와 동일 패턴 — 빈 컨테이너 주입 후 1회 render).
+ // data-loader 가 DOMContentLoaded 를 큐잉 후 CURRENT_USER 세팅 뒤 flush 하므로 여기서 role 확정 가능.
+ try {
+   const u = window.CURRENT_USER;
+   const canStaff = !!(u && (u.isTeamAdmin || ['ADMIN', 'TENANT_OWNER'].includes(u.role)));
+   const navStaff = document.getElementById('nav-staff');
+   if (canStaff) {
+     if (navStaff) navStaff.style.display = '';
+     const host = document.getElementById('page-staff');
+     if (host && typeof buildStaffMgmtPageHTML === 'function') {
+       host.innerHTML = buildStaffMgmtPageHTML();
+       if (typeof renderStaff === 'function') renderStaff('');
+     }
+   } else if (navStaff) {
+     navStaff.style.display = 'none';
+   }
+ } catch(e) { console.warn('staff-mgmt init failed', e); }
  goTo('page-dashboard');
 });
 </script>
