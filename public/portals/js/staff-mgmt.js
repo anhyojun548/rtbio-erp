@@ -734,7 +734,7 @@ async function renderTeamAdmins() {
         <tr style="background:var(--bg-soft);text-align:left;">
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이름</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이메일</th>
-          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">직급</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">권한</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">팀</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">팀 관리자</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">액션</th>
