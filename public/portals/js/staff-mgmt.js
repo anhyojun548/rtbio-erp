@@ -172,8 +172,7 @@ async function renderStaff(searchTerm) {
     const teamAdminBadge = u.isTeamAdmin
       ? ' <span class="badge" style="background:var(--primary-lighter);color:var(--primary);font-size:11px;">팀관리자</span>'
       : '';
-    // 액션 버튼: 활성 직원만 수정/비활성화/비번재발급.
-    // 비활성 직원은 재활성화 endpoint 가 아직 없어 working 버튼 미제공 (아래 TODO 참고).
+    // 액션 버튼: 활성 직원은 수정/비번재발급/비활성화, 비활성 직원은 재활성화.
     let actions;
     if (u.active) {
       actions = `
@@ -182,11 +181,8 @@ async function renderStaff(searchTerm) {
         <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;color:var(--danger);" onclick="deactivateStaff('${u.id}')">비활성화</button>
       `;
     } else {
-      // TODO(STAFF-F): 재활성화 endpoint 추가 시 working 버튼으로 교체.
-      //   현재 백엔드: actions/user.ts 의 reactivateUser() 는 존재하나
-      //   /api/users/[id] 에 PATCH=updateUser(active 미반영) / DELETE=deactivate 만 연결됨.
-      //   → 재활성화 HTTP route 없음. 임의 endpoint 발명 금지 → 준비중 표시.
-      actions = `<span class="text-sm text-muted" style="font-size:11px;">재활성화(준비중)</span>`;
+      // 재활성화 — deactivate 버튼과 동일 스타일(강조색만 primary)
+      actions = `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;color:var(--primary);" onclick="reactivateStaff('${u.id}')">재활성화</button>`;
     }
     return `
       <tr>
@@ -450,11 +446,22 @@ async function deactivateStaff(id) {
   }
 }
 
-// ── 재활성화 — 현재 endpoint 없음 (TODO STAFF-F) ────────────────────
-// actions/user.ts 의 reactivateUser() 는 존재하나 HTTP route 미연결.
-// 임의 endpoint 발명 금지 → 안내만.
-function reactivateStaff(id) {
-  showToast('재활성화 기능은 준비 중입니다. (관리자에게 문의)', 'info');
+// ── 재활성화 (POST /api/users/[id]/reactivate) ──────────────────────
+async function reactivateStaff(id) {
+  if (!confirm('재활성화하시겠습니까?\n(다시 로그인 가능 상태로 전환됩니다)')) return;
+  try {
+    const r = await fetch('/api/users/' + id + '/reactivate', { method: 'POST', credentials: 'same-origin' });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    const data = ct.includes('application/json') ? await r.json().catch(() => null) : null;
+    if (!r.ok || (data && data.ok === false)) {
+      showToast((data && data.error) || '재활성화 실패', 'error');
+      return;
+    }
+    showToast('재활성화됨', 'success');
+    renderStaff(document.getElementById('staff-search')?.value || '');
+  } catch (err) {
+    showToast(err.message || '재활성화 실패', 'error');
+  }
 }
 
 // ── 비밀번호 재발급 (POST /api/users/[id]/password) ─────────────────
@@ -504,6 +511,131 @@ async function _submitResetPassword(id) {
   } catch (err) {
     _setFormError(err.message || '재발급 실패 (네트워크 오류)');
     if (btn) { btn.disabled = false; btn.textContent = '재발급'; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 팀 관리자 지정 (ceo-portal 전용 — 메타관리자 ADMIN/TENANT_OWNER 만)
+// GET /api/users (메타는 전체 staff) + POST /api/users/[id]/team-admin
+// ════════════════════════════════════════════════════════════════════
+
+// 직급 → 팀 라벨 (팀관리자 지정 표용)
+const STAFF_TEAM_LABEL = {
+  TENANT_OWNER: '임원진',
+  ADMIN: '경영지원',
+  QC: '품질관리',
+  EXEC: '영업',
+};
+
+function buildTeamAdminPageHTML() {
+  return `
+    <div class="page-inner">
+      <div class="main-header">
+        <div>
+          <div class="main-title">팀 관리자 지정</div>
+          <div class="main-subtitle">팀별 리더에게 직원 관리 권한(팀 관리자)을 부여하거나 해제합니다</div>
+        </div>
+      </div>
+      <div id="team-admin-list"></div>
+    </div>
+  `;
+}
+
+async function renderTeamAdmins() {
+  const listEl = document.getElementById('team-admin-list');
+  if (!listEl) return;
+  listEl.innerHTML = `<div class="text-sm text-muted" style="padding:20px;">불러오는 중...</div>`;
+
+  let rows = null;
+  try {
+    const r = await fetch('/api/users', { credentials: 'same-origin' });
+    rows = await _staffSafeJson(r);
+  } catch (err) {
+    rows = null;
+  }
+
+  if (!Array.isArray(rows)) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:24px;">
+      <div class="empty-state-text" style="color:var(--danger);">직원 목록을 불러오지 못했습니다. 권한이 없거나 세션이 만료되었을 수 있습니다.</div>
+    </div>`;
+    return;
+  }
+  if (rows.length === 0) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:24px;">
+      <div class="empty-state-text">표시할 직원이 없습니다.</div>
+    </div>`;
+    return;
+  }
+
+  // 직급(팀) → 이름 순 정렬
+  const order = { TENANT_OWNER: 0, ADMIN: 1, QC: 2, EXEC: 3 };
+  const sorted = rows.slice().sort((a, b) => {
+    const ra = order[a.role] ?? 99;
+    const rb = order[b.role] ?? 99;
+    if (ra !== rb) return ra - rb;
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+
+  const bodyRows = sorted.map((u) => {
+    const roleLabel = STAFF_ROLE_LABEL[u.role] || u.role;
+    const teamLabel = STAFF_TEAM_LABEL[u.role] || '-';
+    const adminBadge = u.isTeamAdmin
+      ? '<span class="badge" style="background:var(--primary-lighter);color:var(--primary);">팀관리자</span>'
+      : '<span class="badge" style="background:var(--bg-soft);color:var(--text-muted);">일반</span>';
+    const toggleBtn = u.isTeamAdmin
+      ? `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;color:var(--danger);" onclick="toggleTeamAdminUI('${u.id}', false)">지정 해제</button>`
+      : `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;color:var(--primary);" onclick="toggleTeamAdminUI('${u.id}', true)">관리자 지정</button>`;
+    return `
+      <tr>
+        <td style="font-weight:600;">${_esc(u.name)}</td>
+        <td style="color:var(--text-secondary);">${_esc(u.email)}</td>
+        <td>${roleLabel}</td>
+        <td>${teamLabel}</td>
+        <td>${adminBadge}</td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap;">${toggleBtn}</div></td>
+      </tr>
+    `;
+  }).join('');
+
+  listEl.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:var(--bg-soft);text-align:left;">
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이름</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이메일</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">직급</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">팀</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">팀 관리자</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bodyRows.replace(/<td>/g, '<td style="padding:10px 12px;border-bottom:1px solid var(--border);">')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+async function toggleTeamAdminUI(id, grant) {
+  try {
+    const r = await fetch('/api/users/' + id + '/team-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ grant: !!grant }),
+    });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    const data = ct.includes('application/json') ? await r.json().catch(() => null) : null;
+    if (!r.ok || (data && data.ok === false)) {
+      showToast((data && data.error) || '변경 실패', 'error');
+      return;
+    }
+    showToast(grant ? '팀 관리자로 지정되었습니다.' : '팀 관리자 지정이 해제되었습니다.', 'success');
+    renderTeamAdmins();
+  } catch (err) {
+    showToast(err.message || '변경 실패', 'error');
   }
 }
 
@@ -575,4 +707,8 @@ if (typeof window !== 'undefined') {
   window.changeMyPasswordUI = changeMyPasswordUI;
   window._submitMyPassword = _submitMyPassword;
   window._assignableRoles = _assignableRoles;
+  // 팀 관리자 지정 (ceo-portal)
+  window.buildTeamAdminPageHTML = buildTeamAdminPageHTML;
+  window.renderTeamAdmins = renderTeamAdmins;
+  window.toggleTeamAdminUI = toggleTeamAdminUI;
 }
