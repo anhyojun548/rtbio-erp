@@ -217,7 +217,10 @@
     font-size: 14px; font-weight: 500;
     color: var(--text-secondary); text-decoration: none;
     padding: 8px 0;
+    cursor: pointer;
+    user-select: none;
   }
+  .desktop-nav a:hover { color: var(--primary); }
   .desktop-nav a.active {
     color: var(--primary); font-weight: 700;
     border-bottom: 2px solid var(--primary);
