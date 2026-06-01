@@ -107,8 +107,8 @@ function buildStaffMgmtPageHTML() {
         </select>` : ''}
         <select class="form-select" id="staff-active-filter"
           onchange="filterStaff(document.getElementById('staff-search').value)" style="max-width:130px;">
+          <option value="true" selected>활성</option>
           <option value="">전체 상태</option>
-          <option value="true">활성</option>
           <option value="false">비활성</option>
         </select>
         <button class="btn btn-primary" onclick="showNewStaffForm()">+ 신규 직원</button>
