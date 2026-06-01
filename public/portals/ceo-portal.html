@@ -526,6 +526,10 @@
  <div class="nav-item" data-page="page-notices" onclick="navigateTo('page-notices')">
  📢 공지사항
  </div>
+ <!-- STAFF-E: 직원 관리 — 팀관리자/메타관리자(ADMIN·TENANT_OWNER)만 노출 (기본 숨김, init 에서 게이트) -->
+ <div class="nav-item" id="nav-staff" data-page="page-staff" onclick="goTo('page-staff')" style="display:none">직원 관리</div>
+ <!-- STAFF-E: 팀 관리자 지정 — 메타관리자(ADMIN·TENANT_OWNER)만 노출 -->
+ <div class="nav-item" id="nav-team-admins" data-page="page-team-admins" onclick="goTo('page-team-admins')" style="display:none">팀 관리자 지정</div>
  <div class="nav-section">팀 포탈 이동</div>
  <a class="nav-item" href="qc-portal.html" style="text-decoration:none;">
  품질관리팀
@@ -660,6 +664,12 @@
  <!-- 2026-05-22: 공지사항 (NoticeModule 공통 모듈, 작성자 = 임원진) -->
  <div id="page-notices" class="page"></div>
 
+ <!-- STAFF-E: 직원 관리 (lazy-init — 진입 시 buildStaffMgmtPageHTML() 주입) -->
+ <div id="page-staff" class="page"></div>
+
+ <!-- STAFF-E: 팀 관리자 지정 (메타관리자 전용 — buildTeamAdminPageHTML() 주입) -->
+ <div id="page-team-admins" class="page"></div>
+
  </main>
 </div>
 
@@ -724,6 +734,7 @@
 <script src="js/data-loader.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/shared-ui.js"></script>
+<script src="js/staff-mgmt.js"></script>
 <script src="js/notice.js"></script>
 <script src="js/ai-assistant.js"></script>
 <script src="js/widget-dashboard.js"></script>
@@ -1248,6 +1259,35 @@ function renderStaffMetrics() {
 document.addEventListener('DOMContentLoaded', function() {
  renderCeoDashboard();
  renderStaffMetrics();
+ // STAFF-E: 직원 관리 게이트 + lazy-init (admin-portal 과 동일 — 메타관리자 또는 팀관리자 통과).
+ try {
+   const u = window.CURRENT_USER;
+   const isMeta = !!(u && ['ADMIN', 'TENANT_OWNER'].includes(u.role));
+   const canStaff = !!(u && (u.isTeamAdmin || isMeta));
+   const navStaff = document.getElementById('nav-staff');
+   if (canStaff) {
+     if (navStaff) navStaff.style.display = '';
+     const host = document.getElementById('page-staff');
+     if (host && typeof buildStaffMgmtPageHTML === 'function') {
+       host.innerHTML = buildStaffMgmtPageHTML();
+       if (typeof renderStaff === 'function') renderStaff('');
+     }
+   } else if (navStaff) {
+     navStaff.style.display = 'none';
+   }
+   // 팀 관리자 지정 — 메타관리자(ADMIN/TENANT_OWNER) 만.
+   const navTeamAdmins = document.getElementById('nav-team-admins');
+   if (isMeta) {
+     if (navTeamAdmins) navTeamAdmins.style.display = '';
+     const taHost = document.getElementById('page-team-admins');
+     if (taHost && typeof buildTeamAdminPageHTML === 'function') {
+       taHost.innerHTML = buildTeamAdminPageHTML();
+       if (typeof renderTeamAdmins === 'function') renderTeamAdmins();
+     }
+   } else if (navTeamAdmins) {
+     navTeamAdmins.style.display = 'none';
+   }
+ } catch (e) { console.warn('staff-mgmt init failed', e); }
  goTo('page-ceo-dashboard');
 });
 
