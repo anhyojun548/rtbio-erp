@@ -166,3 +166,44 @@ export async function resetUserPassword(id: string, input: unknown) {
   logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_PASSWORD_RESET", resource: `User:${id}` });
   return ok({ id });
 }
+
+export async function toggleTeamAdmin(id: string, grant: boolean) {
+  const me = await requireMetaAdmin();
+  if (id === me.id) return fail("본인의 팀 관리자 권한은 변경할 수 없습니다.");
+  const target = await prisma.user.findFirst({
+    where: { id, tenantId: me.tenantId, role: { in: STAFF_ROLES as UserRole[] } },
+    select: { id: true, role: true },
+  });
+  if (!target) return fail("대상 직원을 찾을 수 없습니다.");
+  await prisma.user.update({ where: { id }, data: { isTeamAdmin: grant } });
+  logAudit({
+    tenantId: me.tenantId, userId: me.id,
+    action: grant ? "USER_TEAM_ADMIN_GRANT" : "USER_TEAM_ADMIN_REVOKE",
+    resource: `User:${id}`, metadata: { team: TEAM_BY_ROLE[target.role] },
+  });
+  revalidatePath("/portals/ceo-portal.html");
+  return ok({ id, isTeamAdmin: grant });
+}
+
+export async function changeMyPassword(input: unknown) {
+  const me = await requireAuth();
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const row = await prisma.user.findUnique({ where: { id: me.id }, select: { password: true } });
+  if (!row) return fail("사용자를 찾을 수 없습니다.");
+  const okPw = await bcrypt.compare(parsed.data.current, row.password);
+  if (!okPw) return fail("현재 비밀번호가 일치하지 않습니다.", { fieldErrors: { current: ["불일치"] } });
+  const hash = await bcrypt.hash(parsed.data.next, 10);
+  await prisma.user.update({ where: { id: me.id }, data: { password: hash } });
+  logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_PASSWORD_CHANGE_SELF", resource: `User:${me.id}` });
+  return ok({ id: me.id });
+}
+
+/** ceo 팀관리자 지정 화면용 — 전체 staff (메타관리자 전용) */
+export async function listAllStaff() {
+  const me = await requireMetaAdmin();
+  return prisma.user.findMany({
+    where: { tenantId: me.tenantId, role: { in: STAFF_ROLES as UserRole[] } },
+    select: SAFE_SELECT, orderBy: [{ role: "asc" }, { name: "asc" }],
+  });
+}
