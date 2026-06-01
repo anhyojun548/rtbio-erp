@@ -370,6 +370,25 @@ async function main() {
   }
   console.log(`✓ TenantSettings: ${tenantSettings.length}건`);
 
+  // ------ 8.5 조직 옵션 — 부서·직급 관리 목록 (직원 폼 드롭다운 소스) ------
+  const DEPARTMENTS = ["경영지원", "품질관리", "영업", "대표이사실"];
+  const JOB_TITLES = ["사원", "주임", "대리", "과장", "차장", "부장", "이사", "대표"];
+  for (let i = 0; i < DEPARTMENTS.length; i++) {
+    await prisma.orgOption.upsert({
+      where: { tenantId_kind_label: { tenantId: tenant.id, kind: "DEPARTMENT", label: DEPARTMENTS[i]! } },
+      update: {},
+      create: { tenantId: tenant.id, kind: "DEPARTMENT", label: DEPARTMENTS[i]!, sortOrder: i, createdBy: "seed" },
+    });
+  }
+  for (let i = 0; i < JOB_TITLES.length; i++) {
+    await prisma.orgOption.upsert({
+      where: { tenantId_kind_label: { tenantId: tenant.id, kind: "JOB_TITLE", label: JOB_TITLES[i]! } },
+      update: {},
+      create: { tenantId: tenant.id, kind: "JOB_TITLE", label: JOB_TITLES[i]!, sortOrder: i, createdBy: "seed" },
+    });
+  }
+  console.log(`✓ OrgOptions: 부서 ${DEPARTMENTS.length} + 직급 ${JOB_TITLES.length}건`);
+
   // ------ 9. 영업 배정 (R11, R23) ------
   for (const [i, client] of clients.entries()) {
     const rep = salesReps[i % salesReps.length];

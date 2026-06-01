@@ -67,6 +67,8 @@ model User {
   tenantId    String? // null = SUPER_ADMIN
   clientId    String? // CLIENT 역할 유저가 어떤 거래처를 대변하는지 (앱-레벨 FK; 크로스스키마 제약 회피)
   isTeamAdmin Boolean   @default(false) // 팀 관리자(QC·EXEC 리더 승격). ADMIN/OWNER 는 자동 effectiveTeamAdmin
+  department  String? // 부서 (OrgOption 라벨 스냅샷)
+  jobTitle    String? // 직급 (OrgOption 라벨 스냅샷)
   phone       String?
   active      Boolean   @default(true)
   lastLoginAt DateTime?
@@ -845,6 +847,34 @@ model TenantSetting {
   description String?
   updatedAt   DateTime @updatedAt
   updatedBy   String?
+
+  @@schema("tenant_altibio")
+}
+
+// ----------------------------------------------------------------------------
+// 조직 옵션 — 부서·직급 관리 목록 (직원 폼 드롭다운 소스, 라벨 스냅샷)
+//   - kind=DEPARTMENT/JOB_TITLE 별 관리. 추가/삭제(soft)=metaAdmin
+//   - User.department/jobTitle 는 라벨 문자열 스냅샷 → 옵션 삭제돼도 직원값 불변
+// ----------------------------------------------------------------------------
+model OrgOption {
+  id        String        @id @default(cuid())
+  tenantId  String
+  kind      OrgOptionKind
+  label     String
+  sortOrder Int           @default(0)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  createdBy String?
+
+  @@unique([tenantId, kind, label])
+  @@index([tenantId, kind, active])
+  @@schema("tenant_altibio")
+}
+
+enum OrgOptionKind {
+  DEPARTMENT
+  JOB_TITLE
 
   @@schema("tenant_altibio")
 }
