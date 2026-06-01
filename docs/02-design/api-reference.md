@@ -1,7 +1,7 @@
 # RTBIO ERP — API 레퍼런스
 
 **상태**: 통합 정리 (2026-06-01 기준)
-**범위**: `src/app/api/*` 전체 **73개 route 파일** + 호출 server action RBAC 매트릭스
+**범위**: `src/app/api/*` 전체 **76개 route 파일** + 호출 server action RBAC 매트릭스
 **대상 독자**: 백엔드 통합 개발자, 프론트 포털 작업자, AI 에이전트 (windyflo 도구 포함)
 
 ---
@@ -571,6 +571,20 @@ canGrantRole(actor, targetRole):
 ### 18-3. User.isTeamAdmin 플래그
 
 `User.isTeamAdmin boolean` — `/api/me` 세션 페이로드에 `isTeamAdmin` 필드 포함. 프로토타입 사이드바 "직원 관리" 메뉴 게이트 조건: `isTeamAdmin === true || isMetaAdmin(me)`. 팀 관리자 지정/해제는 metaAdmin 만 (`/api/users/[id]/team-admin`).
+
+### 18-4. 부서·직급 옵션 (`/api/org-options`)
+
+테넌트별 드롭다운 목록(부서명 · 직급명)을 관리하는 3개 endpoint. `User.department` / `User.jobTitle` 은 OrgOption 의 **라벨 스냅샷**을 저장하므로, 옵션을 soft-delete 해도 기존 직원 레코드의 값은 변하지 않는다.
+
+| Method | Path | 권한 | 호출 액션 |
+|---|---|---|---|
+| GET | `/api/org-options?kind=DEPARTMENT\|JOB_TITLE` | effectiveTeamAdmin | `listOrgOptions` — tenantId 강제, active=true, sortOrder asc |
+| POST | `/api/org-options` | metaAdmin | `createOrgOption` — body `{ kind, label }`, 중복 가드 (같은 tenantId+kind+label 활성 옵션 이미 존재 시 409 / 비활성 옵션은 `active:true` 로 되살림) |
+| DELETE | `/api/org-options/[id]` | metaAdmin | `deactivateOrgOption` — soft: `active=false` (라벨 스냅샷 불변 보장) |
+
+**스냅샷 정책**: 직원 생성·수정 시 선택한 옵션의 `label` 문자열을 `User.department` / `User.jobTitle` 에 직접 저장. 이후 옵션이 삭제(비활성)되거나 라벨이 변경돼도 기존 직원 데이터는 영향 없음.
+
+**kind 값**: `DEPARTMENT` (부서) · `JOB_TITLE` (직급) — Prisma enum `OrgOptionKind`.
 
 ---
 
