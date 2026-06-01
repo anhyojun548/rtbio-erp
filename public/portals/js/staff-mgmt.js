@@ -45,6 +45,31 @@ function _esc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// ── 부서·직급 옵션 캐시 + 로더 ──────────────────────────────────────
+// 폼/관리모달 열기 전 _loadOrgOptions 로 채움. 읽기 권한=effectiveTeamAdmin.
+var _ORG_OPTIONS = { DEPARTMENT: [], JOB_TITLE: [] };
+async function _loadOrgOptions() {
+  try {
+    const r = await fetch('/api/org-options', { credentials: 'same-origin' });
+    const rows = await _staffSafeJson(r);
+    if (Array.isArray(rows)) {
+      _ORG_OPTIONS = { DEPARTMENT: [], JOB_TITLE: [] };
+      rows.forEach((o) => { if (_ORG_OPTIONS[o.kind]) _ORG_OPTIONS[o.kind].push(o); });
+    }
+  } catch { /* keep last */ }
+}
+// 옵션 → <option> HTML (선택값 보존, 빈 값 허용)
+function _orgOptionSelectHTML(kind, current) {
+  const opts = _ORG_OPTIONS[kind] || [];
+  let html = `<option value="">— 없음 —</option>`;
+  // current 값이 목록에 없어도(삭제된 옵션) 보존 — 스냅샷 표시
+  if (current && !opts.some((o) => o.label === current)) {
+    html += `<option value="${_esc(current)}" selected>${_esc(current)} (사용 안 함)</option>`;
+  }
+  html += opts.map((o) => `<option value="${_esc(o.label)}"${o.label === current ? ' selected' : ''}>${_esc(o.label)}</option>`).join('');
+  return html;
+}
+
 /**
  * 현재 사용자가 부여/지정할 수 있는 직급 목록.
  * - ADMIN / TENANT_OWNER (메타관리자): 모든 staff 직급. OWNER 만 TENANT_OWNER 도 부여 가능.
@@ -253,9 +278,10 @@ function _flattenFieldErrors(fieldErrors) {
 }
 
 // ── 신규 직원 폼 ────────────────────────────────────────────────────
-function showNewStaffForm() {
+async function showNewStaffForm() {
   const roleOpts = _roleOptionsHTML(null);
   if (!roleOpts) { showToast('직원을 생성할 권한이 없습니다.', 'error'); return; }
+  await _loadOrgOptions();
   _openStaffFormModal('신규 직원 등록', `
     <div class="modal-form">
       <div id="staff-form-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:8px;"></div>
@@ -265,7 +291,7 @@ function showNewStaffForm() {
           <input type="text" class="form-input" id="sf-name" placeholder="홍길동">
         </div>
         <div class="form-group">
-          <label>직급 *</label>
+          <label>권한 *</label>
           <select class="form-select" id="sf-role">${roleOpts}</select>
         </div>
       </div>
@@ -277,6 +303,16 @@ function showNewStaffForm() {
         <div class="form-group">
           <label>전화</label>
           <input type="text" class="form-input" id="sf-phone" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>부서</label>
+          <select class="form-select" id="sf-department">${_orgOptionSelectHTML('DEPARTMENT', '')}</select>
+        </div>
+        <div class="form-group">
+          <label>직급</label>
+          <select class="form-select" id="sf-jobtitle">${_orgOptionSelectHTML('JOB_TITLE', '')}</select>
         </div>
       </div>
       <div class="form-row">
@@ -302,6 +338,8 @@ async function _submitNewStaff() {
     email: document.getElementById('sf-email')?.value.trim(),
     role: document.getElementById('sf-role')?.value,
     phone: document.getElementById('sf-phone')?.value.trim(),
+    department: document.getElementById('sf-department')?.value || '',
+    jobTitle: document.getElementById('sf-jobtitle')?.value || '',
     tempPassword: document.getElementById('sf-password')?.value,
   };
   if (!payload.name || !payload.email || !payload.tempPassword) {
@@ -342,6 +380,7 @@ async function editStaff(id) {
     u = await _staffSafeJson(r);
   } catch { u = null; }
   if (!u || !u.id) { showToast('직원 정보를 불러오지 못했습니다.', 'error'); return; }
+  await _loadOrgOptions();
 
   const assignable = _assignableRoles();
   // 대상의 현재 직급이 부여 가능 목록에 없으면 select 후보에 포함시켜 보존
@@ -349,13 +388,13 @@ async function editStaff(id) {
   const canEditRole = assignable.length > 0;
   const roleField = canEditRole
     ? `<div class="form-group">
-         <label>직급</label>
+         <label>권한</label>
          <select class="form-select" id="sf-role">
            ${roleListForEdit.map((r) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${STAFF_ROLE_LABEL[r] || r}</option>`).join('')}
          </select>
        </div>`
     : `<div class="form-group">
-         <label>직급</label>
+         <label>권한</label>
          <input type="text" class="form-input" value="${STAFF_ROLE_LABEL[u.role] || u.role}" readonly style="background:var(--bg);">
        </div>`;
 
@@ -380,6 +419,16 @@ async function editStaff(id) {
           <input type="text" class="form-input" id="sf-phone" value="${_esc(u.phone || '')}" placeholder="010-0000-0000">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>부서</label>
+          <select class="form-select" id="sf-department">${_orgOptionSelectHTML('DEPARTMENT', u.department)}</select>
+        </div>
+        <div class="form-group">
+          <label>직급</label>
+          <select class="form-select" id="sf-jobtitle">${_orgOptionSelectHTML('JOB_TITLE', u.jobTitle)}</select>
+        </div>
+      </div>
       <div class="form-actions">
         <button class="btn btn-outline" onclick="document.querySelector('.modal-overlay').remove()">취소</button>
         <button class="btn btn-primary" id="sf-submit-btn" onclick="_submitEditStaff('${u.id}', ${canEditRole})">저장</button>
@@ -394,6 +443,8 @@ async function _submitEditStaff(id, canEditRole) {
   const payload = {
     name: document.getElementById('sf-name')?.value.trim(),
     phone: document.getElementById('sf-phone')?.value.trim(),
+    department: document.getElementById('sf-department')?.value || '',
+    jobTitle: document.getElementById('sf-jobtitle')?.value || '',
   };
   if (canEditRole) {
     const roleEl = document.getElementById('sf-role');
