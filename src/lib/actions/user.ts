@@ -77,3 +77,92 @@ export async function createUser(input: unknown) {
   revalidatePath("/portals/admin-portal.html");
   return ok(created);
 }
+
+/** 내 테넌트 + (비메타면 같은 팀) 직원인지 확인하고 반환 */
+async function loadManageableUser(me: Awaited<ReturnType<typeof requireTeamAdmin>>, id: string) {
+  const u = await prisma.user.findFirst({
+    where: { id, tenantId: me.tenantId, role: { in: STAFF_ROLES as UserRole[] } },
+    select: { id: true, role: true, active: true },
+  });
+  if (!u) return null;
+  if (!isMetaAdmin(me) && u.role !== me.role) return null;
+  return u;
+}
+
+export async function updateUser(id: string, input: unknown) {
+  const me = await requireTeamAdmin();
+  if (id === me.id) return fail("본인 계정은 이 화면에서 수정할 수 없습니다.");
+  const parsed = updateUserSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const target = await loadManageableUser(me, id);
+  if (!target) return fail("대상 직원을 찾을 수 없습니다.");
+  const d = parsed.data;
+  if (d.role && d.role !== target.role && !canGrantRole(me, d.role)) {
+    return fail("해당 직급으로 변경할 권한이 없습니다.", { fieldErrors: { role: ["권한 없음"] } });
+  }
+  const updated = await prisma.user.update({
+    where: { id },
+    data: {
+      ...(d.name !== undefined && { name: d.name }),
+      ...(d.phone !== undefined && { phone: d.phone ?? null }),
+      ...(d.role !== undefined && { role: d.role }),
+      ...(d.active !== undefined && { active: d.active }),
+    },
+    select: SAFE_SELECT,
+  });
+  logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_UPDATE", resource: `User:${id}`, metadata: { changes: d } });
+  revalidatePath("/portals/admin-portal.html");
+  return ok(updated);
+}
+
+/** 비활성화 — soft. 본인/마지막 owner 차단 + 영업담당자 경고 */
+export async function deactivateUser(id: string) {
+  const me = await requireTeamAdmin();
+  if (id === me.id) return fail("본인 계정은 비활성화할 수 없습니다.");
+  const target = await loadManageableUser(me, id);
+  if (!target) return fail("대상 직원을 찾을 수 없습니다.");
+
+  // 마지막 활성 owner 차단
+  if (target.role === "TENANT_OWNER") {
+    const owners = await prisma.user.count({ where: { tenantId: me.tenantId, role: "TENANT_OWNER", active: true } });
+    if (owners <= 1) return fail("마지막 임원진(대표) 계정은 비활성화할 수 없습니다.");
+  }
+  // 영업담당자 경고 (차단 아님 — affectedCount 반환)
+  let warning: string | undefined;
+  let affectedCount = 0;
+  if (target.role === "EXEC") {
+    const [direct, assigned] = await Promise.all([
+      prisma.client.count({ where: { salesRepId: id, active: true } }),
+      prisma.salesAssignment.count({ where: { salesRepId: id, active: true } }),
+    ]);
+    affectedCount = direct + assigned;
+    if (affectedCount > 0) warning = `이 직원에게 배정된 활성 거래처 ${affectedCount}곳이 있습니다.`;
+  }
+  await prisma.user.update({ where: { id }, data: { active: false } });
+  logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_DEACTIVATE", resource: `User:${id}`, metadata: { role: target.role, affectedCount } });
+  revalidatePath("/portals/admin-portal.html");
+  return ok({ id, warning, affectedCount });
+}
+
+export async function reactivateUser(id: string) {
+  const me = await requireTeamAdmin();
+  const target = await loadManageableUser(me, id);
+  if (!target) return fail("대상 직원을 찾을 수 없습니다.");
+  await prisma.user.update({ where: { id }, data: { active: true } });
+  logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_REACTIVATE", resource: `User:${id}` });
+  revalidatePath("/portals/admin-portal.html");
+  return ok({ id });
+}
+
+export async function resetUserPassword(id: string, input: unknown) {
+  const me = await requireTeamAdmin();
+  if (id === me.id) return fail("본인 비밀번호는 '내 정보'에서 변경하세요.");
+  const parsed = resetPasswordSchema.safeParse(input);
+  if (!parsed.success) return zodFail(parsed.error);
+  const target = await loadManageableUser(me, id);
+  if (!target) return fail("대상 직원을 찾을 수 없습니다.");
+  const hash = await bcrypt.hash(parsed.data.tempPassword, 10);
+  await prisma.user.update({ where: { id }, data: { password: hash } });
+  logAudit({ tenantId: me.tenantId, userId: me.id, action: "USER_PASSWORD_RESET", resource: `User:${id}` });
+  return ok({ id });
+}
