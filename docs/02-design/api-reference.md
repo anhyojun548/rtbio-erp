@@ -1,7 +1,7 @@
 # RTBIO ERP — API 레퍼런스
 
-**상태**: 통합 정리 (2026-05-28 기준)
-**범위**: `src/app/api/*` 전체 **64개 route 파일** + 호출 server action RBAC 매트릭스
+**상태**: 통합 정리 (2026-06-01 기준)
+**범위**: `src/app/api/*` 전체 **73개 route 파일** + 호출 server action RBAC 매트릭스
 **대상 독자**: 백엔드 통합 개발자, 프론트 포털 작업자, AI 에이전트 (windyflo 도구 포함)
 
 ---
@@ -521,7 +521,60 @@ CLIENT 본인 → `SUBMITTED` Order 즉시 생성 (DRAFT 생략).
 
 ---
 
-## 18. 호출 흐름 예시
+## 18. 직원 관리 (`/api/users`, `/api/me/password`)
+
+직원 계정의 조회·생성·수정·비활성화·재활성화·비밀번호 관리와 팀 관리자 지정을 담당하는 9개 endpoint.
+
+| Method | Path | 권한 | 호출 액션 |
+|---|---|---|---|
+| GET | `/api/users?role=&active=&q=` | effectiveTeamAdmin | `listUsers` — tenantId 강제, 비메타는 자기 팀 role 만 |
+| POST | `/api/users` | effectiveTeamAdmin (canGrantRole) | `createUser` — 임시 비번 bcrypt 저장. **201** |
+| GET | `/api/users/[id]` | effectiveTeamAdmin | `getUser` — 타테넌트·타팀(비메타) 차단 |
+| PATCH | `/api/users/[id]` | effectiveTeamAdmin | `updateUser` — `{ name?, phone?, role? }` (`active` 미포함) |
+| DELETE | `/api/users/[id]` | effectiveTeamAdmin | `deactivateUser` (soft: `active=false`) — 본인/마지막 owner 차단 · EXEC 는 경고 반환 |
+| POST | `/api/users/[id]/password` | effectiveTeamAdmin | `resetUserPassword` — body `{ tempPassword }`, 본인 대상 차단 |
+| POST | `/api/users/[id]/reactivate` | effectiveTeamAdmin | `reactivateUser` — 비활성 → 활성 전환 |
+| POST | `/api/users/[id]/team-admin` | **metaAdmin** | `toggleTeamAdmin` — body `{ grant: true|false }` |
+| POST | `/api/me/password` | 본인 (인증) | `changeMyPassword` — body `{ current, next }` |
+
+### 18-1. 권한 모델
+
+```
+isMetaAdmin        = role === "ADMIN" || role === "TENANT_OWNER"
+isEffectiveTeamAdmin = isTeamAdmin === true || isMetaAdmin
+canGrantRole(actor, targetRole):
+  - targetRole 이 STAFF_ROLES 밖 (CLIENT/SUPER_ADMIN/VIEWER) → false
+  - actor.role === "TENANT_OWNER" (임원진) → 전체 staff role 허용
+  - 그 외 effectiveTeamAdmin → 자기 팀 role 만 허용
+```
+
+**role → team 매핑** (DB 컬럼 없음, 앱-레벨 상수):
+
+| role | team | 팀 이름 |
+|---|---|---|
+| TENANT_OWNER | executive | 임원진 |
+| ADMIN | finance | 경영지원 |
+| QC | quality | 품질관리 |
+| EXEC | sales | 영업 |
+| CLIENT / SUPER_ADMIN / VIEWER | — | 직원관리 대상 아님 |
+
+**STAFF_ROLES** = `[TENANT_OWNER, ADMIN, QC, EXEC]` — 목록·생성·수정 모두 이 범위만.
+
+### 18-2. 주요 가드
+
+- **본인 대상 차단**: `updateUser`, `deactivateUser`, `resetUserPassword`, `toggleTeamAdmin` 모두 `id === me.id` 이면 `400`. 본인 비밀번호는 `/api/me/password` 에서만.
+- **마지막 TENANT_OWNER 비활성화 차단**: 활성 owner 가 1명뿐이면 `deactivateUser` 거부 (`400`).
+- **EXEC 비활성화 경고**: 직접담당(`Client.salesRepId`) + 복수배정(`SalesAssignment{active:true}`) 합산 > 0 이면 응답에 `{ warning, affectedCount }` 포함 (차단 아님, 비활성화는 진행됨).
+- **tenantId 스코핑**: 모든 조회/변경은 `where.tenantId = me.tenantId` 강제. 타테넌트 접근 시 `404`.
+- **비밀번호 평문 미노출**: `SAFE_SELECT` 에 `password` 제외. 응답 어디에도 해시 미포함.
+
+### 18-3. User.isTeamAdmin 플래그
+
+`User.isTeamAdmin boolean` — `/api/me` 세션 페이로드에 `isTeamAdmin` 필드 포함. 프로토타입 사이드바 "직원 관리" 메뉴 게이트 조건: `isTeamAdmin === true || isMetaAdmin(me)`. 팀 관리자 지정/해제는 metaAdmin 만 (`/api/users/[id]/team-admin`).
+
+---
+
+## 19. 호출 흐름 예시
 
 ### 18-1. CLIENT 발주 등록 (브라우저)
 ```
@@ -560,7 +613,7 @@ POST /api/ledger                   { action: "recompute", month, clientId }
 
 ---
 
-## 19. 미정의 / 추후 보강
+## 20. 미정의 / 추후 보강
 
 - **세금계산서 (TaxInvoice)** — 신규 도메인. 국세청 e-Tax 연동 vs DB-only 결정 대기 (#143).
 - **이메일 발송** — Nodemailer + Daum SMTP. `.env` `SMTP_USER`/`SMTP_PASS` 필요 (#144).
