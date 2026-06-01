@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>RTBIO 거래처 발주 포탈</title>
-<link rel="stylesheet" href="css/shared.css">
-<link rel="stylesheet" href="css/client.css">
-<link rel="stylesheet" href="css/ai-assistant.css">
-<link rel="stylesheet" href="css/shared-ui.css">
+<link rel="stylesheet" href="/portals/css/shared.css">
+<link rel="stylesheet" href="/portals/css/client.css">
+<link rel="stylesheet" href="/portals/css/ai-assistant.css">
+<link rel="stylesheet" href="/portals/css/shared-ui.css">
 <style>
 /* ── Page-specific overrides ── */
 .page { padding-bottom: 0; }
@@ -262,7 +262,7 @@
  <div class="login-card">
  <div class="login-logo">
  <div class="logo-banner">
- <img src="assets/logo-white.png" alt="RTBIO">
+ <img src="/portals/assets/logo-white.png" alt="RTBIO">
  </div>
  <p>거래처 발주 시스템</p>
  </div>
@@ -297,7 +297,7 @@
  ═══════════════════════════════════════════════════ -->
 <div class="client-header" id="app-header" style="display:none">
  <div class="logo">
- <img src="assets/rtbio-logo.png" alt="RTBIO" style="height:24px;width:auto;filter:brightness(0) saturate(100%);">
+ <img src="/portals/assets/rtbio-logo.png" alt="RTBIO" style="height:24px;width:auto;filter:brightness(0) saturate(100%);">
  </div>
  <nav class="desktop-nav" style="display:none">
  <a data-page="page-dashboard" class="active" onclick="goTo('page-dashboard');updateNav(this)">홈</a>
@@ -643,13 +643,13 @@
 <!-- ═══════════════════════════════════════════════════
  Scripts
  ═══════════════════════════════════════════════════ -->
-<script src="js/data.js"></script>
-<script src="js/api-adapter.js"></script>
-<script src="js/data-loader.js"></script>
-<script src="js/shared.js"></script>
-<script src="js/shared-ui.js"></script>
-<script src="js/notice.js"></script>
-<script src="js/ai-assistant.js"></script>
+<script src="/portals/js/data.js"></script>
+<script src="/portals/js/api-adapter.js"></script>
+<script src="/portals/js/data-loader.js"></script>
+<script src="/portals/js/shared.js"></script>
+<script src="/portals/js/shared-ui.js"></script>
+<script src="/portals/js/notice.js"></script>
+<script src="/portals/js/ai-assistant.js"></script>
 <script>
 // ── FIX-B2 (v2): NextAuth 세션 + window.CURRENT_USER 기반 전체 init ──
 // data-loader.js 가 DOMContentLoaded 를 가로채서 /api/* 를 모두 받은 뒤 큐를 flush 하므로,

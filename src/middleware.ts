@@ -27,6 +27,17 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const pathname = url.pathname;
 
+  // ── 0) 클린 URL 정규화 — 프로토타입 .html 직접 접근 → /admin 등으로 redirect
+  //     (rewrite 내부 서빙은 미들웨어를 재실행하지 않으므로 충돌 없음. 실서비스: .html 노출 금지)
+  const portalMatch = pathname.match(
+    /^\/portals\/(admin|qc|exec|ceo|client)-portal\.html$/,
+  );
+  if (portalMatch) {
+    const clean = new URL("/" + portalMatch[1], req.url);
+    clean.search = url.search;
+    return NextResponse.redirect(clean);
+  }
+
   // ── 1) 테넌트 컨텍스트 주입 ───────────────────────────────────
   const host = req.headers.get("host") ?? "";
   const tenantQuery = url.searchParams.get("tenant");
