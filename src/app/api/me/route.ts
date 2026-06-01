@@ -19,5 +19,6 @@ export async function GET() {
     tenantId: u.tenantId ?? null,
     tenantCode: u.tenantCode ?? null,
     clientId: u.clientId ?? null,
+    isTeamAdmin: u.isTeamAdmin ?? false,
   });
 }

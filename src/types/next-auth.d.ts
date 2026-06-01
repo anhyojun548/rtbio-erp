@@ -13,6 +13,7 @@ declare module "next-auth" {
       tenantId: string | null;
       tenantCode: string | null;
       clientId: string | null;
+      isTeamAdmin: boolean;
     } & DefaultSession["user"];
   }
 
@@ -22,6 +23,7 @@ declare module "next-auth" {
     tenantId: string | null;
     tenantCode: string | null;
     clientId: string | null;
+    isTeamAdmin: boolean;
   }
 }
 
@@ -32,5 +34,6 @@ declare module "next-auth/jwt" {
     tenantId: string | null;
     tenantCode: string | null;
     clientId: string | null;
+    isTeamAdmin: boolean;
   }
 }

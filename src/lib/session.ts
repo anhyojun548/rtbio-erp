@@ -11,6 +11,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { isEffectiveTeamAdmin, isMetaAdmin } from "@/lib/team";
 import type { UserRole } from "@prisma/client";
 
 // RBAC 매트릭스는 Edge 호환을 위해 별도 파일로 분리 — re-export
@@ -24,6 +25,7 @@ export type SessionUser = {
   tenantId: string | null;
   tenantCode: string | null;
   clientId: string | null;
+  isTeamAdmin: boolean;
 };
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
@@ -37,6 +39,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     tenantId: session.user.tenantId,
     tenantCode: session.user.tenantCode,
     clientId: session.user.clientId ?? null,
+    isTeamAdmin: session.user.isTeamAdmin ?? false,
   };
 }
 
@@ -69,5 +72,21 @@ export async function requireClient(): Promise<
   if (user.role !== "CLIENT") redirect("/403");
   if (!user.clientId) redirect("/403");
   return user as SessionUser & { clientId: string };
+}
+
+/** 직원관리 접근 — effectiveTeamAdmin 아니면 /403 */
+export async function requireTeamAdmin(): Promise<SessionUser & { tenantId: string }> {
+  const user = await requireAuth();
+  if (!user.tenantId) redirect("/403");
+  if (!isEffectiveTeamAdmin(user)) redirect("/403");
+  return user as SessionUser & { tenantId: string };
+}
+
+/** 팀 관리자 지정/해제 — 메타관리자(ADMIN/OWNER) 아니면 /403 */
+export async function requireMetaAdmin(): Promise<SessionUser & { tenantId: string }> {
+  const user = await requireAuth();
+  if (!user.tenantId) redirect("/403");
+  if (!isMetaAdmin(user)) redirect("/403");
+  return user as SessionUser & { tenantId: string };
 }
 

@@ -53,6 +53,7 @@ export const authOptions: NextAuthOptions = {
           tenantId: user.tenantId,
           tenantCode: user.tenant?.code ?? null,
           clientId: user.clientId ?? null,
+          isTeamAdmin: user.isTeamAdmin,
         };
       },
     }),
@@ -67,6 +68,7 @@ export const authOptions: NextAuthOptions = {
         token.tenantId = (user as { tenantId: string | null }).tenantId;
         token.tenantCode = (user as { tenantCode: string | null }).tenantCode;
         token.clientId = (user as { clientId: string | null }).clientId ?? null;
+        token.isTeamAdmin = (user as { isTeamAdmin: boolean }).isTeamAdmin ?? false;
       }
       return token;
     },
@@ -78,6 +80,7 @@ export const authOptions: NextAuthOptions = {
         tenantId: (token.tenantId as string | null) ?? null,
         tenantCode: (token.tenantCode as string | null) ?? null,
         clientId: (token.clientId as string | null) ?? null,
+        isTeamAdmin: (token.isTeamAdmin as boolean) ?? false,
       };
       return session;
     },
