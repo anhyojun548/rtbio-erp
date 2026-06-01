@@ -13,6 +13,7 @@ import { ok, fail, zodFail } from "@/lib/action-result";
 
 const SAFE_SELECT = {
   id: true, email: true, name: true, role: true, phone: true,
+  department: true, jobTitle: true,
   active: true, isTeamAdmin: true, lastLoginAt: true, createdAt: true,
 } satisfies Prisma.UserSelect;
 
@@ -66,6 +67,7 @@ export async function createUser(input: unknown) {
   const created = await prisma.user.create({
     data: {
       email: data.email, name: data.name, role: data.role, phone: data.phone ?? null,
+      department: data.department ?? null, jobTitle: data.jobTitle ?? null,
       password: hash, tenantId: me.tenantId, isTeamAdmin: false, active: true, createdBy: me.id,
     },
     select: SAFE_SELECT,
@@ -105,6 +107,8 @@ export async function updateUser(id: string, input: unknown) {
     data: {
       ...(d.name !== undefined && { name: d.name }),
       ...(d.phone !== undefined && { phone: d.phone ?? null }),
+      ...(d.department !== undefined && { department: d.department ?? null }),
+      ...(d.jobTitle !== undefined && { jobTitle: d.jobTitle ?? null }),
       ...(d.role !== undefined && { role: d.role }),
     },
     select: SAFE_SELECT,

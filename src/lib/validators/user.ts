@@ -6,18 +6,23 @@ export const staffRoleEnum = z.enum(["TENANT_OWNER", "ADMIN", "QC", "EXEC"]);
 const passwordField = z.string().min(8, "비밀번호는 8자 이상이어야 합니다.").max(72);
 const nameField = z.string().trim().min(1, "이름을 입력하세요.").max(50);
 const phoneField = z.string().trim().max(20).optional().or(z.literal("")).transform((v) => v || undefined);
+const orgLabelField = z.string().trim().max(40).optional().or(z.literal("")).transform((v) => v || undefined);
 
 export const createUserSchema = z.object({
   name: nameField,
   email: z.string().trim().email("올바른 이메일 형식이 아닙니다.").max(120),
   role: staffRoleEnum,
   phone: phoneField,
+  department: orgLabelField,
+  jobTitle: orgLabelField,
   tempPassword: passwordField,
 });
 
 export const updateUserSchema = z.object({
   name: nameField.optional(),
   phone: phoneField,
+  department: orgLabelField,
+  jobTitle: orgLabelField,
   role: staffRoleEnum.optional(),
 });
 
