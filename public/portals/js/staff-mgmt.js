@@ -214,6 +214,8 @@ async function renderStaff(searchTerm) {
         <td style="font-weight:600;">${_esc(u.name)}${teamAdminBadge}</td>
         <td style="color:var(--text-secondary);">${_esc(u.email)}</td>
         <td>${roleLabel}</td>
+        <td>${_esc(u.department || '-')}</td>
+        <td>${_esc(u.jobTitle || '-')}</td>
         <td>${statusBadge}</td>
         <td style="color:var(--text-secondary);font-size:12px;">${_fmtLastLogin(u.lastLoginAt)}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap;">${actions}</div></td>
@@ -228,6 +230,8 @@ async function renderStaff(searchTerm) {
         <tr style="background:var(--bg-soft);text-align:left;">
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이름</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이메일</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">권한</th>
+          <th style="padding:10px 12px;border-bottom:2px solid var(--border);">부서</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">직급</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">상태</th>
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">최근 로그인</th>
