@@ -239,6 +239,7 @@ function showDiscountMatrix(clientId) {
       <br>할인율(%) = MSRP 대비 거래처 지불 비율 (예: 55% = MSRP × 0.55 가격으로 공급).
     </div>
     <div style="overflow-x:auto;">
+    <style>.discount-matrix-table td{padding:6px 8px;border:1px solid var(--border);}</style>
     <table class="discount-matrix-table" style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="background:var(--bg-soft);">
@@ -250,7 +251,7 @@ function showDiscountMatrix(clientId) {
         </tr>
       </thead>
       <tbody>
-        ${rowsHTML.join('').replace(/<td>/g, '<td style="padding:6px 8px;border:1px solid var(--border);">')}
+        ${rowsHTML.join('')}
       </tbody>
     </table>
     </div>

@@ -226,7 +226,8 @@ async function renderStaff(searchTerm) {
 
   listEl.innerHTML = `
     <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <style>.sm-grid td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}</style>
+    <table class="sm-grid" style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="background:var(--bg-soft);text-align:left;">
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이름</th>
@@ -240,7 +241,7 @@ async function renderStaff(searchTerm) {
         </tr>
       </thead>
       <tbody>
-        ${bodyRows.replace(/<td>/g, '<td style="padding:10px 12px;border-bottom:1px solid var(--border);">')}
+        ${bodyRows}
       </tbody>
     </table>
     </div>
@@ -729,7 +730,8 @@ async function renderTeamAdmins() {
 
   listEl.innerHTML = `
     <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <style>.sm-grid td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}</style>
+    <table class="sm-grid" style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="background:var(--bg-soft);text-align:left;">
           <th style="padding:10px 12px;border-bottom:2px solid var(--border);">이름</th>
@@ -741,7 +743,7 @@ async function renderTeamAdmins() {
         </tr>
       </thead>
       <tbody>
-        ${bodyRows.replace(/<td>/g, '<td style="padding:10px 12px;border-bottom:1px solid var(--border);">')}
+        ${bodyRows}
       </tbody>
     </table>
     </div>
