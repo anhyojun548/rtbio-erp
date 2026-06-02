@@ -924,16 +924,15 @@
 <div class="picker-overlay" id="pickerOverlay">
  <div class="picker-modal">
  <div class="picker-header">
- <h2>➕ 위젯 추가</h2>
+ <h2>위젯 추가</h2>
  <button class="picker-close" id="pickerClose">✕</button>
  </div>
  <div class="picker-section">
- <h3> 프리셋 위젯</h3>
- <div class="preset-list" id="presetList"></div>
+ <div class="picker-section-head">
+ <h3>갤러리에서 선택</h3>
+ <button class="tb-btn primary" id="btnOpenBuilder">+ 직접 만들기</button>
  </div>
- <div class="picker-section">
- <h3> 빈 위젯으로 추가</h3>
- <div class="picker-grid" id="widgetTypeGrid"></div>
+ <div class="gallery-grid" id="galleryGrid"><div class="gallery-loading">불러오는 중…</div></div>
  </div>
  </div>
 </div>
@@ -1011,6 +1010,7 @@
 <script src="/portals/js/staff-mgmt.js"></script>
 <script src="/portals/js/notice.js"></script>
 <script src="/portals/js/ai-assistant.js"></script>
+<script src="/portals/js/widget-builder.js"></script>
 <script src="/portals/js/widget-dashboard.js"></script>
 <script src="/portals/js/report-templates.js"></script>
 <script src="/portals/js/report-builder.js"></script>
