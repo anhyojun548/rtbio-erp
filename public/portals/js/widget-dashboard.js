@@ -883,32 +883,38 @@ async function renderSpecWidget(elId, widgetId) {
       el.innerHTML = '<div class="kpi-value">—</div><div class="kpi-desc">' + _escapeHtml((payload && payload.error) || '데이터 조회 실패') + '</div>';
       return;
     }
-    var result = payload.result || {};
-    var kind = result.kind || payload.kind;
-    switch (kind) {
-      case 'kpi':
-        _renderSpecKpi(el, result, payload);
-        break;
-      case 'gauge':
-        _renderSpecGauge(el, result.value, payload.style, payload.format);
-        break;
-      case 'table':
-        _renderSpecTable(el, result.rows);
-        break;
-      case 'bar':
-      case 'hbar':
-      case 'line':
-      case 'pie':
-      case 'donut':
-        _renderSpecChart(el, kind, result.series, payload.style);
-        break;
-      default:
-        el.innerHTML = '<div class="kpi-desc">알 수 없는 위젯 종류: ' + _escapeHtml(kind) + '</div>';
-    }
+    renderSpecResult(el, payload);
   } catch (e) {
     el.innerHTML = '<div class="kpi-value">—</div><div class="kpi-desc">데이터 조회 오류</div>';
     // eslint-disable-next-line no-console
     console.warn('[dashboard] spec 위젯 렌더 실패', widgetId, e);
+  }
+}
+
+// result(payload) → DOM. 빌더 미리보기는 이미 받은 result 를 직접 그리므로 분리.
+// payload = { ok, result:{kind,value?,series?,rows?,comparison?}, kind?, title?, subtitle?, format?, style? }
+function renderSpecResult(el, payload) {
+  var result = payload.result || {};
+  var kind = result.kind || payload.kind;
+  switch (kind) {
+    case 'kpi':
+      _renderSpecKpi(el, result, payload);
+      break;
+    case 'gauge':
+      _renderSpecGauge(el, result.value, payload.style, payload.format);
+      break;
+    case 'table':
+      _renderSpecTable(el, result.rows);
+      break;
+    case 'bar':
+    case 'hbar':
+    case 'line':
+    case 'pie':
+    case 'donut':
+      _renderSpecChart(el, kind, result.series, payload.style);
+      break;
+    default:
+      el.innerHTML = '<div class="kpi-desc">알 수 없는 위젯 종류: ' + _escapeHtml(kind) + '</div>';
   }
 }
 
@@ -1250,6 +1256,7 @@ function importDashboard(file) {
 // ── Widget Picker ──
 function openPicker() {
   document.getElementById('pickerOverlay').classList.add('open');
+  if (window.onPickerOpen) window.onPickerOpen(); // 갤러리 lazy-load 훅 (widget-builder.js)
 }
 function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('open');
@@ -1298,6 +1305,25 @@ function addEmptyWidget(type) {
   showToast('빈 ' + typeDef.name + ' 위젯을 추가했습니다');
 }
 
+// spec 위젯 1개를 그리드에 추가 (갤러리/빌더 공용). _applyItemsToGrid 의 spec 분기를 단건 재사용.
+function addSpecWidgetToGrid(spec, savedId) {
+  widgetCounter++;
+  var id = 'widget-' + widgetCounter, bodyId = 'wbody-' + widgetCounter;
+  var w = (spec.layout && spec.layout.w) || 3, h = (spec.layout && spec.layout.h) || 2;
+  var content = '<div class="widget-header"><span class="widget-title">' + _escapeHtml(spec.title) +
+    '</span><button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button></div>' +
+    '<div class="widget-body" id="' + bodyId + '"></div>';
+  grid.addWidget({ id: id, w: w, h: h, content: content, autoPosition: true });
+  var el = document.querySelector('[gs-id="' + id + '"]');
+  if (el) {
+    el.dataset.widgetType = 'spec'; el.dataset.widgetTitle = spec.title;
+    el.dataset.widgetSpec = '1'; el.dataset.widgetId = savedId; el.dataset.widgetPreset = 'spec:custom';
+    window._specCache = window._specCache || {}; window._specCache[savedId] = spec;
+  }
+  setTimeout(function () { renderSpecWidget(bodyId, savedId); }, 50);
+  saveDashboard();
+}
+
 // ── Toast ──
 function showToast(msg) {
   var toast = document.getElementById('toast');
@@ -1312,6 +1338,12 @@ window.removeWidget = removeWidget;
 window.addPresetWidget = addPresetWidget;
 window.addEmptyWidget = addEmptyWidget;
 window.showToast = showToast;
+
+// ── spec 렌더러/그리드 추가/피커 토글 — 빌더(widget-builder.js) 재사용 ──
+window.renderSpecResult = renderSpecResult;
+window.addSpecWidgetToGrid = addSpecWidgetToGrid;
+window.closePicker = closePicker;
+window._WIDGET = { COLORS: COLORS }; // 빌더가 색상 토큰 참조
 
 // 2026-05-22: 외부에서 role 지정 가능 (포털 init 시 호출)
 window.setDashboardRole = function (role) {
