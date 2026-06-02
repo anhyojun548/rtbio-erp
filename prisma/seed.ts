@@ -38,10 +38,10 @@ async function main() {
   const defaultPw = await bcrypt.hash("rtbio1234!", 10);
   const users = await Promise.all([
     prisma.user.upsert({
-      where: { email: "owner@altibio.local" },
+      where: { email: "owner@rtbio.com" },
       update: { isTeamAdmin: true },
       create: {
-        email: "owner@altibio.local",
+        email: "owner@rtbio.com",
         password: defaultPw,
         name: "이대표",
         role: "TENANT_OWNER",
@@ -52,10 +52,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: "admin@altibio.local" },
+      where: { email: "admin@rtbio.com" },
       update: { isTeamAdmin: true },
       create: {
-        email: "admin@altibio.local",
+        email: "admin@rtbio.com",
         password: defaultPw,
         name: "김경영",
         role: "ADMIN",
@@ -66,10 +66,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: "qc@altibio.local" },
+      where: { email: "qc@rtbio.com" },
       update: {},
       create: {
-        email: "qc@altibio.local",
+        email: "qc@rtbio.com",
         password: defaultPw,
         name: "박품질",
         role: "QC",
@@ -79,10 +79,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: "sales1@altibio.local" },
+      where: { email: "sales1@rtbio.com" },
       update: {},
       create: {
-        email: "sales1@altibio.local",
+        email: "sales1@rtbio.com",
         password: defaultPw,
         name: "최영업",
         role: "EXEC",
@@ -92,10 +92,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: "sales2@altibio.local" },
+      where: { email: "sales2@rtbio.com" },
       update: {},
       create: {
-        email: "sales2@altibio.local",
+        email: "sales2@rtbio.com",
         password: defaultPw,
         name: "정영업",
         role: "EXEC",
@@ -428,8 +428,8 @@ async function main() {
 
   console.log("\n🌱 Seed 완료!");
   console.log("로그인 테스트 계정:");
-  console.log("  owner@altibio.local / admin@altibio.local / qc@altibio.local");
-  console.log("  sales1@altibio.local / sales2@altibio.local");
+  console.log("  owner@rtbio.com / admin@rtbio.com / qc@rtbio.com");
+  console.log("  sales1@rtbio.com / sales2@rtbio.com");
   console.log("  모두 비밀번호: rtbio1234!");
 }
 

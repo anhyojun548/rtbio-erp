@@ -6,14 +6,14 @@ import {
 describe("createUserSchema", () => {
   it("accepts valid input", () => {
     const r = createUserSchema.safeParse({
-      name: "홍길동", email: "hong@altibio.local", role: "QC",
+      name: "홍길동", email: "hong@rtbio.com", role: "QC",
       phone: "010-1234-5678", tempPassword: "altibio123!",
     });
     expect(r.success).toBe(true);
   });
   it("rejects short password", () => {
     const r = createUserSchema.safeParse({
-      name: "홍길동", email: "hong@altibio.local", role: "QC", tempPassword: "short",
+      name: "홍길동", email: "hong@rtbio.com", role: "QC", tempPassword: "short",
     });
     expect(r.success).toBe(false);
   });
@@ -25,7 +25,7 @@ describe("createUserSchema", () => {
   });
   it("rejects non-staff role at schema level (CLIENT)", () => {
     const r = createUserSchema.safeParse({
-      name: "x", email: "x@altibio.local", role: "CLIENT", tempPassword: "altibio123!",
+      name: "x", email: "x@rtbio.com", role: "CLIENT", tempPassword: "altibio123!",
     });
     expect(r.success).toBe(false);
   });

@@ -312,7 +312,7 @@ async function showNewStaffForm() {
       <div class="form-row">
         <div class="form-group">
           <label>이메일 *</label>
-          <input type="text" class="form-input" id="sf-email" placeholder="user@altibio.local">
+          <input type="text" class="form-input" id="sf-email" placeholder="user@rtbio.com">
         </div>
         <div class="form-group">
           <label>전화</label>

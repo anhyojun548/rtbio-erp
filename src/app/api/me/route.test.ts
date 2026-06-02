@@ -18,7 +18,7 @@ describe("/api/me", () => {
     (getServerSession as any).mockResolvedValue({
       user: {
         id: "u1",
-        email: "owner@altibio.local",
+        email: "owner@rtbio.com",
         name: "이대표",
         role: "TENANT_OWNER",
         tenantId: "t1",
@@ -30,7 +30,7 @@ describe("/api/me", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.role).toBe("TENANT_OWNER");
-    expect(data.email).toBe("owner@altibio.local");
+    expect(data.email).toBe("owner@rtbio.com");
     expect(data.id).toBe("u1");
     expect(data.tenantCode).toBe("altibio");
   });
@@ -54,7 +54,7 @@ describe("/api/me", () => {
     (getServerSession as any).mockResolvedValue({
       user: {
         id: "u3",
-        email: "admin@altibio.local",
+        email: "admin@rtbio.com",
         role: "ADMIN",
         tenantId: "t1",
         tenantCode: "altibio",

@@ -52,7 +52,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full h-10 px-3 rounded-md border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm"
-              placeholder="owner@altibio.local"
+              placeholder="owner@rtbio.com"
             />
           </div>
           <div className="space-y-1">
@@ -80,7 +80,7 @@ export default function LoginPage() {
 
         <div className="text-xs text-slate-400 text-center space-y-1 pt-2 border-t border-slate-100">
           <p>테스트 계정 (seed)</p>
-          <p className="font-mono text-[11px]"> owner/admin/qc/sales1/sales2 @altibio.local · rtbio1234!
+          <p className="font-mono text-[11px]"> owner/admin/qc/sales1/sales2 @rtbio.com · rtbio1234!
           </p>
         </div>
       </div>
