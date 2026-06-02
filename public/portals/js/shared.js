@@ -51,11 +51,14 @@ function formatNumber(num) {
 
 // ── Date Formatting ──
 function formatDate(dateStr) {
-  const [y, m, d] = dateStr.split('-');
+  if (!dateStr) return '';
+  // QA fix(2026-06-02): ISO datetime("2026-01-30T15:00:00Z") 도 허용 — 날짜부만 사용
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-');
   return `${m}.${d}`;
 }
 function formatDateFull(dateStr) {
-  const [y, m, d] = dateStr.split('-');
+  if (!dateStr) return '';
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-');
   return `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
 }
 

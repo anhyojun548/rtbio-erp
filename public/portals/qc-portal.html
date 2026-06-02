@@ -567,6 +567,7 @@
  <!-- STAFF-E5: 본인 비밀번호 변경 (changeMyPasswordUI — staff-mgmt.js) -->
  <div style="padding:0 16px 8px;">
  <a href="#" onclick="event.preventDefault(); changeMyPasswordUI();" style="font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;cursor:pointer;">🔑 비밀번호 변경</a>
+ <a href="#" onclick="event.preventDefault(); doLogout();" style="font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;cursor:pointer;margin-left:12px;">↩ 로그아웃</a>
  </div>
  <nav class="sidebar-nav">
  <div class="nav-section">업무</div>
@@ -2228,6 +2229,12 @@ function moveToNextStage(orderId) {
  </div>`;
 
  showModal(`${nextStage.icon} ${nextStage.name}으로 이동`, html, async () => {
+ // QA fix(2026-06-02): shipment 미시작(출고정보 없음) 주문은 단계이동을 차단.
+ // 과거엔 order.shipmentId 가 없으면 API 호출 없이 로컬 상태만 바뀌어 DB 와 조용히 어긋났음.
+ if (!order.shipmentId) {
+   if (typeof showToast === 'function') showToast('출고가 시작되지 않은 주문입니다 — 발주확정에서 출고를 먼저 시작하세요', 'error');
+   return;
+ }
  const sel = document.getElementById('transfer-staff-select');
  const newStaffId = sel ? sel.value : defaultId;
 

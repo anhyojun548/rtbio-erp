@@ -558,6 +558,7 @@
  <!-- STAFF-E5: 본인 비밀번호 변경 (changeMyPasswordUI — staff-mgmt.js) -->
  <div style="padding:0 16px 8px;">
  <a href="#" onclick="event.preventDefault(); changeMyPasswordUI();" style="font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;cursor:pointer;">🔑 비밀번호 변경</a>
+ <a href="#" onclick="event.preventDefault(); doLogout();" style="font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;cursor:pointer;margin-left:12px;">↩ 로그아웃</a>
  </div>
  <nav class="sidebar-nav">
  <!-- 경영지원팀 요청 (2026-04-21):
@@ -590,7 +591,8 @@
  <div class="nav-item" data-page="page-receivables" onclick="goTo('page-receivables')">
  미수금관리
  </div>
- <div class="nav-item" data-page="page-tax-invoice" onclick="goTo('page-tax-invoice')">
+ <!-- QA(2026-06-02): 세금계산서 미구현(#143) — 구현 전까지 메뉴 숨김 -->
+ <div class="nav-item" data-page="page-tax-invoice" onclick="goTo('page-tax-invoice')" style="display:none;">
  세금계산서
  </div>
  <div class="nav-section">관리</div>
@@ -921,7 +923,7 @@
  <!-- Actions -->
  <div class="grid-actions mt-16" style="display:flex;gap:8px;justify-content:flex-end;">
  <button class="btn btn-outline btn-sm" onclick="showToast('PDF가 다운로드되었습니다', 'success')"> PDF 다운로드</button>
- <button class="btn btn-outline btn-sm" onclick="sendLedgerEmail()"> 이메일 발송</button>
+ <button class="btn btn-outline btn-sm" onclick="sendLedgerEmail()" style="display:none;"> 이메일 발송</button>
  <button class="btn btn-outline btn-sm" onclick="showToast('인쇄 준비 중...', 'info')"> 인쇄</button>
  </div>
  </div>
@@ -2165,17 +2167,17 @@ function renderClients(searchTerm) {
  </div>
  <div class="client-card-row"><span class="label">담당자</span><span>${c.manager}</span></div>
  <div class="client-card-row"><span class="label">영업담당</span><span>${repName}</span></div>
- <div class="client-card-row"><span class="label">연락처</span><span>${c.phone}</span></div>
- <div class="client-card-row"><span class="label">이메일</span><span>${c.email}</span></div>
- <div class="client-card-row"><span class="label">주소</span><span>${c.address}</span></div>
- <div class="client-card-row"><span class="label">결제방식</span><span>${c.paymentType}</span></div>
- <div class="client-card-row"><span class="label">마감기간</span><span>${c.closingPeriod}</span></div>
- <div class="client-card-row"><span class="label">명세서</span><span>${c.invoiceType}</span></div>
+ <div class="client-card-row"><span class="label">연락처</span><span>${c.phone || '-'}</span></div>
+ <div class="client-card-row"><span class="label">이메일</span><span>${c.email || '-'}</span></div>
+ <div class="client-card-row"><span class="label">주소</span><span>${c.address || '-'}</span></div>
+ <div class="client-card-row"><span class="label">결제방식</span><span>${c.paymentMethod || '-'}</span></div>
+ <div class="client-card-row"><span class="label">마감기간</span><span>${c.closingPeriod || '-'}</span></div>
+ <div class="client-card-row"><span class="label">명세서</span><span>${c.priceListName || '-'}</span></div>
  <div class="discount-tags">
- <span class="discount-tag">무릎 ${c.discounts.knee}%</span>
- <span class="discount-tag">상지 ${c.discounts.upper}%</span>
- <span class="discount-tag">하지 ${c.discounts.lower}%</span>
- <span class="discount-tag">스프린트 ${c.discounts.sprint}%</span>
+ <span class="discount-tag">무릎 ${(c.discounts||{}).knee ?? 0}%</span>
+ <span class="discount-tag">상지 ${(c.discounts||{}).upper ?? 0}%</span>
+ <span class="discount-tag">하지 ${(c.discounts||{}).lower ?? 0}%</span>
+ <span class="discount-tag">스프린트 ${(c.discounts||{}).sprint ?? 0}%</span>
  </div>
  ${c.discountMatrix ? `
  <div class="discount-tags" style="margin-top:6px;">
@@ -3008,7 +3010,7 @@ function renderInvoice(clientId) {
  <div class="invoice-actions">
  <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')"> 인쇄</button>
  <button class="btn btn-primary" onclick="showToast('PDF가 저장되었습니다', 'success')"> PDF 저장</button>
- <button class="btn btn-accent" onclick="sendInvoiceEmail('${clientId}')"> 메일 발송</button>
+ <button class="btn btn-accent" onclick="sendInvoiceEmail('${clientId}')" style="display:none;"> 메일 발송</button>
  </div>
  </div>
  `;
@@ -3053,7 +3055,7 @@ function renderLedger() {
  const clientOrders = ORDERS.filter(o => o.clientId === c.id);
  const monthlySales = clientOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
  const rec = RECEIVABLES.find(r => r.clientId === c.id);
- const receivable = rec ? rec.amount : 0;
+ const receivable = rec ? (Number(rec.amount) || 0) : 0;
  const carryOver = Math.round(receivable * 0.7);
  const collected = carryOver + monthlySales - receivable;
  return {
@@ -3218,7 +3220,7 @@ function renderReport() {
  const totalRevenue = filteredOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
  const avgOrder = filteredOrders.length > 0 ? Math.round(totalRevenue / filteredOrders.length) : 0;
  const filteredReceivables = RECEIVABLES.filter(r => clientIds.has(r.clientId));
- const totalRec = filteredReceivables.reduce((s, r) => s + r.amount, 0);
+ const totalRec = filteredReceivables.reduce((s, r) => s + (Number(r.amount) || 0), 0);
 
  // ─── 업체별 브랜드 수량 + 매출 집계 (일일 매출 보고서 메인 테이블) ───
  const BRAND_COLS = ['리코탭','리스프린트','네오','바로웰핏','롱버전','기타'];
@@ -3476,7 +3478,7 @@ function renderReport() {
  <!-- Actions -->
  <div class="report-doc-actions">
  <button class="btn btn-primary" onclick="showToast('PDF가 다운로드되었습니다', 'success')"> PDF 다운로드</button>
- <button class="btn btn-accent" onclick="sendReportEmail()"> 이메일 발송</button>
+ <button class="btn btn-accent" onclick="sendReportEmail()" style="display:none;"> 이메일 발송</button>
  <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')"> 인쇄</button>
  </div>
  </div>
@@ -3606,7 +3608,7 @@ function renderPayments() {
  const thisMonthCollection = 8750000;
  const totalOutstanding = totalReceivables;
  const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
- const avgOverdue = Math.round(RECEIVABLES.reduce((s, r) => s + r.overdueDays, 0) / RECEIVABLES.length);
+ const avgOverdue = RECEIVABLES.length ? Math.round(RECEIVABLES.reduce((s, r) => s + (Number(r.overdueDays) || 0), 0) / RECEIVABLES.length) : 0;
 
  document.getElementById('payments-stats').innerHTML = `
  <div class="stat-card stat-primary">
@@ -3838,7 +3840,7 @@ let _selectedReceivableClientId = null;
 
 function renderReceivables() {
  // 상단 KPI
- const totalOutstanding = RECEIVABLES.reduce((s, r) => s + r.amount, 0);
+ const totalOutstanding = RECEIVABLES.reduce((s, r) => s + (Number(r.amount) || 0), 0);
  const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 30).length;
  const totalClients = (typeof CLIENTS !== 'undefined') ? CLIENTS.length : RECEIVABLES.length;
  const recvCount = RECEIVABLES.length;
@@ -4938,10 +4940,10 @@ function renderInvoiceHistory() {
 
  return `
  <tr>
- <td class="mono" style="font-size:12px;">${inv.id}</td>
+ <td class="mono" style="font-size:12px;">${inv.invoiceNumber || inv.id}</td>
  <td>${formatDate ? formatDate(inv.issueDate) : inv.issueDate}</td>
  <td><strong>${clientName}</strong></td>
- <td class="text-right fw-600">${formatCurrency(inv.amount)}</td>
+ <td class="text-right fw-600">${formatCurrency(Number(inv.totalAmount) || 0)}</td>
  <td class="text-center">${statusBadge}</td>
  <td class="text-center" style="white-space:nowrap;">${sentBadge}</td>
  <td class="text-center" style="white-space:nowrap;">${countCell}</td>

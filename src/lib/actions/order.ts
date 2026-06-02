@@ -236,6 +236,12 @@ export async function listOrders(filter: OrderListFilter = {}) {
     include: {
       client: { select: { id: true, code: true, name: true } },
       items: true, // prototype 호환 — 발주확정/칸반/대시보드가 order.items 직접 참조
+      // QA fix(2026-06-02): 칸반 단계이동/SHIP 이 order.shipmentId 를 필요로 함 → 최신 shipment 1건
+      shipments: {
+        select: { id: true, currentStageId: true, completedAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
       _count: { select: { items: true } },
     },
   });

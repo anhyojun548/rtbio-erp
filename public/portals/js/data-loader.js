@@ -90,9 +90,17 @@
   function normalizeOrder(o) {
     if (!o || typeof o !== 'object') return o;
     var mapped = ORDER_STATUS_MAP[o.status];
-    return mapped
+    var base = mapped
       ? Object.assign({}, o, { status: mapped, _statusEnum: o.status })
-      : o;
+      : Object.assign({}, o);
+    // QA fix(2026-06-02): 칸반 단계이동/SHIP 트랜잭션이 order.shipmentId 를 참조함.
+    // /api/orders 가 include 한 최신 shipment(배열 1건)를 평탄화해 매핑.
+    var ship = (Array.isArray(o.shipments) && o.shipments.length) ? o.shipments[0] : null;
+    if (ship) {
+      base.shipmentId = ship.id;
+      if (ship.currentStageId) base.currentStageId = ship.currentStageId;
+    }
+    return base;
   }
 
   /* ───────────────────────────────────────────
@@ -285,7 +293,9 @@
         });
 
         const normInvoices = bs.invoices || [];
-        const normPayments = bs.payments || [];
+        // QA fix(2026-06-02): Prisma Decimal 은 문자열로 직렬화됨 → amount 를 숫자로 정규화
+        // (합계 reduce 시 `+` 문자열 연결로 NaN→₩0 되는 버그 클래스 근본 차단)
+        const normPayments = (bs.payments || []).map(p => ({ ...p, amount: Number(p.amount) || 0 }));
         const normLedgers  = bs.ledgers  || [];
         const normNotices  = bs.notices  || [];
 
@@ -431,7 +441,7 @@
         return norm;
       }) : [];
       const _normInvoices = invoices  ? (Array.isArray(invoices) ? invoices : (invoices.data ?? [])) : [];
-      const _normPayments = payments  ? (Array.isArray(payments) ? payments : (payments.data ?? [])) : [];
+      const _normPayments = (payments  ? (Array.isArray(payments) ? payments : (payments.data ?? [])) : []).map(p => ({ ...p, amount: Number(p.amount) || 0 }));
       const _normLedger   = ledger    ? (Array.isArray(ledger)   ? ledger   : (ledger.data   ?? [])) : [];
       const _normNotices  = notices   ? (Array.isArray(notices)  ? notices  : (notices.data  ?? [])) : [];
       const _normUdi      = udi       ? (Array.isArray(udi)      ? udi      : (udi.data      ?? [])) : [];

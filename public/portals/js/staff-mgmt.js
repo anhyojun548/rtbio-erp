@@ -848,3 +848,21 @@ if (typeof window !== 'undefined') {
   window.renderTeamAdmins = renderTeamAdmins;
   window.toggleTeamAdminUI = toggleTeamAdminUI;
 }
+
+// QA fix(2026-06-02): admin/qc/exec 포탈 로그아웃 (ceo/client 는 자체 구현 보유)
+async function doLogout() {
+  try {
+    const csrfRes = await fetch('/api/auth/csrf', { credentials: 'same-origin' });
+    const { csrfToken } = await csrfRes.json();
+    await fetch('/api/auth/signout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ csrfToken, callbackUrl: '/login', json: 'true' }),
+    });
+  } catch (err) {
+    console.warn('[doLogout] signOut 호출 실패 — 강제 이동', err);
+  }
+  window.location.href = '/login';
+}
+if (typeof window !== 'undefined') { window.doLogout = doLogout; }
