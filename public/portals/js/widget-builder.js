@@ -61,10 +61,21 @@ async function loadGallery() {
   }
 }
 
-/* ── 카드 클릭 → spec 저장 + 그리드 추가 (Phase A3 에서 구현) ── */
+/* ── 카드 클릭 → spec 저장 + 그리드 추가 ── */
 async function addFromGallery(key) {
-  // A3 에서 POST /api/dashboard/widgets/spec → addSpecWidgetToGrid 로 교체된다.
-  if (window.showToast) window.showToast('준비 중입니다');
+  var spec = _galleryCache[key];
+  if (!spec) return;
+  try {
+    var r = await fetch('/api/dashboard/widgets/spec', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spec: spec }),
+    });
+    var j = await r.json();
+    if (!r.ok || !j.ok) { window.showToast('추가 실패: ' + ((j.validationErrors && j.validationErrors[0] && j.validationErrors[0].message) || j.error || '')); return; }
+    window.addSpecWidgetToGrid(j.spec, j.id);
+    window.closePicker(); window.showToast('"' + spec.title + '" 위젯을 추가했습니다');
+  } catch (e) { window.showToast('네트워크 오류'); }
 }
 
 /* ── 갤러리 lazy-load 훅 — openPicker 가 호출 ── */
