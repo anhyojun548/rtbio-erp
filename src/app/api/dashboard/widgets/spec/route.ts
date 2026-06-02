@@ -22,6 +22,7 @@ import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { validateWidgetSpec } from "@/lib/widget-spec/schema";
 import { executeWidgetSpec } from "@/lib/widget-spec/execute";
+import { resolveTargetUserId } from "./forUser";
 
 const unauthorized = () =>
   Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -81,8 +82,21 @@ export async function POST(req: Request) {
   }
 
   // 3) 저장 — config 에 full spec 보존
+  // forUser(email) 가 있으면 그 유저의 대시보드에 저장 (Flowise 토큰 흐름: 요청자 대상).
+  let userId: string;
+  try {
+    const forUser =
+      body && typeof body === "object" && typeof body.forUser === "string"
+        ? body.forUser
+        : undefined;
+    userId = await resolveTargetUserId(user.id, forUser);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    return Response.json({ ok: false, error: message }, { status: 400 });
+  }
+
   const last = await prisma.dashboardWidget.findFirst({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { position: "desc" },
     select: { position: true },
   });
@@ -90,7 +104,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.dashboardWidget.create({
     data: {
-      userId: user.id,
+      userId,
       preset: "spec:custom", // spec-based 위젯 마커
       position,
       width: spec.layout?.w ?? 3,
