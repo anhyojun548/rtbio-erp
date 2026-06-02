@@ -1264,7 +1264,10 @@ function closePicker() {
 
 function renderPicker() {
   // Presets — 2026-05-22: role 필터링 적용
+  // 2026-06-02(Phase A): 갤러리 모달로 교체되어 #presetList/#widgetTypeGrid 가 더 이상 없다.
+  //   레거시 호출부(init/setDashboardRole) 가 남아 있으므로 안전 가드로 조용히 종료. (Phase B5 에서 함수 자체 제거)
   var presetList = document.getElementById('presetList');
+  if (!presetList) return;
   presetList.innerHTML = getVisiblePresets().map(function (p) {
     var typeDef = WIDGET_TYPES.find(function (t) { return t.id === p.type; });
     return '' +
@@ -1295,14 +1298,6 @@ function addPresetWidget(type, title, preset, w, h) {
   closePicker();
   saveDashboard();
   showToast('"' + title + '" 위젯을 추가했습니다');
-}
-
-function addEmptyWidget(type) {
-  var typeDef = WIDGET_TYPES.find(function (t) { return t.id === type; });
-  addWidget(type, typeDef.name + ' (새 위젯)', null, typeDef.defaultW, typeDef.defaultH);
-  closePicker();
-  saveDashboard();
-  showToast('빈 ' + typeDef.name + ' 위젯을 추가했습니다');
 }
 
 // spec 위젯 1개를 그리드에 추가 (갤러리/빌더 공용). _applyItemsToGrid 의 spec 분기를 단건 재사용.
@@ -1336,7 +1331,6 @@ function showToast(msg) {
 window.addWidget = addWidget;
 window.removeWidget = removeWidget;
 window.addPresetWidget = addPresetWidget;
-window.addEmptyWidget = addEmptyWidget;
 window.showToast = showToast;
 
 // ── spec 렌더러/그리드 추가/피커 토글 — 빌더(widget-builder.js) 재사용 ──
