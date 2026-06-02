@@ -141,8 +141,16 @@ Prisma Decimal이 JSON에서 **문자열**로 직렬화 → `reduce((s,x)=>s+x.a
 | 7 | **admin/qc/exec 로그아웃 버튼 부재**(실서비스 결함) | staff-mgmt.js(doLogout) + 3포탈 | 실동작 검증 |
 | 8 | **칸반 단계이동/SHIP 미영속**(order.shipmentId null — /api/orders가 shipment 미포함) | order.ts + data-loader.js + qc-portal.html | E2E SHIP 검증 |
 | 9 | 세금계산서·이메일 발송 미구현(#143/#144) — 메뉴/버튼 노출 | admin-portal.html | `display:none` 숨김(코드 보존, 구현 시 복구) |
+| 10 | **RECEIVABLES 오배선**(미수금=Payment로 잘못 집계) → **ClosingLedger 재배선** | admin-portal.html | 브라우저 검증 ✅ ↓ |
 
-> **후속 권장 중 보류**(브라우저 확장 연결 해제로 시각검증 불가 → 무검증 UI 변경 회피): RECEIVABLES→ClosingLedger 재배선(데이터는 준비됨: ClosingLedger 1191행/balance>0 999) · 칸반 무음실패→auto-start · exec rep 스코프 · 보고서 기본 날짜범위 · 로드 후 네비 경합. **브라우저 재연결된 집중 세션에서 진행 권장.**
+### 🔧 후속 #10 — RECEIVABLES → ClosingLedger 재배선 (완료·검증)
+- 신규 헬퍼 `_clientReceivableAgg()`: 거래처별 balance>0 마감원장 합산(대시보드 위젯 `total_ar` 와 동일 출처)
+- `renderReceivables`(미수금관리): 총 미수금/연체/거래처별 행 = ClosingLedger 기반 → **거래처당 1행**(수금건별 중복 제거), 실 매출/입금/미수금 + 이월 연체
+- `renderPayments`(수금관리): 미수금 총액/연체 = 동일 출처
+- **검증(브라우저)**: 3개 화면 수치 일치 — 대시보드 위젯 **₩579,204,367** ≈ 미수금관리 **₩580,269,307**(75거래처·64연체) = 수금관리 **₩580,269,307**. (전: ₩0/₩1.6B/stale ₩12.77M)
+- E2E 산출물 정리: 테스트 발주 `ORD-20260602-001` 삭제 + `ORD-001` 되돌리기(재고/상태/SHIP로그/shipment) → DB baseline 복귀
+
+> **남은 후속(시각검증·설계 필요 → 차기 세션):** 칸반 무음실패→auto-start shipment · exec rep 스코프(영업사원 회사전체 조회) · 보고서 기본 날짜범위 · 로드 후 네비 경합 · 마감원장 receivable 컬럼(여전히 order 근사)
 
 ### ⚠️ 후속 권장 (데이터/UX·코드버그 아님)
 - **RECEIVABLES 오배선**: 미수 화면이 Payment 데이터 기반 → 정밀 미수는 ClosingLedger(`/api/ledger`) 연동이 정공법

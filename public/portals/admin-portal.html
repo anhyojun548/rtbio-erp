@@ -3606,8 +3606,12 @@ function addPurchaseRow() {
 function renderPayments() {
  // Summary stats
  const thisMonthCollection = 8750000;
- const totalOutstanding = totalReceivables;
- const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 0).length;
+ // QA fix(2026-06-02): 미수금/연체는 ClosingLedger(거래처별 최신 balance) 기준 — 미수금관리와 정합
+ const _aggP = _clientReceivableAgg();
+ const _recvP = Object.keys(_aggP).map(function (k) { return _aggP[k]; });
+ const totalOutstanding = _recvP.reduce((s, e) => s + e.bal, 0);
+ const recvClientCount = _recvP.length;
+ const overdueCount = _recvP.filter(e => e.carry > 0).length;
  const avgOverdue = RECEIVABLES.length ? Math.round(RECEIVABLES.reduce((s, r) => s + (Number(r.overdueDays) || 0), 0) / RECEIVABLES.length) : 0;
 
  document.getElementById('payments-stats').innerHTML = `
@@ -3619,7 +3623,7 @@ function renderPayments() {
  <div class="stat-card stat-danger">
  <div class="stat-label">미수금 총액</div>
  <div class="stat-value">${formatCurrency(totalOutstanding)}</div>
- <div class="stat-sub">${RECEIVABLES.length}개 거래처</div>
+ <div class="stat-sub">${recvClientCount}개 거래처</div>
  </div>
  <div class="stat-card stat-warning">
  <div class="stat-label">연체 건수</div>
@@ -3838,12 +3842,33 @@ async function commitPayment() {
 
 let _selectedReceivableClientId = null;
 
+// QA fix(2026-06-02): 미수금 = ClosingLedger.balance. Payment(RECEIVABLES) 가 아님.
+// 거래처별로 balance>0 인 모든 마감월을 합산 (대시보드 위젯 total_ar 와 동일 출처 → 수치 정합).
+function _clientReceivableAgg() {
+ const leds = (typeof LEDGERS !== 'undefined' && LEDGERS) ? LEDGERS : (window.LEDGERS || []);
+ const agg = {};
+ for (let i = 0; i < leds.length; i++) {
+  const l = leds[i]; const b = Number(l.balance) || 0;
+  if (b <= 0 || !l || !l.clientId) continue;
+  let a = agg[l.clientId];
+  if (!a) {
+   const c = (typeof CLIENTS !== 'undefined') ? CLIENTS.find(x => x.id === l.clientId) : null;
+   a = agg[l.clientId] = { cid: l.clientId, name: c ? c.name : l.clientId, type: c ? (c.type || '-') : '-', sales: 0, paid: 0, carry: 0, bal: 0, month: '' };
+  }
+  a.bal += b; a.sales += Number(l.monthlySales) || 0; a.paid += Number(l.received) || 0;
+  if ((Number(l.carryOver) || 0) > 0) a.carry += (Number(l.carryOver) || 0);
+  if (String(l.closingMonth) > a.month) a.month = l.closingMonth;
+ }
+ return agg;
+}
 function renderReceivables() {
- // 상단 KPI
- const totalOutstanding = RECEIVABLES.reduce((s, r) => s + (Number(r.amount) || 0), 0);
- const overdueCount = RECEIVABLES.filter(r => r.overdueDays > 30).length;
- const totalClients = (typeof CLIENTS !== 'undefined') ? CLIENTS.length : RECEIVABLES.length;
- const recvCount = RECEIVABLES.length;
+ // 상단 KPI — 거래처별 최신 마감원장 balance>0 (정공법: ClosingLedger)
+ const _aggMap = _clientReceivableAgg();
+ const _entries = Object.keys(_aggMap).map(function (k) { return _aggMap[k]; });
+ const totalOutstanding = _entries.reduce((s, e) => s + e.bal, 0);
+ const overdueCount = _entries.filter(e => e.carry > 0).length;
+ const totalClients = (typeof CLIENTS !== 'undefined') ? CLIENTS.length : _entries.length;
+ const recvCount = _entries.length;
  const kpi = document.getElementById('receivables-stats');
  if (kpi) {
  kpi.innerHTML = `
@@ -3855,7 +3880,7 @@ function renderReceivables() {
  <div class="stat-card stat-warning">
  <div class="stat-label">연체 중</div>
  <div class="stat-value">${overdueCount}건</div>
- <div class="stat-sub">1개월 이상 경과</div>
+ <div class="stat-sub">전월 잔액 이월</div>
  </div>
  <div class="stat-card stat-primary">
  <div class="stat-label">미수 비율</div>
@@ -3870,23 +3895,16 @@ function renderReceivables() {
  `;
  }
 
- // 미수 거래처 목록
+ // 미수 거래처 목록 (ClosingLedger 기반 — 거래처당 1행)
  const typeFilter = document.getElementById('recv-type-filter')?.value || 'all';
  const sortBy = document.getElementById('recv-sort')?.value || 'amount-desc';
- let rows = RECEIVABLES.map(r => {
- const c = (typeof CLIENTS !== 'undefined') ? CLIENTS.find(x => x.id === r.clientId) : null;
- return {
- r, c,
- name: c ? c.name : r.clientId,
- type: c ? (c.type || '-') : '-',
- };
- });
+ let rows = _entries.slice();
  if (typeFilter !== 'all') {
  rows = rows.filter(x => x.type === typeFilter);
  }
  rows.sort((a, b) => {
- if (sortBy === 'amount-desc') return b.r.amount - a.r.amount;
- if (sortBy === 'overdue-desc') return b.r.overdueDays - a.r.overdueDays;
+ if (sortBy === 'amount-desc') return b.bal - a.bal;
+ if (sortBy === 'overdue-desc') return b.carry - a.carry;
  return a.name.localeCompare(b.name, 'ko');
  });
 
@@ -3896,24 +3914,19 @@ function renderReceivables() {
  const tbody = document.getElementById('receivables-body');
  if (tbody) {
  tbody.innerHTML = rows.length === 0
- ? '<tr><td colspan="8" class="text-center text-muted" style="padding:32px;">조건에 맞는 미수 거래처가 없습니다.</td></tr>'
+ ? '<tr><td colspan="8" class="text-center text-muted" style="padding:32px;">미수 거래처가 없습니다.</td></tr>'
  : rows.map(x => {
- const recentSales = Math.round(x.r.amount * 1.2);
- const recentPaid = Math.round(x.r.amount * 0.6);
- const bucket = classifyAgingMonth(x.r.overdueDays);
- const statusBadge = bucket === 'THIS' ? '<span class="aging-normal">정상</span>'
- : bucket === 'M1' ? '<span class="aging-warning">주의</span>'
- : '<span class="aging-danger">연체</span>';
+ const statusBadge = x.carry > 0 ? '<span class="aging-danger">연체</span>' : '<span class="aging-normal">정상</span>';
  return `
  <tr>
  <td><strong>${x.name}</strong></td>
  <td>${x.type}</td>
- <td class="text-right">${formatCurrency(recentSales)}</td>
- <td class="text-right" style="color:var(--success);">${formatCurrency(recentPaid)}</td>
- <td class="text-right fw-600" style="color:var(--danger);">${formatCurrency(x.r.amount)}</td>
- <td class="text-right">${x.r.overdueDays > 0 ? x.r.overdueDays + '일 (' + AGING_LABEL[bucket] + ')' : '<span style="color:var(--success);">이번 달</span>'}</td>
+ <td class="text-right">${formatCurrency(x.sales)}</td>
+ <td class="text-right" style="color:var(--success);">${formatCurrency(x.paid)}</td>
+ <td class="text-right fw-600" style="color:var(--danger);">${formatCurrency(x.bal)}</td>
+ <td class="text-right">${x.month || '-'}${x.carry > 0 ? ' · 이월 ' + formatCurrency(x.carry) : ''}</td>
  <td>${statusBadge}</td>
- <td class="text-center"><button class="btn btn-outline btn-sm" onclick="selectReceivableClient('${x.r.clientId}')" title="월별 분석"></button></td>
+ <td class="text-center"><button class="btn btn-outline btn-sm" onclick="selectReceivableClient('${x.cid}')" title="월별 분석">분석</button></td>
  </tr>
  `;
  }).join('');
@@ -3946,8 +3959,8 @@ function onReceivablesSearchInput(value) {
  return;
  }
  dd.innerHTML = matches.slice(0, 20).map(c => {
- const rec = (typeof RECEIVABLES !== 'undefined') ? RECEIVABLES.find(r => r.clientId === c.id) : null;
- const recAmt = rec ? rec.amount : 0;
+ const _agg2 = _clientReceivableAgg()[c.id];
+ const recAmt = _agg2 ? _agg2.bal : 0;
  return `
  <div onclick="selectReceivableClient('${c.id}')"
  style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"
