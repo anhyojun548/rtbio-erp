@@ -2,6 +2,25 @@
  * RTBIO Prototype — Shared Utilities
  */
 
+// ── 넓은 표 자동 스크롤 래핑 ──
+// .data-table 이 뷰포트보다 넓을 때 페이지 전체가 가로 스크롤되는 문제 해결.
+// 표를 .table-scroll(overflow-x:auto) 로 감싸 "표만" 가로 스크롤되게 한다.
+// 동적 렌더는 tbody 만 교체하므로 래퍼는 1회 감싸면 유지됨 (goTo 시점 호출로 충분).
+function autoWrapTables(scope) {
+  try {
+    const root = scope || document;
+    const tables = root.querySelectorAll('table.data-table, table.de-grid');
+    tables.forEach(function (t) {
+      const parent = t.parentElement;
+      if (!parent || (parent.classList && parent.classList.contains('table-scroll'))) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'table-scroll';
+      parent.insertBefore(wrap, t);
+      wrap.appendChild(t);
+    });
+  } catch (e) { /* no-op: 네비게이션을 막지 않음 */ }
+}
+
 // ── Page Navigation ──
 function goTo(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -9,6 +28,7 @@ function goTo(pageId) {
   if (target) {
     target.classList.add('active');
     window.scrollTo(0, 0);
+    autoWrapTables(target);
   }
   // Update nav highlights
   document.querySelectorAll('[data-page]').forEach(el => {

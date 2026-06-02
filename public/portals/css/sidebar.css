@@ -157,6 +157,7 @@
 /* ── Main Content ── */
 .main-content {
   flex: 1;
+  min-width: 0; /* flex 자식이 넓은 표 때문에 늘어나 페이지 전체가 가로 스크롤되는 것 방지 */
   margin-left: 250px;
   padding: 24px 32px;
   min-height: 100vh;
