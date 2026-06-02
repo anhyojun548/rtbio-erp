@@ -10,9 +10,14 @@
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getToken, encode } from "next-auth/jwt";
 import { canAccessPath } from "@/lib/rbac";
 import { getAuthSecret } from "@/lib/auth-secret";
+import {
+  isValidApiToken,
+  isTokenWriteAllowed,
+  SERVICE_PRINCIPAL,
+} from "@/lib/widget-spec/api-auth";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/403", "/_next", "/favicon.ico"];
 
@@ -46,6 +51,54 @@ export async function middleware(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers);
   if (tenant) requestHeaders.set("x-tenant-id", tenant);
+
+  // ── 1.5) API 토큰 게이트 (Flowise 등 외부 에이전트) ──
+  //     Authorization: Bearer <WIDGET_API_TOKEN> 요청은 서비스 계정 세션 JWT 를
+  //     쿠키로 주입해 기존 getServerSession 기반 핸들러가 정상 ADMIN 세션으로 인식.
+  const authz = req.headers.get("authorization");
+  if (authz && authz.startsWith("Bearer ")) {
+    if (!pathname.startsWith("/api/")) {
+      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    }
+    if (!isValidApiToken(authz)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid API token" },
+        { status: 401 },
+      );
+    }
+    if (!isTokenWriteAllowed(req.method, pathname)) {
+      return NextResponse.json(
+        { ok: false, error: "토큰은 읽기 + 위젯 생성만 허용됩니다", path: pathname },
+        { status: 403 },
+      );
+    }
+    const secret = getAuthSecret();
+    if (!secret) {
+      // 운영에서 NEXTAUTH_SECRET 미설정 — 세션 브리지 불가 (fail-loud, 우회 없음)
+      return NextResponse.json(
+        { ok: false, error: "Server auth not configured" },
+        { status: 500 },
+      );
+    }
+    const svcJwt = await encode({
+      token: {
+        userId: SERVICE_PRINCIPAL.userId,
+        role: SERVICE_PRINCIPAL.role,
+        tenantId: SERVICE_PRINCIPAL.tenantId,
+        tenantCode: SERVICE_PRINCIPAL.tenantCode,
+        clientId: SERVICE_PRINCIPAL.clientId,
+        isTeamAdmin: SERVICE_PRINCIPAL.isTeamAdmin,
+      },
+      secret,
+    });
+    // 쿠키명은 환경 의존: 운영 HTTPS 는 __Secure- 접두사
+    const secure = (process.env.NEXTAUTH_URL || "").startsWith("https");
+    const cookieName = (secure ? "__Secure-" : "") + "next-auth.session-token";
+    requestHeaders.set("cookie", cookieName + "=" + svcJwt);
+    requestHeaders.set("x-tenant-id", SERVICE_PRINCIPAL.tenantCode);
+    requestHeaders.set("x-api-principal", SERVICE_PRINCIPAL.userId);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   // ── 2) 인증 게이트 ─────────────────────────────────────────
   if (isPublic(pathname) || pathname === "/") {
