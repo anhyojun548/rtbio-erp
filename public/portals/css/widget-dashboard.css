@@ -236,6 +236,8 @@
 }
 .builder-hint { color: var(--text-muted); }
 .builder-err { color: var(--danger); }
+/* 편집 모달 안내 문구 (제목만 편집 — 구성 변경은 빌더로) */
+.edit-hint { font-size: 12px; line-height: 1.5; color: var(--text-muted); margin: 8px 0 0; }
 /* 필터 행 — 기존 .custom-row 패턴 재사용 */
 .bfilter-row {
   display: flex;

@@ -1884,8 +1884,6 @@
  </div>
  <div class="edit-modal-body">
  <div class="edit-field"><label>위젯 제목</label><input type="text" id="editTitle" placeholder="위젯 제목을 입력하세요"></div>
- <div class="edit-field"><label>위젯 타입</label><select id="editType"></select></div>
- <div class="edit-field"><label>데이터 소스</label><select id="editPreset"><option value="">✏ 직접 설정 (커스텀)</option></select></div>
  <div class="edit-field">
  <label> 기간 (override)</label>
  <select id="editDateOverride">
@@ -1899,17 +1897,7 @@
  대시보드 전역 기간이 변경되면 위젯 override는 자동 리셋됩니다.
  </div>
  </div>
- <div class="custom-section" id="customSection">
- <div class="edit-field"><label>데이터 테이블</label><select id="customTable"><option value="orders"> 주문</option><option value="products"> 제품</option><option value="inventory"> 재고</option><option value="clients"> 거래처</option><option value="payments"> 입금</option></select></div>
- <div class="edit-field"><label>표시 컬럼</label><div class="col-chips" id="colChips"></div></div>
- <div class="edit-field"><label>필터 조건</label><div id="filterRows"></div><button class="add-condition-btn" id="addFilterBtn">+ 조건 추가</button></div>
- <div class="agg-row">
- <div class="agg-field"><label>그룹핑</label><select id="customGroup"><option value="">없음</option><option value="client">거래처별</option><option value="product">제품별</option><option value="status">상태별</option><option value="date">날짜별</option></select></div>
- <div class="agg-field"><label>집계</label><select id="customAgg"><option value="">없음</option><option value="sum">합계</option><option value="avg">평균</option><option value="count">건수</option></select></div>
- <div class="agg-field"><label>정렬</label><select id="customSort"><option value="desc">내림차순 ↓</option><option value="asc">오름차순 ↑</option></select></div>
- </div>
- <div class="preview-section"><h4> 미리보기</h4><div class="preview-table-wrap" id="previewWrap"></div><div class="preview-count" id="previewCount"></div></div>
- </div>
+ <p class="edit-hint">측정값·필터 등 구성은 "+ 직접 만들기"로 새 위젯을 만들어 변경하세요.</p>
  </div>
  <div class="edit-modal-footer">
  <button class="tb-btn" id="editCancel">취소</button>
