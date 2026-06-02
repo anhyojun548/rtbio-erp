@@ -110,14 +110,15 @@ async function main() {
   // ------ 2.5 integration 서비스 계정 (Flowise 토큰 브리지 주체) ------
   // 직접 로그인용이 아님 — 토큰 인증 요청이 이 유저로 동작하여
   // DashboardWidget.userId FK 충족 + 감사 createdBy 를 만족한다.
-  // password 는 토큰 흐름과 무관(자격증명 로그인 미사용).
+  // password 는 토큰 흐름과 무관(자격증명 로그인 미사용) — 고정 throwaway.
+  // (WIDGET_API_TOKEN 을 password 로 해싱하지 않는다: 불필요한 결합 회피)
   await prisma.user.upsert({
     where: { id: "svc-integration" },
     update: {},
     create: {
       id: "svc-integration",
       email: "integration@rtbio.com",
-      password: await bcrypt.hash(process.env.WIDGET_API_TOKEN || "disabled-svc-account", 10),
+      password: await bcrypt.hash("svc-integration-no-login", 10),
       name: "Flowise 연동",
       role: "ADMIN",
       tenantId: tenant.id,
