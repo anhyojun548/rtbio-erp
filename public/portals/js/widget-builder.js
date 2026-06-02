@@ -234,6 +234,94 @@ function _addFilterRow() {
   box.appendChild(row);
 }
 
+// in/notIn/between 은 배열, 그 외는 스칼라. 숫자/불리언/템플릿 자동 추론.
+function _coerceFilterValue(op, raw) {
+  if (op === 'in' || op === 'notIn' || op === 'between') {
+    return raw.split(',').map(function (s) { return _coerceScalar(s.trim()); });
+  }
+  return _coerceScalar(raw);
+}
+function _coerceScalar(s) {
+  if (s === '') return s;
+  if (/^\{\{.*\}\}$/.test(s)) return s;            // 템플릿 변수는 문자열 유지
+  if (s === 'true') return true;
+  if (s === 'false') return false;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s); // 순수 숫자
+  return s;
+}
+
+// 필터 행들 → { field: { op: value } }
+function _collectFilters() {
+  var out = {};
+  var rows = document.querySelectorAll('#bFilters .bfilter-row');
+  rows.forEach(function (row) {
+    var field = row.querySelector('.bf-field').value;
+    var op = row.querySelector('.bf-op').value;
+    var raw = row.querySelector('.bf-val').value;
+    if (!field || !op || raw === '') return;
+    if (!out[field]) out[field] = {};
+    out[field][op] = _coerceFilterValue(op, raw);
+  });
+  return out;
+}
+
+/* ══════════════════════════════════════════
+   폼 → WidgetSpec 조립
+   규칙:
+     kpi   → aggregate 필수, groupBy 없음
+     차트  → groupBy 필수 + aggregate
+     table → aggregate 없음, orderBy/limit
+   ══════════════════════════════════════════ */
+function buildSpecFromForm() {
+  var kind = _val('bKind');
+  var source = _val('bSource');
+  var layout = kind === 'table'
+    ? { w: 6, h: 4 }
+    : (kind === 'kpi' ? { w: 3, h: 2 } : { w: 6, h: 4 });
+
+  var spec = {
+    version: '1.0',
+    title: _val('bTitle') || '제목 없음',
+    kind: kind,
+    layout: layout,
+    data: { source: source },
+  };
+
+  // 필터
+  var filter = _collectFilters();
+  if (Object.keys(filter).length) spec.data.filter = filter;
+
+  // 측정값 (table 제외)
+  if (_needsAggregate(kind)) {
+    var aggType = _val('bAggType');
+    var aggField = _val('bAggField');
+    if (aggType) {
+      spec.data.aggregate = { type: aggType, field: aggField || null };
+    }
+  }
+
+  // 분류 (차트만)
+  if (_needsGroupBy(kind)) {
+    var groupBy = _val('bGroupBy');
+    if (groupBy) spec.data.groupBy = [groupBy];
+  }
+
+  // 정렬/limit (table 또는 정렬 기준 선택 시 — top-N)
+  if (kind !== 'kpi') {
+    var orderField = _val('bOrderField');
+    if (orderField) {
+      spec.data.orderBy = [{ field: orderField, dir: _val('bOrderDir') || 'desc' }];
+    }
+    var limitRaw = _val('bLimit');
+    if (limitRaw) {
+      var lim = parseInt(limitRaw, 10);
+      if (lim > 0) spec.data.limit = Math.min(100, lim);
+    }
+  }
+
+  return spec;
+}
+
 /* ══════════════════════════════════════════
    빌더 열기/닫기
    ══════════════════════════════════════════ */
