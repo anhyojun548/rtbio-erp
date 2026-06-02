@@ -937,6 +937,77 @@
  </div>
 </div>
 
+<!-- Widget Builder Modal (직접 만들기) -->
+<div class="edit-overlay" id="builderOverlay">
+ <div class="edit-modal builder-modal">
+ <div class="edit-modal-header">
+ <h2>위젯 직접 만들기</h2>
+ <button class="edit-modal-close" id="bClose">✕</button>
+ </div>
+ <div class="edit-modal-body">
+ <div class="builder-cols">
+ <div class="builder-form">
+ <div class="edit-field">
+ <label>위젯 제목</label>
+ <input type="text" id="bTitle" placeholder="예: 이번 달 매출">
+ </div>
+ <div class="builder-row">
+ <div class="edit-field">
+ <label>데이터 소스</label>
+ <select id="bSource"></select>
+ </div>
+ <div class="edit-field">
+ <label>차트 종류</label>
+ <select id="bKind"></select>
+ </div>
+ </div>
+ <div class="edit-field" id="bMeasure">
+ <label>측정값 (집계)</label>
+ <div class="builder-row">
+ <select id="bAggType"></select>
+ <select id="bAggField"></select>
+ </div>
+ </div>
+ <div class="edit-field" id="bGroupByField">
+ <label>분류 (그룹)</label>
+ <select id="bGroupBy"></select>
+ </div>
+ <div class="edit-field">
+ <label>필터 조건</label>
+ <div id="bFilters"></div>
+ <button class="add-condition-btn" id="bAddFilter" type="button">+ 조건</button>
+ </div>
+ <div class="builder-row" id="bOrderRow">
+ <div class="edit-field">
+ <label>정렬 기준</label>
+ <select id="bOrderField"></select>
+ </div>
+ <div class="edit-field">
+ <label>정렬</label>
+ <select id="bOrderDir">
+ <option value="desc">내림차순 ↓</option>
+ <option value="asc">오름차순 ↑</option>
+ </select>
+ </div>
+ <div class="edit-field">
+ <label>최대 행</label>
+ <input type="number" id="bLimit" min="1" max="100" placeholder="20">
+ </div>
+ </div>
+ </div>
+ <div class="builder-preview">
+ <label class="builder-preview-label">미리보기</label>
+ <div id="bPreview"><div class="builder-hint">소스와 측정값을 선택하면 실데이터 미리보기가 표시됩니다.</div></div>
+ </div>
+ </div>
+ </div>
+ <div class="edit-modal-footer">
+ <button class="tb-btn" id="bCancel">취소</button>
+ <button class="tb-btn primary" id="bSave" disabled>저장</button>
+ </div>
+ </div>
+</div>
+
 <!-- Widget Context Menu -->
 <div class="widget-ctx" id="widgetCtx">
  <button class="widget-ctx-item" data-action="edit">✏ 위젯 수정</button>
