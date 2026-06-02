@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTBIO ERP — 아키텍처 · IA · 포탈 연동 구조</title>
+<style>
+  :root{
+    --navy:#1B3A5C; --blue:#2B5797; --teal:#00A8B5; --teal-d:#00838F;
+    --orange:#C2410C; --purple:#6D28D9; --green:#0E9F6E;
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f8fb; --card:#fff;
+    --r:14px; --sh:0 1px 3px rgba(16,42,67,.08),0 8px 24px rgba(16,42,67,.06);
+    --c-admin:#1B3A5C; --c-qc:#00A8B5; --c-exec:#C2410C; --c-ceo:#6D28D9; --c-client:#2B5797;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--teal-d);text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* Hero */
+  header.hero{background:linear-gradient(135deg,var(--navy) 0%,#16304d 55%,var(--teal-d) 140%);color:#fff;padding:54px 0 60px}
+  .hero .wrap{display:flex;flex-direction:column;gap:14px}
+  .hero .kicker{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#7fd4dc;font-weight:700}
+  .hero h1{margin:0;font-size:34px;line-height:1.25;font-weight:800}
+  .hero p{margin:0;max-width:760px;color:#cdd9e6;font-size:15px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:999px;
+    padding:5px 13px;font-size:12.5px;font-weight:600;color:#eaf2f8}
+
+  /* Sticky nav */
+  nav.toc{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:10px 24px}
+  nav.toc a{white-space:nowrap;font-size:13.5px;font-weight:600;color:var(--muted);padding:7px 13px;border-radius:8px}
+  nav.toc a:hover{background:var(--bg);color:var(--navy)}
+
+  section{padding:46px 0}
+  section:nth-child(even){background:var(--card)}
+  h2{font-size:24px;font-weight:800;margin:0 0 6px;color:var(--navy);display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--navy);
+    color:#fff;font-size:15px;font-weight:800}
+  .lead{color:var(--muted);font-size:14.5px;margin:0 0 26px;max-width:820px}
+  h3{font-size:16.5px;font-weight:700;color:var(--navy);margin:26px 0 12px}
+
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:880px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh)}
+  .card h4{margin:0 0 8px;font-size:15px;font-weight:700}
+  .card p{margin:0;font-size:13.5px;color:var(--muted)}
+
+  /* Architecture stack */
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .layer{border-radius:12px;padding:16px 18px;border:1px solid var(--line);position:relative}
+  .layer .lt{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin-bottom:8px}
+  .layer .items{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:600}
+  .l-ui{background:#eef5ff;border-color:#d4e3f7}
+  .l-api{background:#e8faf8;border-color:#bfeeea}
+  .l-db{background:#f3eefe;border-color:#e0d4fb}
+  .l-ext{background:#fff7ec;border-color:#fbe6c8}
+  .arrow{align-self:center;color:var(--muted);font-size:20px;line-height:1}
+
+  /* Tables */
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;overflow:hidden}
+  thead th{background:var(--navy);color:#fff;text-align:left;padding:11px 13px;font-weight:600;font-size:12.5px}
+  tbody td{padding:10px 13px;border-top:1px solid var(--line);vertical-align:top}
+  tbody tr:nth-child(even){background:#fafbfc}
+  .table-scroll{overflow-x:auto;border-radius:12px}
+
+  /* Portal color system */
+  .ptag{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;color:#fff;
+    padding:3px 10px;border-radius:7px}
+  .p-admin{background:var(--c-admin)} .p-qc{background:var(--c-qc)} .p-exec{background:var(--c-exec)}
+  .p-ceo{background:var(--c-ceo)} .p-client{background:var(--c-client)}
+
+  /* IA portal cards */
+  .portal{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);background:#fff}
+  .portal .head{padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+  .portal .head .t{font-weight:800;font-size:16px}
+  .portal .head .u{font-size:12px;opacity:.85}
+  .portal .body{padding:14px 18px}
+  .portal .sec{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin:10px 0 5px}
+  .portal .sec:first-child{margin-top:0}
+  .portal ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:5px}
+  .portal li{font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 9px}
+  .portal li.new{background:#e8faf8;border-color:#bfeeea;color:var(--teal-d);font-weight:600}
+
+  /* Swimlane */
+  .swim{display:grid;grid-template-columns:120px 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .swim .lane-h{background:#f3f6fa;border-top:1px solid var(--line);padding:14px 12px;font-weight:800;font-size:13px;
+    display:flex;align-items:center;border-right:2px solid var(--line)}
+  .swim .lane-h:first-child{border-top:none}
+  .swim .lane{border-top:1px solid var(--line);padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .swim .lane:nth-of-type(2){border-top:none}
+  .step{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:600;
+    position:relative;max-width:230px}
+  .step b{display:block;font-size:12.5px}
+  .step small{color:var(--muted);font-weight:500}
+  .step.a{border-color:var(--c-admin)} .step.q{border-color:var(--c-qc)} .step.e{border-color:var(--c-exec)}
+  .step.c{border-color:var(--c-client)} .step.x{border-color:var(--c-ceo)}
+  .flowarrow{color:var(--muted);font-weight:800;font-size:16px}
+
+  .note{background:#fff7ec;border:1px solid #fbe6c8;border-left:4px solid var(--orange);border-radius:10px;
+    padding:13px 16px;font-size:13px;color:#7a4a18;margin-top:16px}
+  .key{background:#eef5ff;border:1px solid #d4e3f7;border-left:4px solid var(--blue);border-radius:10px;
+    padding:13px 16px;font-size:13px;color:#1e3a5f;margin-top:16px}
+  code{background:#f1f3f6;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;
+    font-family:'SF Mono',Consolas,monospace}
+  footer{padding:30px 0;text-align:center;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);background:#fff}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 26px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">RTBIO ERP · System Documentation</div>
+    <h1>아키텍처 · 정보구조(IA) · 포탈 연동 구조</h1>
+    <p>의료용품 멀티테넌트 SaaS ERP. 5개 역할 포탈이 <b>하나의 공유 데이터베이스</b> 위에서 주문→출고→정산 생애주기를 단계별로 이어받습니다. 본 문서는 전체 아키텍처, 각 포탈의 기능, 그리고 포탈 간 데이터가 어떻게 넘어가는지를 정리합니다.</p>
+    <div class="meta">
+      <span class="pill">Next.js 14 + TypeScript</span>
+      <span class="pill">Prisma · PostgreSQL 16</span>
+      <span class="pill">NextAuth (JWT · RBAC)</span>
+      <span class="pill">prototype-as-truth</span>
+      <span class="pill">Azure (예정)</span>
+      <span class="pill">2026-06-02 기준</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#arch">아키텍처</a>
+    <a href="#tenancy">멀티테넌시·인증</a>
+    <a href="#ia">정보구조(IA)</a>
+    <a href="#features">포탈별 기능</a>
+    <a href="#flow">포탈 연동 구조</a>
+    <a href="#handoff">데이터 핸드오프</a>
+    <a href="#principles">핵심 불변식</a>
+  </div>
+</nav>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <div class="wrap">
+    <h2><span class="num">1</span> 전체 아키텍처</h2>
+    <p class="lead"><b>prototype-as-truth</b> 구조. 화면은 프로토타입 HTML/JS(<code>public/portals/*.html</code>), 백엔드는 Next.js API Route + Server Action, 데이터는 Prisma·PostgreSQL. 브라우저의 모든 동작은 <code>/api/*</code>를 거쳐 실 DB에 반영됩니다.</p>
+
+    <div class="stack">
+      <div class="layer l-ui">
+        <div class="lt">① UI 레이어 — 프로토타입 (클린 URL <code>/admin · /qc · /exec · /ceo · /client</code>)</div>
+        <div class="items">
+          <span class="chip">admin / qc / exec / ceo / client -portal.html</span>
+          <span class="chip">data-loader.js (역할별 부트스트랩)</span>
+          <span class="chip">*-mgmt.js · staff-mgmt.js · db-admin.js · widget-dashboard.js</span>
+          <span class="chip">window.CURRENT_USER 게이트</span>
+        </div>
+      </div>
+      <div class="arrow">▼ &nbsp;fetch <code>/api/*</code> (same-origin, JWT 쿠키)</div>
+      <div class="layer l-api">
+        <div class="lt">② API 레이어 — Next.js (인증 → 서버 액션 RBAC)</div>
+        <div class="items">
+          <span class="chip">/api/* Route Handlers (79개)</span>
+          <span class="chip">src/lib/actions/* (도메인 로직)</span>
+          <span class="chip">requireRole / requireMetaAdmin / requireClient</span>
+          <span class="chip">validators (Zod) · logAudit</span>
+          <span class="chip">middleware: 인증·RBAC·클린URL rewrite</span>
+        </div>
+      </div>
+      <div class="arrow">▼ &nbsp;Prisma Client</div>
+      <div class="layer l-db">
+        <div class="lt">③ 데이터 레이어 — PostgreSQL (멀티스키마)</div>
+        <div class="items">
+          <span class="chip"><b>public</b>: User · Tenant · AuditLog · SystemSetting</span>
+          <span class="chip"><b>tenant_altibio</b>: Order · Invoice · Inventory · Client · …(업무 데이터)</span>
+        </div>
+      </div>
+      <div class="arrow">↕ &nbsp;외부 연동</div>
+      <div class="layer l-ext">
+        <div class="lt">④ 외부 시스템</div>
+        <div class="items">
+          <span class="chip">windyflo (외부 LLM) → 위젯 생성 도구 3종</span>
+          <span class="chip">Daum SMTP (이메일, 보류)</span>
+          <span class="chip">Azure Container Apps + Front Door (배포 예정)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="key"><b>설계 철학</b> — 포탈은 “서로 메시지를 주고받지” 않습니다. 모두 <b>같은 DB(단일 진실 원천)</b>를 바라보며, 한 포탈이 <b>상태(status)를 바꾸면</b> 다른 포탈이 그 상태를 읽어 다음 동작을 합니다. 데이터 이동의 매개체는 <b>공유 테이블 · 상태머신 · 스냅샷 · 외래 연결(clientId·billingMonth·salesRepId)</b>입니다.</div>
+  </div>
+</section>
+
+<!-- TENANCY / AUTH -->
+<section id="tenancy">
+  <div class="wrap">
+    <h2><span class="num">2</span> 멀티테넌시 · 인증 · 권한</h2>
+    <p class="lead">테넌트(고객사)별로 스키마를 분리하고, 역할(role)로 포탈 접근을 통제합니다.</p>
+    <div class="grid g3">
+      <div class="card"><h4>스키마 분리형 멀티테넌시</h4><p><code>public</code>(공용: 계정·테넌트·감사) + <code>tenant_{id}</code>(격리: 업무 데이터). 현재 <code>tenant_altibio</code> 1개. 업무 테이블은 스키마 자체가 테넌트 경계, public 테이블은 <code>tenantId</code> 컬럼으로 필터.</p></div>
+      <div class="card"><h4>인증 — NextAuth (JWT 8h)</h4><p>이메일+비밀번호(bcrypt). 세션에 <code>{id, role, tenantId, clientId, isTeamAdmin}</code> 주입. 미들웨어가 <code>getToken</code>으로 검증, 미인증 시 <code>/login</code>.</p></div>
+      <div class="card"><h4>클린 URL</h4><p><code>/admin</code>·<code>/qc</code>·… 는 rewrite로 프로토타입 HTML을 서빙(.html 노출 없음). 자산은 절대경로 <code>/portals/...</code>.</p></div>
+    </div>
+    <h3>역할 ↔ 포탈 접근 (RBAC)</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>역할(role)</th><th>팀</th><th>접근 포탈</th><th>대표 권한</th></tr></thead>
+      <tbody>
+        <tr><td><b>TENANT_OWNER</b></td><td>임원진</td><td>전 포탈(주로 /ceo·/admin)</td><td>모든 직급 직원 생성 · 팀관리자 지정</td></tr>
+        <tr><td><b>ADMIN</b></td><td>경영지원</td><td>/admin · /exec</td><td>정산·거래처·설정 · 팀관리자 지정 · DB 탐색기</td></tr>
+        <tr><td><b>QC</b></td><td>품질관리</td><td>/qc</td><td>출고·재고·입고·샘플 · (리더면 직원관리)</td></tr>
+        <tr><td><b>EXEC</b></td><td>영업</td><td>/exec</td><td>담당 거래처·학회·사용량 · (리더면 직원관리)</td></tr>
+        <tr><td><b>CLIENT</b></td><td>거래처</td><td>/client</td><td>본인 거래처 발주·조회 (행-레벨 격리)</td></tr>
+        <tr><td><b>SUPER_ADMIN</b></td><td>운영사</td><td>/ceo · /system</td><td>운영 전반</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><b>2단계 권한 검증</b> — Route 핸들러는 로그인 여부만 확인하고, 실제 역할 검증은 Server Action 내부 <code>requireRole(...)</code>가 수행(거부 시 307→/403). 직원관리·DB탐색기는 <code>isTeamAdmin</code>/<code>metaAdmin</code> 게이트로 메뉴 자체가 숨겨집니다.</div>
+  </div>
+</section>
+
+<!-- IA -->
+<section id="ia">
+  <div class="wrap">
+    <h2><span class="num">3</span> 정보구조 (IA) — 5개 포탈 사이트맵</h2>
+    <p class="lead">각 포탈의 사이드바 메뉴 구조. <span class="portal" style="display:inline"><li class="new" style="display:inline-block">민트색</li></span> 항목은 이번 실서비스 전환에서 추가/개편된 기능입니다.</p>
+    <div class="grid g2">
+
+      <div class="portal">
+        <div class="head" style="background:var(--c-client)"><div><div class="t">거래처 포탈</div><div class="u">/client · role CLIENT</div></div><span class="ptag p-client">CLIENT</span></div>
+        <div class="body">
+          <div class="sec">발주</div><ul><li>홈(대시보드)</li><li>발주하기</li><li>발주내역</li></ul>
+          <div class="sec">정산·문서</div><ul><li>거래명세서</li><li>수금/원장</li><li>판매계약서</li></ul>
+          <div class="sec">기타</div><ul><li>공지사항</li><li>내 정보</li></ul>
+        </div>
+      </div>
+
+      <div class="portal">
+        <div class="head" style="background:var(--c-qc)"><div><div class="t">품질관리 포탈</div><div class="u">/qc · role QC</div></div><span class="ptag p-qc">QC</span></div>
+        <div class="body">
+          <div class="sec">업무</div><ul><li>QC 대시보드</li><li>발주확정</li><li>출고관리(칸반)</li><li>출고내역</li></ul>
+          <div class="sec">재고·입출고</div><ul><li>재고현황</li><li>샘플출고</li><li>입고등록</li><li>재고조정</li></ul>
+          <div class="sec">보고·거래처·시스템</div><ul><li>보고서</li><li>데이터 탐색기</li><li>거래처관리</li><li>공지</li><li>설정</li><li class="new">직원 관리</li></ul>
+        </div>
+      </div>
+
+      <div class="portal">
+        <div class="head" style="background:var(--c-admin)"><div><div class="t">경영지원 포탈</div><div class="u">/admin · role ADMIN</div></div><span class="ptag p-admin">ADMIN</span></div>
+        <div class="body">
+          <div class="sec">주요 업무</div><ul><li>대시보드</li><li>매입매출장</li><li>거래처원장</li><li>마감원장</li><li>보고서</li></ul>
+          <div class="sec">정산</div><ul><li>거래명세서</li><li>수금관리</li><li>미수금관리</li><li>세금계산서</li></ul>
+          <div class="sec">관리·보고</div><ul><li>거래처관리</li><li class="new">직원 관리</li><li>보고서 작성</li><li class="new">데이터 탐색기(전체 테이블)</li><li>UDI 보고</li><li>매뉴얼</li><li>공지사항</li><li>시스템설정</li></ul>
+        </div>
+      </div>
+
+      <div class="portal">
+        <div class="head" style="background:var(--c-exec)"><div><div class="t">영업 포탈</div><div class="u">/exec · role EXEC</div></div><span class="ptag p-exec">EXEC</span></div>
+        <div class="body">
+          <div class="sec">영업</div><ul><li>영업 대시보드</li><li>영업 현황</li><li>거래처 관리</li><li>담당자 관리</li><li>학회 관리</li><li>영업사원 계정</li></ul>
+          <div class="sec">기타</div><ul><li>공지사항</li><li>사용량 입력</li><li>보고서 작성</li><li>데이터 탐색기</li><li class="new">직원 관리</li></ul>
+        </div>
+      </div>
+
+      <div class="portal">
+        <div class="head" style="background:var(--c-ceo)"><div><div class="t">대표 포탈</div><div class="u">/ceo · role TENANT_OWNER / SUPER_ADMIN</div></div><span class="ptag p-ceo">CEO</span></div>
+        <div class="body">
+          <div class="sec">대표</div><ul><li>임원 대시보드(위젯 커스텀)</li><li>통합 현황</li><li>직원별 지표</li><li>공지사항</li></ul>
+          <div class="sec">관리</div><ul><li class="new">직원 관리</li><li class="new">팀 관리자 지정</li><li>팀 포탈 이동</li></ul>
+        </div>
+      </div>
+
+      <div class="portal" style="background:#f3f6fa">
+        <div class="head" style="background:#475569"><div><div class="t">공통 (전 포탈)</div><div class="u">역할 게이트로 노출</div></div><span class="ptag" style="background:#475569">COMMON</span></div>
+        <div class="body">
+          <div class="sec">공통 기능</div><ul><li>공지사항(수신/작성)</li><li>데이터 탐색기(41K 원장)</li><li class="new">DB 탐색기(metaAdmin)</li><li class="new">본인 비밀번호 변경</li><li>AI 어시스턴트</li><li>위젯 대시보드</li></ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <h2><span class="num">4</span> 포탈별 핵심 기능 요약</h2>
+    <p class="lead">각 포탈이 “무엇을 하는 곳인지” + 도메인에서 맡는 책임.</p>
+    <div class="table-scroll"><table>
+      <thead><tr><th style="width:120px">포탈</th><th>핵심 기능</th><th>도메인 책임</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ptag p-client">거래처</span></td>
+          <td>발주 등록 · 발주/출고 상태 추적 · 명세서/수금/계약 조회 · 공지 수신</td>
+          <td><b>주문 발생지</b> — 발주를 SUBMITTED로 생성(가격 스냅샷). 행-레벨로 본인 데이터만.</td></tr>
+        <tr><td><span class="ptag p-qc">품질관리</span></td>
+          <td>발주확정 · 출고 칸반(단계 이동) · 입고/재고조정/샘플출고 · 재고현황 · 유통기한</td>
+          <td><b>재고·출고 집행</b> — 확정 시 RESERVE, 출고 완료 시 SHIP. 모든 재고 변동의 원천.</td></tr>
+        <tr><td><span class="ptag p-admin">경영지원</span></td>
+          <td>거래명세서 발행/발송 · 수금/은행거래 매칭 · 마감원장 · 미수금 Aging · 거래처 가격설정 · UDI · 설정</td>
+          <td><b>정산·마스터</b> — 완료 주문을 명세서·수금·원장으로 회계 마감. 가격 정책 소유.</td></tr>
+        <tr><td><span class="ptag p-exec">영업</span></td>
+          <td>담당자 배정 · 담당 거래처 매출/미수 · 학회 방명록 · 사용량 입력 · 담당자별 매출</td>
+          <td><b>영업 관리</b> — Client.salesRepId/배정으로 매출·미수를 담당자 단위로 집계.</td></tr>
+        <tr><td><span class="ptag p-ceo">대표</span></td>
+          <td>임원 대시보드(위젯·windyflo) · 통합 현황 · 직원별 지표 · 팀관리자 지정</td>
+          <td><b>경영 가시성·거버넌스</b> — 전 도메인 집계 + 직원/권한 최상위 관리.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow">
+  <div class="wrap">
+    <h2><span class="num">5</span> 포탈 연동 구조 — 주문 생애주기</h2>
+    <p class="lead">데이터는 <b>주문(Order) 상태머신</b>을 따라 포탈을 횡단합니다. 한 포탈의 액션이 상태를 바꾸면, 다음 포탈이 그 상태의 주문을 화면에 띄워 다음 액션을 수행합니다. 아래는 발주→출고→정산→경영보고의 한 사이클.</p>
+
+    <div class="legend">
+      <span class="ptag p-client">거래처</span><span class="ptag p-qc">품질관리</span>
+      <span class="ptag p-admin">경영지원</span><span class="ptag p-ceo">대표</span>
+    </div>
+
+    <div class="swim">
+      <div class="lane-h" style="color:var(--c-client)">거래처</div>
+      <div class="lane">
+        <div class="step c"><b>발주하기</b><small>POST /client-portal/orders → Order(SUBMITTED) · 가격 스냅샷</small></div>
+        <span class="flowarrow">→</span>
+        <div class="step c" style="opacity:.85"><b>발주내역</b><small>상태/출고 단계 실시간 조회 ←</small></div>
+      </div>
+
+      <div class="lane-h" style="color:var(--c-qc)">품질관리</div>
+      <div class="lane">
+        <div class="step q"><b>발주확정</b><small>CONFIRM → 재고 RESERVE(available−) → CONFIRMED</small></div>
+        <span class="flowarrow">→</span>
+        <div class="step q"><b>출고관리(칸반)</b><small>단계 이동 → terminal → SHIP(physical−, InventoryLog) → COMPLETED</small></div>
+      </div>
+
+      <div class="lane-h" style="color:var(--c-admin)">경영지원</div>
+      <div class="lane">
+        <div class="step a"><b>거래명세서</b><small>COMPLETED → createInvoiceFromOrder → INV 채번 → 발행/발송</small></div>
+        <span class="flowarrow">→</span>
+        <div class="step a"><b>수금관리</b><small>recordPayment · 은행거래 매칭</small></div>
+        <span class="flowarrow">→</span>
+        <div class="step a"><b>마감원장 / 미수금</b><small>carry+매출−수금=잔액 (billingMonth 링크)</small></div>
+      </div>
+
+      <div class="lane-h" style="color:var(--c-ceo)">대표</div>
+      <div class="lane">
+        <div class="step x"><b>임원 대시보드 · 통합 현황</b><small>위 전부를 집계 (매출·미수·진행주문·출고)</small></div>
+      </div>
+    </div>
+
+    <div class="key"><b>핵심</b> — 각 단계의 “넘김”은 메시지가 아니라 <b>같은 Order 행의 status 변화 + 연관 행 생성</b>입니다. 거래처가 만든 주문을 품질관리가 status로 이어받고, 완료된 주문을 경영지원이 명세서·수금으로 회계화하며, 대표는 그 결과를 읽기만 합니다.</div>
+
+    <h3>보조 연동 흐름</h3>
+    <div class="grid g2">
+      <div class="card"><h4>💰 가격 결정 (경영지원 → 발주 시점)</h4><p><b>경영지원·거래처관리</b>에서 할인율(ClientDiscount)·고정가(ClientFixedPrice) 설정 → 발주 생성 시 <code>calculatePriceSnapshot</code>이 <b>고정가 &gt; 할인 &gt; 기본가</b> 우선순위로 OrderItem에 단가를 박제. 이후 제품 가격이 바뀌어도 기존 주문 불변.</p></div>
+      <div class="card"><h4>📦 재고 이중관리 (품질관리 중심)</h4><p><b>입고등록</b>(RECEIVE) → <b>재고조정</b>(반품/폐기/실사/샘플) → 주문 <b>확정 RESERVE</b>(available−) → <b>출고 SHIP</b>(physical−). 모든 변동은 InventoryLog. physical/available 이중재고 불변식 유지.</p></div>
+      <div class="card"><h4>📣 공지 (작성 포탈 → 수신 포탈)</h4><p>경영지원/영업/품질/대표가 <b>공지 작성</b> 시 대상 지정(ALL·DEALER·HOSPITAL·SPECIFIC) → 해당 포탈 공지함 + <b>거래처 포탈 홈/공지</b>로 수신. NoticeRecipient로 특정 거래처 타게팅.</p></div>
+      <div class="card"><h4>👤 영업 집계 (영업 ↔ 정산)</h4><p><b>담당자 관리</b>에서 <code>Client.salesRepId</code>/SalesAssignment 배정 → 그 거래처의 매출(Invoice)·미수(ClosingLedger)가 <b>영업 현황</b>·<b>담당자별 매출 보고서</b>로 자동 집계. 학회 방문자(assignedRep) → 영업 이력서.</p></div>
+      <div class="card"><h4>🛡 직원·권한 (대표/경영지원 → 각 팀)</h4><p><b>대표·팀관리자 지정</b>에서 <code>isTeamAdmin</code> 부여 → 각 팀의 팀관리자가 <b>직원 관리</b>에서 자기 팀 직원 CRUD. role이 곧 포탈 접근 권한(RBAC).</p></div>
+      <div class="card"><h4>📊 위젯·DB (대표·관리자)</h4><p>대표 <b>위젯 대시보드</b> 커스터마이징 + <b>windyflo(외부 LLM)</b>가 자연어→WidgetSpec 생성 → DashboardWidget. metaAdmin은 <b>DB 탐색기</b>로 전 테이블 조회 + 설정성 4개 편집.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDOFF TABLE -->
+<section id="handoff">
+  <div class="wrap">
+    <h2><span class="num">6</span> 데이터 핸드오프 표</h2>
+    <p class="lead">“어느 포탈의 어느 기능 → 어느 포탈의 어느 기능 → 무엇을 매개로” 한눈에.</p>
+    <div class="table-scroll"><table>
+      <thead><tr><th style="width:24%">출발 (포탈·기능)</th><th style="width:24%">도착 (포탈·기능)</th><th style="width:24%">매개 데이터</th><th>메커니즘</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ptag p-client">거래처</span> 발주하기</td><td><span class="ptag p-qc">품질</span> 발주확정</td><td>Order(SUBMITTED)+OrderItem(단가 스냅샷)</td><td>상태머신 — SUBMITTED 주문이 확정 큐에 노출</td></tr>
+        <tr><td><span class="ptag p-qc">품질</span> 발주확정</td><td><span class="ptag p-qc">품질</span> 출고 칸반</td><td>Order(CONFIRMED) + 재고 RESERVE</td><td>availableStock 차감 · InventoryLog.RESERVE</td></tr>
+        <tr><td><span class="ptag p-qc">품질</span> 출고 칸반(terminal)</td><td><span class="ptag p-admin">경영</span> 거래명세서</td><td>Order(COMPLETED) + physicalStock 차감</td><td>SHIP 트랜잭션 후 COMPLETED만 명세서 발급 대상</td></tr>
+        <tr><td><span class="ptag p-admin">경영</span> 거래명세서(발행)</td><td><span class="ptag p-admin">경영</span> 마감원장 / <span class="ptag p-client">거래처</span> 명세서</td><td>Invoice(ISSUED/SENT) · billingMonth</td><td>원장 monthlySales 집계 · 거래처 포탈에 노출</td></tr>
+        <tr><td><span class="ptag p-admin">경영</span> 수금관리</td><td><span class="ptag p-admin">경영</span> 마감원장 / 미수금</td><td>Payment(PARTIAL/PAID)</td><td>원장 received 집계 → balance = carry+sales−received</td></tr>
+        <tr><td><span class="ptag p-admin">경영</span> 거래처관리(가격)</td><td>발주 시점(거래처/경영)</td><td>ClientDiscount · ClientFixedPrice</td><td>pricing 스냅샷(고정가&gt;할인&gt;기본가)</td></tr>
+        <tr><td><span class="ptag p-qc">품질</span> 입고/재고조정</td><td><span class="ptag p-qc">품질</span> 재고현황 / 발주확정</td><td>ProductSize.physical/available · InventoryLog</td><td>이중재고 불변식 — 확정/출고가 이 재고를 차감</td></tr>
+        <tr><td><span class="ptag p-exec">영업</span> 담당자 관리</td><td><span class="ptag p-exec">영업</span> 영업현황 · <span class="ptag p-admin">경영</span> 담당자별 매출</td><td>Client.salesRepId · SalesAssignment</td><td>외래 연결로 매출/미수를 담당자 단위 집계</td></tr>
+        <tr><td>모든 팀 공지 작성</td><td>대상 포탈 공지함 · <span class="ptag p-client">거래처</span> 홈</td><td>Notice(target) · NoticeRecipient</td><td>대상(ALL/DEALER/HOSPITAL/SPECIFIC) 필터 수신</td></tr>
+        <tr><td><span class="ptag p-ceo">대표</span>/<span class="ptag p-admin">경영</span> 팀관리자 지정</td><td>각 팀 직원 관리</td><td>User.isTeamAdmin · role</td><td>세션 게이트 — 권한 있는 사람만 메뉴 노출</td></tr>
+        <tr><td>전 포탈 모든 쓰기</td><td>(감사 추적)</td><td>AuditLog (public)</td><td>logAudit — actor/resource/metadata 기록</td></tr>
+        <tr><td>windyflo (외부 LLM)</td><td><span class="ptag p-ceo">대표</span> 위젯 대시보드</td><td>WidgetSpec(JSON) → DashboardWidget</td><td>3개 도구 API로 spec 생성·검증·저장·실시간 렌더</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section id="principles">
+  <div class="wrap">
+    <h2><span class="num">7</span> 데이터 무결성을 지키는 핵심 불변식</h2>
+    <p class="lead">포탈을 횡단해도 데이터가 깨지지 않게 하는 규칙들 — 모두 서버 도메인 로직에서 강제.</p>
+    <div class="grid g2">
+      <div class="card"><h4>① 가격 스냅샷</h4><p>주문 확정 시점의 단가를 OrderItem에 박제(<code>unitPrice·basePriceAtOrder·discountRateAtOrder·fixedPriceAppliedAtOrder</code>). 이후 가격 정책이 바뀌어도 과거 주문·명세서 불변.</p></div>
+      <div class="card"><h4>② 이중 재고 + 로그</h4><p><code>physicalStock</code>(실재고) vs <code>availableStock</code>(가용). 확정=RESERVE(available−), 출고=SHIP(physical−), 취소=RELEASE. 전 변동 InventoryLog. <code>SELECT FOR UPDATE</code> 동시성.</p></div>
+      <div class="card"><h4>③ 배송지 스냅샷</h4><p>발주 시 선택한 배송지를 <code>Order.shipTo*</code>에 복사. 이후 거래처 주소가 수정/삭제돼도 과거 주문 배송정보 불변.</p></div>
+      <div class="card"><h4>④ 채번 직렬화</h4><p><code>ORD-/INV-YYYYMMDD-NNN</code> — Postgres advisory lock으로 동시 발번 충돌 방지. 주문/명세서 키공간 분리.</p></div>
+      <div class="card"><h4>⑤ 회계 마감 보호</h4><p>ClosingLedger 마감(closedAt) 후 재계산 거부. <code>(clientId, closingMonth)</code> unique + upsert로 직렬화.</p></div>
+      <div class="card"><h4>⑥ 테넌트·행 격리</h4><p>업무 데이터는 스키마 격리, 거래처 포탈은 <code>clientId</code> 행-레벨 필터, public 테이블은 <code>tenantId</code> 강제. 민감컬럼(비밀번호)은 select 제외.</p></div>
+    </div>
+    <div class="note"><b>요약</b> — 5개 포탈은 “하나의 주문이 흘러가는 컨베이어 벨트의 서로 다른 작업대”입니다. 거래처가 올린 주문을 품질관리가 실물로 처리하고, 경영지원이 돈으로 정산하며, 영업이 실적으로 집계하고, 대표가 경영지표로 내려다봅니다. 모든 핸드오프는 공유 DB의 상태 변화로 이뤄지고, 위 6개 불변식이 그 과정에서 데이터가 깨지지 않도록 지킵니다.</div>
+  </div>
+</section>
+
+<footer>
+  RTBIO ERP — 아키텍처 · IA · 포탈 연동 구조 · 2026-06-02 ·
+  참고: <code>CLAUDE.md</code> · <code>docs/02-design/api-reference.md</code> · <code>docs/superpowers/specs/</code>
+</footer>
+
+</body>
+</html>
