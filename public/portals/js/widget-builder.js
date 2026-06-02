@@ -79,21 +79,42 @@ async function loadGallery() {
   }
 }
 
+/* ══════════════════════════════════════════
+   공통 저장 — spec 을 POST(저장) 하고 {id, spec} 반환 (실패 시 throw)
+   갤러리/빌더 양쪽이 재사용 (DRY).
+   ══════════════════════════════════════════ */
+async function _saveSpec(spec) {
+  var r, j;
+  try {
+    r = await fetch('/api/dashboard/widgets/spec', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spec: spec }),
+    });
+    j = await r.json();
+  } catch (e) {
+    throw new Error('네트워크 오류');
+  }
+  if (!r.ok || !j || !j.ok) {
+    var msg = (j && j.validationErrors && j.validationErrors[0] && (j.validationErrors[0].hint || j.validationErrors[0].message)) ||
+      (j && j.error) || '저장 실패';
+    throw new Error(msg);
+  }
+  return { id: j.id, spec: j.spec };
+}
+
 /* ── 갤러리 카드 클릭 → spec 저장 + 그리드 추가 ── */
 async function addFromGallery(key) {
   var spec = _galleryCache[key];
   if (!spec) return;
   try {
-    var r = await fetch('/api/dashboard/widgets/spec', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ spec: spec }),
-    });
-    var j = await r.json();
-    if (!r.ok || !j.ok) { window.showToast('추가 실패: ' + ((j.validationErrors && j.validationErrors[0] && j.validationErrors[0].message) || j.error || '')); return; }
-    window.addSpecWidgetToGrid(j.spec, j.id);
-    window.closePicker(); window.showToast('"' + spec.title + '" 위젯을 추가했습니다');
-  } catch (e) { window.showToast('네트워크 오류'); }
+    var res = await _saveSpec(spec);
+    window.addSpecWidgetToGrid(res.spec, res.id);
+    window.closePicker();
+    window.showToast('"' + spec.title + '" 위젯을 추가했습니다');
+  } catch (e) {
+    window.showToast('추가 실패: ' + (e && e.message ? e.message : ''));
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -398,6 +419,21 @@ function closeBuilder() {
   if (_pvTimer) { clearTimeout(_pvTimer); _pvTimer = null; }
 }
 
+/* ── 저장 → 그리드 추가 (갤러리와 동일 _saveSpec 경로) ── */
+async function saveBuilder() {
+  var spec = buildSpecFromForm();
+  try {
+    var res = await _saveSpec(spec);
+    window.addSpecWidgetToGrid(res.spec, res.id);
+    closeBuilder();
+    window.showToast('"' + (res.spec.title || spec.title) + '" 위젯을 추가했습니다');
+  } catch (e) {
+    var box = _$('bPreview');
+    if (box) box.innerHTML = '<div class="builder-err">' + _esc(e && e.message ? e.message : '저장 실패') + '</div>';
+    _setSaveEnabled(false);
+  }
+}
+
 /* ── 빌더 이벤트 배선 ── */
 function _wireBuilder() {
   var open = _$('btnOpenBuilder');
@@ -414,6 +450,9 @@ function _wireBuilder() {
 
   var addFilter = _$('bAddFilter');
   if (addFilter) addFilter.addEventListener('click', function () { _addFilterRow(); });
+
+  var save = _$('bSave');
+  if (save) save.addEventListener('click', saveBuilder);
 
   // 소스 변경 → 종속 필드 갱신 + 미리보기
   var src = _$('bSource');
