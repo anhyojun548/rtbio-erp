@@ -1531,6 +1531,20 @@
  <div id="de-pagination" class="de-pagination"></div>
  </div>
  <!-- 우측 슬라이드 편집 패널 (body 끝으로 이동 — 화면 전체 fixed) -->
+
+ <!-- ══════════════════════════════════════
+ DBX-C: 전체 테이블 브라우저 (서버 레지스트리 화이트리스트 ~20개 조회 + 설정성 4개 편집)
+ ADMIN/TENANT_OWNER 만 노출 — db-admin.js 의 loadDbTables() 가 게이트 후 init.
+ ══════════════════════════════════════ -->
+ <div id="db-admin-section" style="margin-top:28px;display:none;">
+ <div class="main-header" style="margin-bottom:12px;">
+ <div>
+ <div class="main-title" style="font-size:18px;">전체 테이블</div>
+ <div class="main-subtitle">ERP 전체 업무 테이블 조회 · 설정성 4개 테이블(부서·직급 / 출고 단계 / 테넌트 설정 / 공지) 인라인 편집</div>
+ </div>
+ </div>
+ <div id="db-admin"></div>
+ </div>
  </div>
  </div>
 
@@ -1853,6 +1867,7 @@
 <script src="/portals/js/report-builder.js"></script>
 <script src="/portals/js/data-explorer-schemas.js"></script>
 <script src="/portals/js/data-explorer.js"></script>
+<script src="/portals/js/db-admin.js"></script>
 <script>
 /* ══════════════════════════════════════════
  경영지원팀 포탈 — Page Logic
@@ -5614,6 +5629,20 @@ document.addEventListener('DOMContentLoaded', () => {
  // 알티바이오 ISO 13485 품질양식 보고서 작성기 초기화
  try { initReportBuilder({ team: 'admin', userName: (window.CURRENT_USER?.name || '김소영'), userRole: (window.CURRENT_USER?.role || '경영지원팀 팀장') }); } catch(e) { console.warn('initReportBuilder failed', e); }
  try { initDataExplorer({ team: 'admin', userName: (window.CURRENT_USER?.name || '김소영') }); } catch(e) { console.warn('initDataExplorer failed', e); }
+ // DBX-C: 전체 테이블 브라우저 — ADMIN/TENANT_OWNER 만 섹션 노출 + loadDbTables init
+ try {
+   const u = window.CURRENT_USER;
+   const canDbx = !!(u && ['ADMIN', 'TENANT_OWNER'].includes(u.role));
+   const dbxSection = document.getElementById('db-admin-section');
+   if (dbxSection) {
+     if (canDbx) {
+       dbxSection.style.display = '';
+       if (typeof loadDbTables === 'function') loadDbTables();
+     } else {
+       dbxSection.style.display = 'none';
+     }
+   }
+ } catch(e) { console.warn('db-admin init failed', e); }
  // 2026-05-12 미팅: 알림 종 + 첫 페이지 로드 시 미읽음 공지 팝업
  try {
    const bellHost = document.getElementById('topbar-notify-bell');
