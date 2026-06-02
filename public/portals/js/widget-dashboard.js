@@ -15,428 +15,35 @@ const COLORS = {
   chart: ['#1B3A5C','#00A8B5','#F57C00','#7C3AED','#2E7D32','#D32F2F','#E91E63','#3F51B5']
 };
 
-// ── Widget Type Definitions ──
-const WIDGET_TYPES = [
-  { id: 'kpi', name: 'KPI 카드', icon: '🔢', desc: '단일 숫자 + 설명', defaultW: 3, defaultH: 2 },
-  { id: 'vbar', name: '세로 막대 그래프', icon: '📊', desc: '카테고리별 비교', defaultW: 6, defaultH: 4 },
-  { id: 'hbar', name: '가로 막대 그래프', icon: '📶', desc: '순위/비중 시각화', defaultW: 6, defaultH: 4 },
-  { id: 'table', name: '표', icon: '📋', desc: '목록/상세 데이터', defaultW: 6, defaultH: 4 },
-  { id: 'donut', name: '도넛 차트', icon: '🍩', desc: '비율/구성 시각화', defaultW: 4, defaultH: 4 },
-  { id: 'line', name: '라인 차트', icon: '📈', desc: '시계열 추세', defaultW: 6, defaultH: 4 },
-  { id: 'gauge', name: '게이지', icon: '🎯', desc: '목표 대비 달성률', defaultW: 3, defaultH: 3 },
-];
+// ── 레거시 preset → prefab spec key 매핑 ──
+// 2026-06-02(Phase B5): 레거시 MOCK preset 위젯을 spec 엔진으로 일원화.
+//   DB 에 남아 있는 옛 mock-preset 위젯(config.spec 없음)은 이 맵으로 prefab spec 에 매핑해 렌더한다.
+//   매핑 없는 키(weekly_sales/client_share/today_order_list/procurement_*/udi_status/unread_notifications 등)는 드롭.
+const LEGACY_PRESET_MAP = {
+  monthly_sales: 'kpi_monthly_sales',
+  total_ar: 'kpi_total_ar',
+  today_orders: 'kpi_open_orders',
+  active_clients: 'kpi_active_clients',
+};
 
-// ── Preset Widgets (pre-configured) ──
-// 2026-05-22: roles 필드 추가 — exec/ceo/admin/qc 별 노출 제어. 없으면 모두 노출 (하위 호환).
-const PRESETS = [
-  { name: '이번 달 매출', type: 'kpi', preset: 'monthly_sales', desc: '당월 누적 매출액', w: 3, h: 2, roles: ['exec','ceo','admin'] },
-  { name: '오늘 발주', type: 'kpi', preset: 'today_orders', desc: '금일 접수된 발주 건수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
-  { name: '총 미수금', type: 'kpi', preset: 'total_ar', desc: '미수금 합계 + 연체 건수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
-  { name: '활성 거래처', type: 'kpi', preset: 'active_clients', desc: '현재 거래 중인 거래처 수', w: 3, h: 2, roles: ['exec','ceo','admin'] },
-  { name: '최근 7일 매출 추이', type: 'vbar', preset: 'weekly_sales', desc: '일별 매출 막대 그래프', w: 6, h: 4, roles: ['exec','ceo'] },
-  { name: '거래처별 매출 비중', type: 'hbar', preset: 'client_share', desc: '거래처별 매출 비율', w: 6, h: 4, roles: ['exec','ceo'] },
-  { name: '오늘 발주 현황', type: 'table', preset: 'today_order_list', desc: '금일 발주 목록 (상태 포함)', w: 6, h: 5, roles: ['exec','admin'] },
-  { name: '품목별 매출 구성', type: 'donut', preset: 'product_mix', desc: '제품 카테고리별 매출 비율', w: 4, h: 4, roles: ['exec','ceo'] },
-  { name: '월별 매출 추이', type: 'line', preset: 'monthly_trend', desc: '최근 6개월 매출 트렌드', w: 6, h: 4, roles: ['exec','ceo'] },
-  { name: '월 매출 목표 달성률', type: 'gauge', preset: 'sales_target', desc: '목표 대비 현재 달성 퍼센트', w: 3, h: 3, roles: ['exec','ceo'] },
-  { name: '재고 부족 품목', type: 'table', preset: 'low_stock', desc: '안전재고 미달 품목 목록', w: 6, h: 4, roles: ['admin','qc','ceo'] },
-  { name: '미수금 거래처', type: 'table', preset: 'ar_clients', desc: '미수금 보유 거래처 + 연체일', w: 6, h: 4, roles: ['exec','admin','ceo'] },
-  { name: '거래처별 담당자 목록', type: 'table', preset: 'client_reps', desc: '거래처 / 담당자 / 연락처 / 최근거래일', w: 6, h: 5, roles: ['exec'] },
-  // 2026-05-12 미팅 신규 위젯 — 베트남 발주는 임원/관리 위주
-  { name: '베트남 발주 입고 현황', type: 'table', preset: 'procurement_status', desc: '월별 발주 → 항공/선박 입고 트래킹 (대표님 핵심 요청)', w: 8, h: 5, roles: ['ceo','admin'] },
-  { name: '생산발주 진행률', type: 'gauge', preset: 'production_progress', desc: '이번달 베트남 발주 입고율', w: 3, h: 3, roles: ['ceo','admin'] },
-  { name: '운송중 선적 알림', type: 'table', preset: 'in_transit_shipments', desc: '항공/선박 운송중 + 예상 입항일', w: 6, h: 4, roles: ['ceo','admin'] },
-  { name: '원부자재 발주 비율', type: 'donut', preset: 'material_split', desc: '원단/부자재/제품 발주 비율 (대표님 요청)', w: 4, h: 4, roles: ['ceo','admin'] },
-  { name: 'UDI 보고 현황', type: 'kpi', preset: 'udi_status', desc: '월별 UDI 공급내역 보고 현황', w: 3, h: 2, roles: ['ceo','admin'] },
-  { name: '미확인 알림', type: 'kpi', preset: 'unread_notifications', desc: '미확인 알림 개수', w: 3, h: 2, roles: ['exec','ceo','admin','qc'] },
-];
+// 기본 레이아웃에 채울 prefab spec key (순서대로) — loadDefaultLayout 에서 사용.
+const DEFAULT_LAYOUT_KEYS = ['kpi_monthly_sales', 'kpi_total_ar', 'kpi_open_orders', 'kpi_active_clients'];
 
-// 2026-05-22: 현재 대시보드 role (init 시점에 설정) — 'exec' / 'ceo' / 'admin' / 'qc' / null=전체
-let _currentDashboardRole = null;
-function getVisiblePresets() {
-  if (!_currentDashboardRole) return PRESETS;
-  return PRESETS.filter(function (p) {
-    return !p.roles || p.roles.indexOf(_currentDashboardRole) !== -1;
-  });
-}
-
-// ── Dynamic Dashboard Data (data-loader 가 채운 window.* 로 계산) ──
-function _fmtKRW(n) { return '₩' + Math.round(n).toLocaleString(); }
-function _yyyymm(d) { return d.toISOString().slice(0, 7); }
-function _today() { return new Date().toISOString().slice(0, 10); }
-// 데이터의 가장 최신 거래월 (TRANSACTIONS 분포가 과거일 때 의미있는 KPI 표시)
-function _latestDataMonth() {
-  var txns = window.TRANSACTIONS || [];
-  if (!txns.length) return _yyyymm(new Date());
-  var max = '';
-  for (var i = 0; i < txns.length; i++) {
-    var d = (txns[i].txnDate || '').slice(0, 7);
-    if (d > max) max = d;
+// widget-schema.examples(prefab spec 카탈로그) 캐시 — 1회 fetch 후 재사용.
+var _prefabSpecs = null;
+async function _ensurePrefabSpecs() {
+  if (_prefabSpecs) return _prefabSpecs;
+  try {
+    var r = await fetch('/api/dashboard/widget-schema', { credentials: 'same-origin' });
+    var j = await r.json();
+    _prefabSpecs = (j && j.examples) || {};
+  } catch (e) {
+    _prefabSpecs = {};
+    // eslint-disable-next-line no-console
+    console.warn('[dashboard] prefab spec 카탈로그 로드 실패', e);
   }
-  return max || _yyyymm(new Date());
+  return _prefabSpecs;
 }
-function _last7Days() {
-  var days = [];
-  var now = new Date();
-  for (var i = 6; i >= 0; i--) {
-    var d = new Date(now);
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
-  }
-  return days;
-}
-
-const MOCK = {
-  get monthly_sales() {
-    var ym = _latestDataMonth();  // 데이터의 가장 최신 월 (현재 월이 비어있을 때)
-    var sales = (window.TRANSACTIONS || [])
-      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
-      .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
-    return { value: _fmtKRW(sales), desc: ym + ' 누적', change: '', changeDir: 'up' };
-  },
-
-  get today_orders() {
-    var today = _today();
-    var count = (window.ORDERS || [])
-      .filter(function (o) { return (o.createdAt || o.orderDate || '').startsWith(today); })
-      .length;
-    return { value: count + '건', desc: '금일 접수된 발주', change: '', changeDir: 'up' };
-  },
-
-  get total_ar() {
-    var sum = (window.LEDGERS || [])
-      .reduce(function (s, l) { return s + Number(l.balance || 0); }, 0);
-    var overdue = (window.LEDGERS || []).filter(function (l) { return Number(l.balance || 0) > 0; }).length;
-    return { value: _fmtKRW(sum), desc: overdue > 0 ? ('잔액 ' + overdue + '건') : '연체 없음', change: '', changeDir: 'down' };
-  },
-
-  get active_clients() {
-    var clients = (window.CLIENTS || []).filter(function (c) { return c.active !== false; });
-    var dealer = clients.filter(function (c) { return c.type === '대리점' || c._typeEnum === 'AGENCY'; }).length;
-    var hospital = clients.filter(function (c) { return c.type === '병원' || c._typeEnum === 'HOSPITAL'; }).length;
-    return { value: clients.length + '개', desc: '대리점 ' + dealer + ' / 병원 ' + hospital, change: '', changeDir: '' };
-  },
-
-  get weekly_sales() {
-    // 데이터의 가장 최근 거래 7일 (현재 날짜가 데이터 외라면)
-    var txns = window.TRANSACTIONS || [];
-    var maxDate = '';
-    for (var i = 0; i < txns.length; i++) {
-      var d = (txns[i].txnDate || '').slice(0, 10);
-      if (d > maxDate) maxDate = d;
-    }
-    var anchorDate = maxDate ? new Date(maxDate) : new Date();
-    var days = [];
-    for (var j = 6; j >= 0; j--) {
-      var d2 = new Date(anchorDate);
-      d2.setDate(d2.getDate() - j);
-      days.push(d2.toISOString().slice(0, 10));
-    }
-    var data = days.map(function (day) {
-      var sum = (window.TRANSACTIONS || [])
-        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(day); })
-        .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
-      return Math.round(sum);
-    });
-    return { labels: days.map(function (d) { return d.slice(5); }), data: data };
-  },
-
-  get client_share() {
-    // 데이터 최신 월의 거래처별 매출 Top 5
-    var ym = _latestDataMonth();
-    var byClient = {};
-    (window.TRANSACTIONS || [])
-      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
-      .forEach(function (t) {
-        var key = t.clientName || t.clientCode || '미지정';
-        byClient[key] = (byClient[key] || 0) + Number(t.totalAmount || 0);
-      });
-    var sorted = Object.entries(byClient).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
-    return {
-      labels: sorted.map(function (e) { var n = e[0]; return n.length > 10 ? n.slice(0, 10) + '…' : n; }),
-      data: sorted.map(function (e) { return Math.round(e[1]); }),
-    };
-  },
-
-  get today_order_list() {
-    var today = _today();
-    var orders = (window.ORDERS || [])
-      .filter(function (o) { return (o.createdAt || o.orderDate || '').startsWith(today); })
-      .slice(0, 10);
-    return {
-      headers: ['발주번호','거래처','금액','상태','시간'],
-      rows: orders.length === 0
-        ? [['—','오늘 발주 없음','—','—','—']]
-        : orders.map(function (o) {
-            return [
-              o.orderNumber || o.id,
-              (o.client && o.client.name) || o.clientName || '-',
-              _fmtKRW(Number(o.totalAmount || 0)),
-              o.status || '-',
-              (o.createdAt || '').slice(11, 16),
-            ];
-          }),
-    };
-  },
-
-  get product_mix() {
-    // 데이터 최신 월의 카테고리별 매출 비중
-    var ym = _latestDataMonth();
-    var byCat = {};
-    (window.TRANSACTIONS || [])
-      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
-      .forEach(function (t) {
-        var cat = t.category || '기타';
-        byCat[cat] = (byCat[cat] || 0) + Number(t.totalAmount || 0);
-      });
-    var sorted = Object.entries(byCat).sort(function (a, b) { return b[1] - a[1]; });
-    return {
-      labels: sorted.map(function (e) { return e[0]; }),
-      data: sorted.map(function (e) { return Math.round(e[1]); }),
-    };
-  },
-
-  get monthly_trend() {
-    // 데이터의 가장 최근 월 기준 최근 6개월 매출
-    var latestYM = _latestDataMonth();
-    var anchor = new Date(latestYM + '-01');
-    var months = [];
-    for (var i = 5; i >= 0; i--) {
-      var d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
-      months.push(d.toISOString().slice(0, 7));
-    }
-    var data = months.map(function (m) {
-      var sum = (window.TRANSACTIONS || [])
-        .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(m); })
-        .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
-      return Math.round(sum);
-    });
-    return { labels: months.map(function (m) { return m.slice(5) + '월'; }), data: data };
-  },
-
-  get sales_target() {
-    var ym = _latestDataMonth();
-    var sales = (window.TRANSACTIONS || [])
-      .filter(function (t) { return t.kind === 'SALE' && (t.txnDate || '').startsWith(ym); })
-      .reduce(function (s, t) { return s + Number(t.totalAmount || 0); }, 0);
-    var target = 50000000;
-    var pct = target > 0 ? Math.min(100, (sales / target) * 100) : 0;
-    return { value: pct, label: pct.toFixed(1) + '%', target: _fmtKRW(target) };
-  },
-
-  get low_stock() {
-    // window.PRODUCTS 의 사이즈 중 reorderPoint 보다 낮은 재고
-    var rows = [];
-    (window.PRODUCTS || []).forEach(function (p) {
-      (p.sizes || []).forEach(function (s) {
-        var stock = s.availableStock || 0;
-        var rop = s.reorderPoint || 0;
-        if (rop > 0 && stock < rop) {
-          rows.push([p.code, p.name + ' (' + s.sizeCode + ')', String(stock), String(rop), String(rop - stock)]);
-        }
-      });
-    });
-    return {
-      headers: ['품목코드','품목명','현재고','안전재고','부족분'],
-      rows: rows.length === 0 ? [['—','재고 부족 없음','—','—','—']] : rows.slice(0, 10),
-    };
-  },
-
-  get ar_clients() {
-    var rows = (window.LEDGERS || [])
-      .filter(function (l) { return Number(l.balance || 0) > 0; })
-      .sort(function (a, b) { return Number(b.balance) - Number(a.balance); })
-      .slice(0, 10)
-      .map(function (l) {
-        return [
-          (l.client && l.client.name) || l.clientCode || '-',
-          _fmtKRW(Number(l.balance)),
-          '-',
-          Number(l.balance) > 5000000 ? '위험' : '주의',
-        ];
-      });
-    return {
-      headers: ['거래처','미수금','연체일','상태'],
-      rows: rows.length === 0 ? [['—','미수금 없음','—','—']] : rows,
-    };
-  },
-
-  // C-4: 거래처+담당자 프리셋
-  get client_reps() {
-    var rows = (window.CLIENTS || []).slice(0, 10).map(function (c) {
-      return [
-        c.name,
-        c.type || '-',
-        c.salesRep || '-',
-        c.phone || '-',
-        '-',
-      ];
-    });
-    return {
-      headers: ['거래처','유형','담당 영업사원','연락처','최근 거래일'],
-      rows: rows.length === 0 ? [['—','—','—','—','—']] : rows,
-    };
-  },
-
-  // 2026-05-12 미팅: 대표님 핵심 요청 — 베트남 발주 입고 트래킹
-  get procurement_status() {
-    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
-    return {
-      headers: ['발주월','카테고리','발주량','입고량','진행률','선적'],
-      rows: projects.length === 0
-        ? [['—','발주 없음','—','—','—','—']]
-        : projects.slice(0, 7).map(function (p) {
-          var total = Number(p.totalQty || 0);
-          var recv = Number(p.receivedQty || 0);
-          var pct = total > 0 ? Math.round(recv / total * 100) : 0;
-          var ships = (p.shipments || []).map(function (s) { return s.shipmentType === 'AIR' ? '✈️' : '🚢'; }).join(' ');
-          var cat = { FABRIC: '원단', MATERIAL: '부자재', PRODUCT: '제품' }[p.category] || p.category || '-';
-          return [
-            (p.orderDate || '').slice(0, 7),
-            cat,
-            total.toLocaleString(),
-            recv.toLocaleString(),
-            pct + '%',
-            ships,
-          ];
-        }),
-    };
-  },
-
-  get production_progress() {
-    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
-    var active = projects.filter(function (p) { return p.status !== 'COMPLETED'; });
-    var total = active.reduce(function (s, p) { return s + Number(p.totalQty || 0); }, 0);
-    var received = active.reduce(function (s, p) { return s + Number(p.receivedQty || 0); }, 0);
-    var pct = total > 0 ? Math.round(received / total * 100) : 100;
-    return { value: pct, label: pct + '%', target: '입고완료' };
-  },
-
-  get in_transit_shipments() {
-    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
-    var transit = [];
-    projects.forEach(function (p) {
-      (p.shipments || []).filter(function (s) { return s.status === 'IN_TRANSIT'; }).forEach(function (s) {
-        transit.push([
-          s.shipmentType === 'AIR' ? '✈️ 항공' : '🚢 선박',
-          p.code,
-          s.shipDate,
-          s.arrivalDate,
-          (s.qty || 0).toLocaleString() + '개',
-        ]);
-      });
-    });
-    return {
-      headers: ['수단','프로젝트','출항일','입항예정','수량'],
-      rows: transit.length > 0 ? transit : [['-','입항 대기 없음','-','-','-']],
-    };
-  },
-
-  get material_split() {
-    var projects = (window.PROCUREMENTS || window.PROCUREMENT_PROJECTS || []);
-    var totals = { 원단: 0, 부자재: 0, 제품: 0 };
-    projects.forEach(function (p) {
-      var k = { FABRIC: '원단', MATERIAL: '부자재', PRODUCT: '제품' }[p.category];
-      if (k) totals[k] += Number(p.totalQty || 0);
-    });
-    return { labels: Object.keys(totals), data: Object.values(totals) };
-  },
-
-  get udi_status() {
-    var reports = (window.UDI_REPORTS || []);
-    var pending = reports.filter(function (r) { return r.status === 'PENDING' || !r.submittedAt; }).length;
-    var ym = _yyyymm(new Date());
-    return { value: pending + '건', desc: ym + ' 보고 대기', change: '', changeDir: '' };
-  },
-
-  get unread_notifications() {
-    var notifs = (window.NOTIFICATIONS || []);
-    var unread = notifs.filter(function (n) { return !n.readAt; }).length;
-    return { value: unread + '건', desc: '미확인 알림', change: '', changeDir: unread > 0 ? 'up' : '' };
-  },
-};
-
-// ── Table column definitions (mock schema) ──
-const TABLE_COLUMNS = {
-  orders: [
-    { id: 'order_no', name: '발주번호', type: 'text' },
-    { id: 'client', name: '거래처', type: 'text' },
-    { id: 'amount', name: '금액', type: 'number' },
-    { id: 'status', name: '상태', type: 'select', options: ['접수','확정','출고중','완료','취소'] },
-    { id: 'order_date', name: '주문일', type: 'date' },
-    { id: 'delivery_date', name: '납기일', type: 'date' },
-    { id: 'product', name: '제품', type: 'text' },
-    { id: 'qty', name: '수량', type: 'number' },
-  ],
-  products: [
-    { id: 'code', name: '품목코드', type: 'text' },
-    { id: 'name', name: '품목명', type: 'text' },
-    { id: 'category', name: '카테고리', type: 'select', options: ['수술용품','진단기기','소모품','보호구','기타'] },
-    { id: 'price', name: '단가', type: 'number' },
-    { id: 'stock', name: '재고', type: 'number' },
-    { id: 'min_stock', name: '안전재고', type: 'number' },
-  ],
-  inventory: [
-    { id: 'product', name: '제품', type: 'text' },
-    { id: 'physical', name: '실재고', type: 'number' },
-    { id: 'available', name: '가용재고', type: 'number' },
-    { id: 'reserved', name: '예약수량', type: 'number' },
-    { id: 'warehouse', name: '창고', type: 'select', options: ['본사','물류센터','지방'] },
-    { id: 'last_in', name: '최종입고일', type: 'date' },
-  ],
-  clients: [
-    { id: 'name', name: '거래처명', type: 'text' },
-    { id: 'type', name: '유형', type: 'select', options: ['대리점','병원','약국','기타'] },
-    { id: 'region', name: '지역', type: 'text' },
-    { id: 'total_sales', name: '총매출', type: 'number' },
-    { id: 'ar_balance', name: '미수금', type: 'number' },
-    { id: 'last_order', name: '최근주문', type: 'date' },
-  ],
-  payments: [
-    { id: 'client', name: '거래처', type: 'text' },
-    { id: 'amount', name: '입금액', type: 'number' },
-    { id: 'method', name: '입금방법', type: 'select', options: ['계좌이체','카드','현금','어음'] },
-    { id: 'date', name: '입금일', type: 'date' },
-    { id: 'invoice', name: '대상청구서', type: 'text' },
-  ],
-};
-
-const OPERATORS = {
-  text: ['=','≠','포함','시작','끝'],
-  number: ['=','≠','>','<','≥','≤'],
-  date: ['=','≠','>','<','≥','≤'],
-  select: ['=','≠'],
-};
-
-// ── Mock preview data ──
-const PREVIEW_DATA = {
-  orders: [
-    { order_no:'ORD-0411-001', client:'메디팜 의료기', amount:'570,000', status:'접수', order_date:'2026-04-11', product:'수술용 장갑', qty:'200' },
-    { order_no:'ORD-0411-002', client:'한빛정형외과', amount:'647,700', status:'접수', order_date:'2026-04-11', product:'진단키트', qty:'50' },
-    { order_no:'ORD-0411-004', client:'대한메디칼', amount:'308,200', status:'확정', order_date:'2026-04-11', product:'소독알코올', qty:'100' },
-    { order_no:'ORD-0411-007', client:'한빛정형외과', amount:'338,400', status:'출고중', order_date:'2026-04-11', product:'보호장갑', qty:'150' },
-    { order_no:'ORD-0411-008', client:'대한메디칼', amount:'560,000', status:'출고중', order_date:'2026-04-11', product:'마스크', qty:'500' },
-  ],
-  products: [
-    { code:'MED-0042', name:'수술용 장갑 (M)', category:'수술용품', price:'2,500', stock:'120', min_stock:'200' },
-    { code:'MED-0078', name:'일회용 마스크 (50매)', category:'소모품', price:'12,000', stock:'80', min_stock:'300' },
-    { code:'MED-0123', name:'소독용 알코올 500ml', category:'소모품', price:'8,500', stock:'45', min_stock:'100' },
-  ],
-  inventory: [
-    { product:'수술용 장갑', physical:'120', available:'80', reserved:'40', warehouse:'본사', last_in:'2026-04-08' },
-    { product:'일회용 마스크', physical:'80', available:'60', reserved:'20', warehouse:'본사', last_in:'2026-04-05' },
-    { product:'소독알코올', physical:'45', available:'45', reserved:'0', warehouse:'물류센터', last_in:'2026-04-02' },
-  ],
-  clients: [
-    { name:'메디팜 의료기', type:'대리점', region:'서울', total_sales:'14,916,500', ar_balance:'0', last_order:'2026-04-11' },
-    { name:'한빛정형외과', type:'병원', region:'경기', total_sales:'13,977,000', ar_balance:'3,200,000', last_order:'2026-04-11' },
-    { name:'대한메디칼', type:'대리점', region:'부산', total_sales:'8,682,000', ar_balance:'8,500,000', last_order:'2026-04-11' },
-  ],
-  payments: [
-    { client:'메디팜 의료기', amount:'5,000,000', method:'계좌이체', date:'2026-04-10', invoice:'INV-0403' },
-    { client:'세종재활의학과', amount:'2,800,000', method:'카드', date:'2026-04-09', invoice:'INV-0402' },
-  ],
-};
 
 // ── Grid Init ──
 var grid;
@@ -485,200 +92,10 @@ function initGrid() {
   grid.on('change', function () { saveDashboard(); });
 }
 
-// ── Render Widget Content ──
-function renderWidgetContent(type, preset, elId) {
-  var data = preset ? MOCK[preset] : null;
-  var el = document.getElementById(elId);
-  if (!el) return;
-
-  switch (type) {
-    case 'kpi':
-      if (data) {
-        el.innerHTML =
-          '<div class="kpi-value">' + data.value + '</div>' +
-          '<div class="kpi-desc">' + data.desc + '</div>' +
-          (data.change ? '<div class="kpi-change ' + data.changeDir + '">' + (data.changeDir === 'up' ? '▲' : '▼') + ' ' + data.change + '</div>' : '');
-      } else {
-        el.innerHTML = '<div class="kpi-value">—</div><div class="kpi-desc">데이터 소스를 설정하세요</div>';
-      }
-      break;
-
-    case 'vbar':
-      if (data) {
-        el.innerHTML = '<div class="chart-container"><canvas></canvas></div>';
-        var ctx = el.querySelector('canvas').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: [{
-              data: data.data.map(function (v) { return v / 10000; }),
-              backgroundColor: data.data.map(function (v, i) { return i === data.data.length - 1 ? COLORS.accent : '#D1D5DB'; }),
-              borderRadius: 4,
-              barPercentage: 0.6,
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: function (c) { return c.parsed.y + '만원'; } } }
-            },
-            scales: {
-              y: { display: false },
-              x: { grid: { display: false }, ticks: { font: { size: 11 } } }
-            }
-          }
-        });
-      }
-      break;
-
-    case 'hbar':
-      if (data) {
-        el.innerHTML = '<div class="chart-container"><canvas></canvas></div>';
-        var ctx = el.querySelector('canvas').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: [{
-              data: data.data,
-              backgroundColor: COLORS.chart.slice(0, data.labels.length),
-              borderRadius: 4,
-              barPercentage: 0.7,
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: function (c) { return '₩' + c.parsed.x.toLocaleString(); } } }
-            },
-            scales: {
-              x: { display: false },
-              y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-            }
-          }
-        });
-      }
-      break;
-
-    case 'table':
-      if (data) {
-        var html = '<div style="overflow:auto;flex:1;"><table class="widget-table"><thead><tr>';
-        data.headers.forEach(function (h) { html += '<th>' + h + '</th>'; });
-        html += '</tr></thead><tbody>';
-        data.rows.forEach(function (row) {
-          html += '<tr>';
-          row.forEach(function (cell, i) {
-            if (data.headers[i] === '상태') {
-              html += '<td><span class="status-badge status-' + cell + '">' + cell + '</span></td>';
-            } else {
-              html += '<td>' + cell + '</td>';
-            }
-          });
-          html += '</tr>';
-        });
-        html += '</tbody></table></div>';
-        el.innerHTML = html;
-      }
-      break;
-
-    case 'donut':
-      if (data) {
-        el.innerHTML = '<div class="chart-container"><canvas></canvas></div>';
-        var ctx = el.querySelector('canvas').getContext('2d');
-        new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: data.labels,
-            datasets: [{
-              data: data.data,
-              backgroundColor: COLORS.chart.slice(0, data.labels.length),
-              borderWidth: 0,
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-              legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
-              tooltip: { callbacks: { label: function (c) { return c.label + ' ' + c.parsed + '%'; } } }
-            }
-          }
-        });
-      }
-      break;
-
-    case 'line':
-      if (data) {
-        el.innerHTML = '<div class="chart-container"><canvas></canvas></div>';
-        var ctx = el.querySelector('canvas').getContext('2d');
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: data.labels,
-            datasets: [{
-              data: data.data.map(function (v) { return v / 10000; }),
-              borderColor: COLORS.accent,
-              backgroundColor: 'rgba(0,168,181,0.1)',
-              fill: true,
-              tension: 0.3,
-              pointRadius: 4,
-              pointBackgroundColor: COLORS.accent,
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: function (c) { return c.parsed.y + '만원'; } } }
-            },
-            scales: {
-              y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 }, callback: function (v) { return v / 100 + '백만'; } } },
-              x: { grid: { display: false }, ticks: { font: { size: 11 } } }
-            }
-          }
-        });
-      }
-      break;
-
-    case 'gauge':
-      if (data) {
-        el.innerHTML =
-          '<div class="gauge-wrapper">' +
-            '<div class="gauge-canvas-wrap"><canvas width="160" height="90"></canvas></div>' +
-            '<div class="gauge-label">' + data.label + '</div>' +
-            '<div class="gauge-sub">목표: ' + data.target + '</div>' +
-          '</div>';
-        var ctx = el.querySelector('canvas').getContext('2d');
-        new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            datasets: [{
-              data: [data.value, 100 - data.value],
-              backgroundColor: [COLORS.accent, '#E5E7EB'],
-              borderWidth: 0,
-            }]
-          },
-          options: {
-            responsive: false,
-            circumference: 180,
-            rotation: -90,
-            cutout: '75%',
-            plugins: { legend: { display: false }, tooltip: { enabled: false } }
-          }
-        });
-      }
-      break;
-  }
-}
-
 /* ══════════════════════════════════════════
    Spec Widget Renderer (executeWidgetSpec 결과)
    ──────────────────────────────────────────
-   prototype MOCK 위젯과 공존. config.spec 이 있는 위젯만 이 경로로 렌더.
+   모든 위젯은 spec 위젯(config.spec)이다. (2026-06-02 레거시 MOCK 전면 제거)
    GET /api/dashboard/widgets/{id}/data → WidgetResult { kind, value?, series?, rows?, comparison? }
    ══════════════════════════════════════════ */
 
@@ -922,7 +339,7 @@ function renderSpecResult(el, payload) {
    실시간 갱신 — Tier 2 (폴링) + Tier 3 (액션 후)
    ══════════════════════════════════════════ */
 
-// 모든 위젯 재계산/재fetch. spec 위젯은 data 재fetch, prototype 위젯은 MOCK 재계산.
+// 모든 위젯 data 재fetch. (모든 위젯은 spec 위젯이다 — 2026-06-02 레거시 MOCK 제거)
 function refreshAllWidgets() {
   if (typeof grid === 'undefined' || !grid) return;
   grid.getGridItems().forEach(function (el) {
@@ -930,9 +347,6 @@ function refreshAllWidgets() {
     if (!bodyEl) return;
     if (el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
       renderSpecWidget(bodyEl.id, el.dataset.widgetId);
-    } else {
-      // prototype 위젯: MOCK getter 가 window.* 최신값으로 재계산
-      renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
     }
   });
 }
@@ -961,42 +375,6 @@ document.addEventListener('visibilitychange', function () {
 });
 window.addEventListener('beforeunload', _stopWidgetPolling);
 
-// ── Add Widget to Grid ──
-function addWidget(type, title, preset, w, h) {
-  widgetCounter++;
-  var id = 'widget-' + widgetCounter;
-  var bodyId = 'wbody-' + widgetCounter;
-  var typeDef = WIDGET_TYPES.find(function (t) { return t.id === type; });
-  w = w || typeDef.defaultW;
-  h = h || typeDef.defaultH;
-
-  var content =
-    '<div class="widget-header">' +
-      '<span class="widget-title">' + (title || typeDef.name) + '</span>' +
-      '<button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button>' +
-    '</div>' +
-    '<div class="widget-body" id="' + bodyId + '"></div>';
-
-  grid.addWidget({
-    id: id,
-    w: w,
-    h: h,
-    content: content,
-    autoPosition: true,
-  });
-
-  // Render after DOM is ready
-  setTimeout(function () { renderWidgetContent(type, preset, bodyId); }, 50);
-
-  // Store meta
-  var el = document.querySelector('[gs-id="' + id + '"]');
-  if (el) {
-    el.dataset.widgetType = type;
-    el.dataset.widgetPreset = preset || '';
-    el.dataset.widgetTitle = title || typeDef.name;
-  }
-}
-
 function removeWidget(id) {
   var el = document.querySelector('[gs-id="' + id + '"]');
   if (el) {
@@ -1005,18 +383,38 @@ function removeWidget(id) {
   }
 }
 
+// spec 1개를 DB 에 저장하고 { id, spec } 반환 (실패 시 throw). 갤러리/빌더의 _saveSpec 와 동일 경로.
+async function _saveSpecToDb(spec) {
+  var r = await fetch('/api/dashboard/widgets/spec', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ spec: spec }),
+  });
+  var j = await r.json();
+  if (!r.ok || !j || !j.ok) {
+    var msg = (j && j.validationErrors && j.validationErrors[0] && (j.validationErrors[0].hint || j.validationErrors[0].message)) ||
+      (j && j.error) || '저장 실패';
+    throw new Error(msg);
+  }
+  return { id: j.id, spec: j.spec };
+}
+
 // ── Default Layout ──
-function loadDefaultLayout() {
+// 2026-06-02(Phase B5): prefab spec 4종(KPI)을 순차 저장 후 그리드에 추가. (레거시 addWidget 제거)
+async function loadDefaultLayout() {
   grid.removeAll();
-  addWidget('kpi', '이번 달 매출', 'monthly_sales', 3, 2);
-  addWidget('kpi', '오늘 발주', 'today_orders', 3, 2);
-  addWidget('kpi', '총 미수금', 'total_ar', 3, 2);
-  addWidget('kpi', '활성 거래처', 'active_clients', 3, 2);
-  addWidget('vbar', '최근 7일 매출 추이', 'weekly_sales', 6, 4);
-  addWidget('hbar', '거래처별 매출 비중', 'client_share', 6, 4);
-  addWidget('table', '오늘 발주 현황', 'today_order_list', 6, 5);
-  addWidget('donut', '품목별 매출 구성', 'product_mix', 3, 4);
-  addWidget('gauge', '월 매출 목표 달성률', 'sales_target', 3, 3);
+  var examples = await _ensurePrefabSpecs();
+  for (var i = 0; i < DEFAULT_LAYOUT_KEYS.length; i++) {
+    var spec = examples[DEFAULT_LAYOUT_KEYS[i]];
+    if (!spec) continue; // 카탈로그에 없으면 건너뜀
+    try {
+      var res = await _saveSpecToDb(spec);
+      addSpecWidgetToGrid(res.spec, res.id);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[dashboard] 기본 위젯 저장 실패', DEFAULT_LAYOUT_KEYS[i], e);
+    }
+  }
 }
 
 // ── Save / Load Dashboard ──
@@ -1127,44 +525,68 @@ async function _resyncSpecWidgetIds() {
   }
 }
 
-function _applyItemsToGrid(items) {
+// items[] 을 GridStack 에 복원. 모든 위젯은 spec 위젯이어야 한다.
+//   - spec 동봉(item.spec + widgetId) → 그대로 렌더
+//   - 레거시 mock-preset(spec 없음) → LEGACY_PRESET_MAP 으로 prefab spec 매핑해 저장 후 렌더, 매핑 없으면 드롭
+async function _applyItemsToGrid(items) {
   grid.removeAll();
-  items.forEach(function (item) {
-    widgetCounter++;
-    var id = 'widget-' + widgetCounter;
-    var bodyId = 'wbody-' + widgetCounter;
-    var content =
-      '<div class="widget-header">' +
-        '<span class="widget-title">' + (item.title || '') + '</span>' +
-        '<button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button>' +
-      '</div>' +
-      '<div class="widget-body" id="' + bodyId + '"></div>';
-    grid.addWidget({
-      id: id, x: item.x, y: item.y, w: item.w, h: item.h, content: content
-    });
-    var el = document.querySelector('[gs-id="' + id + '"]');
-    if (el) {
-      el.dataset.widgetType = item.type || '';
-      el.dataset.widgetPreset = item.preset || '';
-      el.dataset.widgetTitle = item.title || '';
-      el.dataset.widgetDateOverride = item.dateOverride || '';
-      // spec 위젯이면 DB id 보관 (data endpoint fetch 용)
-      if (item.spec && item.widgetId) {
-        el.dataset.widgetId = item.widgetId;
-        el.dataset.widgetSpec = '1';
-        // spec 원본 캐시 — DB sync 시 config.spec 유실 방지
-        window._specCache = window._specCache || {};
-        window._specCache[item.widgetId] = item.spec;
-      }
-    }
+
+  // 레거시 prefab spec 매핑이 필요한 항목이 있으면 카탈로그를 1회 로드.
+  var needsPrefab = items.some(function (it) { return !(it.spec && it.widgetId) && LEGACY_PRESET_MAP[it.preset]; });
+  var examples = needsPrefab ? await _ensurePrefabSpecs() : {};
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+
+    // ── spec 위젯 (정상 경로) ──
     if (item.spec && item.widgetId) {
-      (function (bid, wid) {
-        setTimeout(function () { renderSpecWidget(bid, wid); }, 50);
-      })(bodyId, item.widgetId);
-    } else {
-      setTimeout(function () { renderWidgetContent(item.type, item.preset, bodyId); }, 50);
+      _addRestoredSpecWidget(item.spec, item.widgetId, item);
+      continue;
     }
+
+    // ── 레거시 mock-preset → prefab spec 매핑 ──
+    var mappedKey = LEGACY_PRESET_MAP[item.preset];
+    if (!mappedKey) continue;                 // 매핑 없는 옛 위젯은 드롭
+    var prefab = examples[mappedKey];
+    if (!prefab) continue;                    // 카탈로그에 없으면 드롭
+    try {
+      var res = await _saveSpecToDb(prefab);  // 새 DB id 발급
+      _addRestoredSpecWidget(res.spec, res.id, item);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[dashboard] 레거시 위젯 → spec 매핑 실패', item.preset, e);
+    }
+  }
+}
+
+// 복원된 spec 위젯 1개를 그리드에 배치(위치 보존). item.x/y/w/h/dateOverride 를 사용.
+function _addRestoredSpecWidget(spec, widgetId, item) {
+  widgetCounter++;
+  var id = 'widget-' + widgetCounter;
+  var bodyId = 'wbody-' + widgetCounter;
+  var content =
+    '<div class="widget-header">' +
+      '<span class="widget-title">' + _escapeHtml((spec && spec.title) || item.title || '') + '</span>' +
+      '<button class="widget-menu-btn" onclick="removeWidget(\'' + id + '\')" title="위젯 삭제">✕</button>' +
+    '</div>' +
+    '<div class="widget-body" id="' + bodyId + '"></div>';
+  grid.addWidget({
+    id: id, x: item.x, y: item.y, w: item.w, h: item.h, content: content
   });
+  var el = document.querySelector('[gs-id="' + id + '"]');
+  if (el) {
+    el.dataset.widgetType = 'spec';
+    el.dataset.widgetPreset = 'spec:custom';
+    el.dataset.widgetTitle = (spec && spec.title) || item.title || '';
+    el.dataset.widgetDateOverride = item.dateOverride || '';
+    el.dataset.widgetId = widgetId;
+    el.dataset.widgetSpec = '1';
+    window._specCache = window._specCache || {};
+    window._specCache[widgetId] = spec;
+  }
+  (function (bid, wid) {
+    setTimeout(function () { renderSpecWidget(bid, wid); }, 50);
+  })(bodyId, widgetId);
 }
 
 async function loadDashboard() {
@@ -1192,7 +614,7 @@ async function loadDashboard() {
             h: w.height,
           };
         });
-        _applyItemsToGrid(items);
+        await _applyItemsToGrid(items);
         return true;
       }
     }
@@ -1206,7 +628,7 @@ async function loadDashboard() {
   if (saved) {
     try {
       var items2 = JSON.parse(saved);
-      _applyItemsToGrid(items2);
+      await _applyItemsToGrid(items2);
       return true;
     } catch (e) { return false; }
   }
@@ -1214,15 +636,21 @@ async function loadDashboard() {
 }
 
 // ── Export / Import ──
+// 모든 위젯은 spec 위젯이므로 spec 을 동봉해 내보낸다(재가져오기 시 복원 가능).
 function exportDashboard() {
   var items = grid.getGridItems().map(function (el) {
     var node = el.gridstackNode;
-    return {
+    var item = {
       type: el.dataset.widgetType,
       title: el.dataset.widgetTitle,
       preset: el.dataset.widgetPreset,
       x: node.x, y: node.y, w: node.w, h: node.h
     };
+    if (el.dataset.widgetSpec === '1' && el.dataset.widgetId &&
+        window._specCache && window._specCache[el.dataset.widgetId]) {
+      item.spec = window._specCache[el.dataset.widgetId];
+    }
+    return item;
   });
   var json = JSON.stringify({ version: '1.0', portal: 'exec', widgets: items }, null, 2);
   var blob = new Blob([json], { type: 'application/json' });
@@ -1241,10 +669,30 @@ function importDashboard(file) {
     try {
       var data = JSON.parse(e.target.result);
       if (data.widgets && Array.isArray(data.widgets)) {
-        grid.removeAll();
-        data.widgets.forEach(function (item) { addWidget(item.type, item.title, item.preset, item.w, item.h); });
-        saveDashboard();
-        showToast('대시보드를 가져왔습니다 (위젯 ' + data.widgets.length + '개)');
+        // 동봉된 spec 은 새 DB id 로 재저장(addSpecWidgetToGrid), spec 없는 항목은 LEGACY_PRESET_MAP 시도.
+        var count = 0;
+        var chain = Promise.resolve();
+        data.widgets.forEach(function (item) {
+          chain = chain.then(function () {
+            if (item.spec) {
+              return _saveSpecToDb(item.spec).then(function (res) {
+                addSpecWidgetToGrid(res.spec, res.id); count++;
+              }).catch(function () {});
+            }
+            var mappedKey = LEGACY_PRESET_MAP[item.preset];
+            if (!mappedKey) return null; // 매핑 없는 옛 위젯은 드롭
+            return _ensurePrefabSpecs().then(function (examples) {
+              var prefab = examples[mappedKey];
+              if (!prefab) return null;
+              return _saveSpecToDb(prefab).then(function (res) {
+                addSpecWidgetToGrid(res.spec, res.id); count++;
+              });
+            }).catch(function () {});
+          });
+        });
+        chain.then(function () {
+          showToast('대시보드를 가져왔습니다 (위젯 ' + count + '개)');
+        });
       }
     } catch (err) {
       showToast('올바른 대시보드 JSON 파일이 아닙니다');
@@ -1262,45 +710,7 @@ function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('open');
 }
 
-function renderPicker() {
-  // Presets — 2026-05-22: role 필터링 적용
-  // 2026-06-02(Phase A): 갤러리 모달로 교체되어 #presetList/#widgetTypeGrid 가 더 이상 없다.
-  //   레거시 호출부(init/setDashboardRole) 가 남아 있으므로 안전 가드로 조용히 종료. (Phase B5 에서 함수 자체 제거)
-  var presetList = document.getElementById('presetList');
-  if (!presetList) return;
-  presetList.innerHTML = getVisiblePresets().map(function (p) {
-    var typeDef = WIDGET_TYPES.find(function (t) { return t.id === p.type; });
-    return '' +
-      '<div class="preset-item" onclick="addPresetWidget(\'' + p.type + '\',\'' + p.name + '\',\'' + p.preset + '\',' + p.w + ',' + p.h + ')">' +
-        '<div class="preset-icon">' + typeDef.icon + '</div>' +
-        '<div class="preset-info">' +
-          '<div class="preset-name">' + p.name + '</div>' +
-          '<div class="preset-desc-text">' + p.desc + '</div>' +
-        '</div>' +
-        '<span class="preset-type">' + typeDef.name + '</span>' +
-      '</div>';
-  }).join('');
-
-  // Widget types
-  var typeGrid = document.getElementById('widgetTypeGrid');
-  typeGrid.innerHTML = WIDGET_TYPES.map(function (t) {
-    return '' +
-      '<div class="picker-card" onclick="addEmptyWidget(\'' + t.id + '\')">' +
-        '<div class="picker-card-icon">' + t.icon + '</div>' +
-        '<div class="picker-card-name">' + t.name + '</div>' +
-        '<div class="picker-card-desc">' + t.desc + '</div>' +
-      '</div>';
-  }).join('');
-}
-
-function addPresetWidget(type, title, preset, w, h) {
-  addWidget(type, title, preset, w, h);
-  closePicker();
-  saveDashboard();
-  showToast('"' + title + '" 위젯을 추가했습니다');
-}
-
-// spec 위젯 1개를 그리드에 추가 (갤러리/빌더 공용). _applyItemsToGrid 의 spec 분기를 단건 재사용.
+// spec 위젯 1개를 그리드에 추가 (갤러리/빌더 공용).
 function addSpecWidgetToGrid(spec, savedId) {
   widgetCounter++;
   var id = 'widget-' + widgetCounter, bodyId = 'wbody-' + widgetCounter;
@@ -1328,9 +738,7 @@ function showToast(msg) {
 }
 
 // ── Expose functions needed by HTML onclick handlers ──
-window.addWidget = addWidget;
 window.removeWidget = removeWidget;
-window.addPresetWidget = addPresetWidget;
 window.showToast = showToast;
 
 // ── spec 렌더러/그리드 추가/피커 토글 — 빌더(widget-builder.js) 재사용 ──
@@ -1339,30 +747,20 @@ window.addSpecWidgetToGrid = addSpecWidgetToGrid;
 window.closePicker = closePicker;
 window._WIDGET = { COLORS: COLORS }; // 빌더가 색상 토큰 참조
 
-// 2026-05-22: 외부에서 role 지정 가능 (포털 init 시 호출)
-window.setDashboardRole = function (role) {
-  _currentDashboardRole = role || null;
-  // 이미 picker 가 렌더링됐다면 다시 그려서 필터 적용
-  if (document.getElementById('presetList')) renderPicker();
-};
+// 2026-06-02: 갤러리는 role 무관 전체 prefab 노출 → role 필터 제거. 외부 호출 호환용 no-op 스텁 유지.
+window.setDashboardRole = function () {};
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async function () {
-  // 2026-05-22: body[data-dashboard-role] 또는 window._dashboardRole 로 role 주입
-  var roleAttr = document.body && document.body.getAttribute('data-dashboard-role');
-  if (roleAttr) _currentDashboardRole = roleAttr;
-  else if (window._dashboardRole) _currentDashboardRole = window._dashboardRole;
-
   initGrid();
-  renderPicker();
 
   // Load saved or default — 2026-05-27: DB 우선, 폴백 localStorage, 둘 다 없으면 default.
   var loaded = await loadDashboard();
   if (!loaded) {
-    loadDefaultLayout();
+    await loadDefaultLayout();
   }
 
-  // 실시간 Tier 2 — 60초 폴링 시작 (spec 위젯 data refresh + prototype 재계산)
+  // 실시간 Tier 2 — 60초 폴링 시작 (spec 위젯 data refresh)
   _startWidgetPolling();
 
   // ── C-1: Global Date Range Selector ──
@@ -1411,7 +809,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       saveDashboard();
       showToast('전역 기간: ' + DATE_LABELS[newRange] + ' (위젯 override 리셋됨)');
 
-      // 전 위젯 리렌더 (spec 위젯은 data 재fetch, prototype 은 MOCK 재계산)
+      // 전 위젯 data 재fetch (모든 위젯 spec)
       refreshAllWidgets();
     });
 
@@ -1509,263 +907,76 @@ document.addEventListener('DOMContentLoaded', async function () {
     } else if (action === 'edit') {
       openEditModal(ctxTargetId);
     } else if (action === 'duplicate') {
-      if (el) {
-        addWidget(el.dataset.widgetType, el.dataset.widgetTitle + ' (복사)', el.dataset.widgetPreset || null,
-          el.gridstackNode.w, el.gridstackNode.h);
-        saveDashboard();
-        showToast('위젯을 복제했습니다');
+      // spec 위젯 복제: 캐시된 spec 을 새 DB id 로 재저장 후 그리드에 추가.
+      if (el && el.dataset.widgetSpec === '1' && el.dataset.widgetId &&
+          window._specCache && window._specCache[el.dataset.widgetId]) {
+        var dupSpec = window._specCache[el.dataset.widgetId];
+        _saveSpecToDb(dupSpec).then(function (res) {
+          addSpecWidgetToGrid(res.spec, res.id);
+          showToast('위젯을 복제했습니다');
+        }).catch(function (err) {
+          showToast('복제 실패: ' + (err && err.message ? err.message : ''));
+        });
       }
     } else if (action === 'refresh') {
-      if (el) {
+      if (el && el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
         var bodyEl = el.querySelector('.widget-body');
         if (bodyEl) {
-          if (el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
-            renderSpecWidget(bodyEl.id, el.dataset.widgetId);
-          } else {
-            renderWidgetContent(el.dataset.widgetType, el.dataset.widgetPreset || null, bodyEl.id);
-          }
+          renderSpecWidget(bodyEl.id, el.dataset.widgetId);
           showToast('위젯을 새로고침했습니다');
         }
       }
     }
   });
 
-  // ── Edit Modal ──
+  // ── Edit Modal — 제목/기간 편집만 (2026-06-02 커스텀 빌더 섹션 제거) ──
+  //   spec 의 측정/필터 등 구조 변경은 "삭제 후 다시 만들기"(빌더)로 안내. (YAGNI)
   var editOverlay = document.getElementById('editOverlay');
   var editTitle = document.getElementById('editTitle');
-  var editType = document.getElementById('editType');
-  var editPreset = document.getElementById('editPreset');
-  var customSection = document.getElementById('customSection');
   var editingWidgetId = null;
-
-  // Populate edit selects
-  WIDGET_TYPES.forEach(function (t) {
-    var opt = document.createElement('option');
-    opt.value = t.id;
-    opt.textContent = t.icon + ' ' + t.name;
-    editType.appendChild(opt);
-  });
-  // 2026-05-22: edit-modal 의 데이터 소스 선택도 role 필터링
-  getVisiblePresets().forEach(function (p) {
-    var opt = document.createElement('option');
-    opt.value = p.preset;
-    opt.textContent = '📌 ' + p.name;
-    editPreset.appendChild(opt);
-  });
-
-  // Show/hide custom section based on preset selection
-  editPreset.addEventListener('change', function () {
-    if (editPreset.value === '') {
-      customSection.classList.add('visible');
-      renderColumnChips();
-      renderPreview();
-    } else {
-      customSection.classList.remove('visible');
-    }
-  });
-
-  // Table change → update chips & filters
-  document.getElementById('customTable').addEventListener('change', function () {
-    renderColumnChips();
-    document.getElementById('filterRows').innerHTML = '';
-    renderPreview();
-  });
-
-  // ── Column Chips ──
-  function renderColumnChips() {
-    var table = document.getElementById('customTable').value;
-    var cols = TABLE_COLUMNS[table] || [];
-    var container = document.getElementById('colChips');
-    container.innerHTML = cols.map(function (c) {
-      return '<span class="col-chip selected" data-col="' + c.id + '">' + c.name + '</span>';
-    }).join('');
-    container.querySelectorAll('.col-chip').forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        chip.classList.toggle('selected');
-        renderPreview();
-      });
-    });
-  }
-
-  // ── Filter Rows ──
-  document.getElementById('addFilterBtn').addEventListener('click', addFilterRow);
-
-  function addFilterRow() {
-    var table = document.getElementById('customTable').value;
-    var cols = TABLE_COLUMNS[table] || [];
-    var row = document.createElement('div');
-    row.className = 'custom-row';
-
-    var fieldSelect = document.createElement('select');
-    fieldSelect.className = 'col-field';
-    cols.forEach(function (c) {
-      var opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name;
-      opt.dataset.type = c.type;
-      fieldSelect.appendChild(opt);
-    });
-
-    var opSelect = document.createElement('select');
-    opSelect.className = 'col-op';
-
-    var valInput = document.createElement('input');
-    valInput.className = 'col-val';
-    valInput.placeholder = '값 입력';
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'col-del';
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', function () { row.remove(); renderPreview(); });
-
-    function updateOps() {
-      var selOpt = fieldSelect.options[fieldSelect.selectedIndex];
-      var colType = selOpt ? selOpt.dataset.type : 'text';
-      var ops = OPERATORS[colType] || OPERATORS.text;
-      opSelect.innerHTML = ops.map(function (o) { return '<option>' + o + '</option>'; }).join('');
-
-      // If select type, change input to select
-      var col = cols.find(function (c) { return c.id === fieldSelect.value; });
-      if (col && col.type === 'select' && col.options) {
-        var newSelect = document.createElement('select');
-        newSelect.className = 'col-val';
-        col.options.forEach(function (o) {
-          var opt = document.createElement('option');
-          opt.value = o; opt.textContent = o;
-          newSelect.appendChild(opt);
-        });
-        newSelect.addEventListener('change', renderPreview);
-        if (row.contains(valInput)) row.replaceChild(newSelect, valInput);
-      } else if (col && col.type === 'date') {
-        valInput.type = 'date';
-        valInput.placeholder = '';
-      } else {
-        valInput.type = 'text';
-        valInput.placeholder = '값 입력';
-      }
-    }
-
-    fieldSelect.addEventListener('change', function () { updateOps(); renderPreview(); });
-    opSelect.addEventListener('change', renderPreview);
-    valInput.addEventListener('input', renderPreview);
-
-    row.append(fieldSelect, opSelect, valInput, delBtn);
-    document.getElementById('filterRows').appendChild(row);
-    updateOps();
-  }
-
-  // ── Preview ──
-  function renderPreview() {
-    var table = document.getElementById('customTable').value;
-    var data = PREVIEW_DATA[table] || [];
-    var cols = TABLE_COLUMNS[table] || [];
-
-    // Get selected columns
-    var selectedCols = [];
-    document.querySelectorAll('#colChips .col-chip.selected').forEach(function (c) { selectedCols.push(c.dataset.col); });
-    if (selectedCols.length === 0) {
-      document.getElementById('previewWrap').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">표시할 컬럼을 선택하세요</div>';
-      document.getElementById('previewCount').textContent = '';
-      return;
-    }
-
-    // Filter data (simple mock filtering)
-    var filtered = [].concat(data);
-    document.querySelectorAll('#filterRows .custom-row').forEach(function (row) {
-      var field = row.querySelector('.col-field') ? row.querySelector('.col-field').value : null;
-      var op = row.querySelector('.col-op') ? row.querySelector('.col-op').value : null;
-      var val = (row.querySelector('.col-val') ? row.querySelector('.col-val').value : '').trim();
-      if (!field || !val) return;
-      filtered = filtered.filter(function (item) {
-        var cellVal = (item[field] || '').toString();
-        switch (op) {
-          case '=': return cellVal === val;
-          case '≠': return cellVal !== val;
-          case '포함': return cellVal.includes(val);
-          case '시작': return cellVal.startsWith(val);
-          case '끝': return cellVal.endsWith(val);
-          default: return true;
-        }
-      });
-    });
-
-    // Build table
-    var html = '<table><thead><tr>';
-    selectedCols.forEach(function (colId) {
-      var col = cols.find(function (c) { return c.id === colId; });
-      html += '<th>' + (col ? col.name : colId) + '</th>';
-    });
-    html += '</tr></thead><tbody>';
-    filtered.forEach(function (row) {
-      html += '<tr>';
-      selectedCols.forEach(function (colId) { html += '<td>' + (row[colId] || '-') + '</td>'; });
-      html += '</tr>';
-    });
-    if (filtered.length === 0) {
-      html += '<tr><td colspan="' + selectedCols.length + '" style="text-align:center;color:var(--text-muted);padding:16px;">조건에 맞는 데이터 없음</td></tr>';
-    }
-    html += '</tbody></table>';
-
-    document.getElementById('previewWrap').innerHTML = html;
-    document.getElementById('previewCount').textContent = filtered.length + '건 표시 (전체 ' + data.length + '건)';
-  }
-
-  // ── Grouping/Agg/Sort change → re-preview ──
-  ['customGroup', 'customAgg', 'customSort'].forEach(function (id) {
-    document.getElementById(id).addEventListener('change', renderPreview);
-  });
 
   function openEditModal(widgetId) {
     var el = document.querySelector('[gs-id="' + widgetId + '"]');
-    if (!el) return;
+    if (!el || !editOverlay) return;
     editingWidgetId = widgetId;
-    editTitle.value = el.dataset.widgetTitle || '';
-    editType.value = el.dataset.widgetType || 'kpi';
-    editPreset.value = el.dataset.widgetPreset || '';
+    if (editTitle) editTitle.value = el.dataset.widgetTitle || '';
     var dateOvrSel = document.getElementById('editDateOverride');
     if (dateOvrSel) dateOvrSel.value = el.dataset.widgetDateOverride || '';
-
-    // Show/hide custom section
-    if (!el.dataset.widgetPreset) {
-      customSection.classList.add('visible');
-      renderColumnChips();
-      renderPreview();
-    } else {
-      customSection.classList.remove('visible');
-    }
-
     editOverlay.classList.add('open');
-    editTitle.focus();
+    if (editTitle) editTitle.focus();
   }
 
   function closeEditModal() {
-    editOverlay.classList.remove('open');
+    if (editOverlay) editOverlay.classList.remove('open');
     editingWidgetId = null;
-    customSection.classList.remove('visible');
-    document.getElementById('filterRows').innerHTML = '';
   }
 
-  document.getElementById('editClose').addEventListener('click', closeEditModal);
-  document.getElementById('editCancel').addEventListener('click', closeEditModal);
-  editOverlay.addEventListener('click', function (e) {
-    if (e.target === editOverlay) closeEditModal();
-  });
+  function _wireEdit(id, fn) { var b = document.getElementById(id); if (b) b.addEventListener('click', fn); }
+  _wireEdit('editClose', closeEditModal);
+  _wireEdit('editCancel', closeEditModal);
+  if (editOverlay) {
+    editOverlay.addEventListener('click', function (e) {
+      if (e.target === editOverlay) closeEditModal();
+    });
+  }
 
-  document.getElementById('editSave').addEventListener('click', function () {
+  _wireEdit('editSave', function () {
     if (!editingWidgetId) return;
     var el = document.querySelector('[gs-id="' + editingWidgetId + '"]');
     if (!el) return;
 
-    var newTitle = editTitle.value.trim() || '위젯';
-    var newType = editType.value;
-    var newPreset = editPreset.value || null;
+    var newTitle = (editTitle && editTitle.value.trim()) || '위젯';
     var dateOvrSel = document.getElementById('editDateOverride');
     var newOverride = dateOvrSel ? dateOvrSel.value : '';
 
     el.dataset.widgetTitle = newTitle;
-    el.dataset.widgetType = newType;
-    el.dataset.widgetPreset = newPreset || '';
     el.dataset.widgetDateOverride = newOverride || '';
+
+    // spec 캐시의 title 도 갱신 → saveDashboard 시 config.spec.title 반영.
+    if (el.dataset.widgetSpec === '1' && el.dataset.widgetId &&
+        window._specCache && window._specCache[el.dataset.widgetId]) {
+      window._specCache[el.dataset.widgetId].title = newTitle;
+    }
 
     var titleEl = el.querySelector('.widget-title');
     if (titleEl) {
@@ -1773,8 +984,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       titleEl.title = '기간: ' + getEffectiveDateLabel(el);
     }
 
-    var bodyEl = el.querySelector('.widget-body');
-    if (bodyEl) renderWidgetContent(newType, newPreset, bodyEl.id);
+    // spec 위젯 data 재fetch (override 반영)
+    if (el.dataset.widgetSpec === '1' && el.dataset.widgetId) {
+      var bodyEl = el.querySelector('.widget-body');
+      if (bodyEl) renderSpecWidget(bodyEl.id, el.dataset.widgetId);
+    }
 
     saveDashboard();
     closeEditModal();
