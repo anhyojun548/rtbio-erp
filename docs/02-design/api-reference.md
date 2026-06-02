@@ -1,7 +1,7 @@
 # RTBIO ERP — API 레퍼런스
 
 **상태**: 통합 정리 (2026-06-01 기준)
-**범위**: `src/app/api/*` 전체 **76개 route 파일** + 호출 server action RBAC 매트릭스
+**범위**: `src/app/api/*` 전체 **79개 route 파일** + 호출 server action RBAC 매트릭스
 **대상 독자**: 백엔드 통합 개발자, 프론트 포털 작업자, AI 에이전트 (windyflo 도구 포함)
 
 ---
@@ -638,5 +638,66 @@ POST /api/ledger                   { action: "recompute", month, clientId }
 
 ---
 
+## 21. DB 탐색기 (`/api/db-explorer`)
+
+관리자가 ERP 내부 테이블을 UI 에서 직접 조회·편집할 수 있는 메타 도구. 기존 `/api/data-explorer`(TransactionLedger 41K 전용)와는 **경로·용도 모두 다른** 별개 endpoint.
+
+> **권한**: 모두 `metaAdmin` (§18-1 정의 — `role === "ADMIN" || role === "TENANT_OWNER"`). 미인증 시 401, 역할 부족 시 403.
+
+### 보안 경계
+
+임의 테이블·컬럼·SQL 접근은 **원천 불가**. 서버 레지스트리 `src/lib/db-explorer/registry.ts` 의 화이트리스트에 등재된 테이블·컬럼만 노출한다.
+
+- **조회 대상**: 의미 있는 업무 테이블 약 20개 (로그·조인·시스템 테이블 제외).
+- **민감 컬럼 차단**: 레지스트리에 명시된 `safeColumns` 만 SELECT. 예) `User.password` 미포함.
+- **편집 대상**: `OrgOption`, `KanbanColumn`, `TenantSetting`, `Notice` 4개 테이블만 (`editable: true`). 도메인 불변식이 없는 설정성 데이터에 한정.
+
+### Tenant 스코핑
+
+| 스키마 유형 | 스코핑 방식 |
+|---|---|
+| `public` 스키마 모델 (`User`, `OrgOption` 등) | `where.tenantId = me.tenantId` 강제 주입 |
+| `tenant_altibio` 스키마 모델 | 스키마 격리 — 테넌트 컨텍스트 자체가 격리 경계 |
+
+### Endpoints
+
+| Method | Path | 권한 | 동작 |
+|---|---|---|---|
+| GET | `/api/db-explorer` | metaAdmin | 레지스트리 테이블 목록 — `{ key, label, group, editable }[]` |
+| GET | `/api/db-explorer/[table]?q=&limit=&offset=` | metaAdmin | 테이블 조회 — safeColumns select + tenant 스코핑 + 검색 + 페이지 |
+| PATCH | `/api/db-explorer/[table]/[id]` | metaAdmin | `editable: true` 테이블만 — `editableFields` 에 포함된 컬럼만 패치. 전건 감사(`logAudit`) |
+| DELETE | `/api/db-explorer/[table]/[id]` | metaAdmin | `editable: true` 테이블만 — 행 삭제. 전건 감사 |
+
+**GET `/api/db-explorer/[table]` 응답 구조**:
+```jsonc
+{
+  "rows": [ { /* safeColumns 만 포함된 행 객체 */ } ],
+  "columns": [ "id", "label", "kind", "sortOrder", ... ],  // safeColumns 순서
+  "total": 42,          // 필터 적용 후 전체 건수 (페이지네이션용)
+  "editable": true,     // 이 테이블이 편집 가능한지
+  "editableFields": ["label", "sortOrder", "color"],  // editable=false 이면 []
+  "pkField": "id"       // 행 식별에 사용하는 PK 컬럼명
+}
+```
+
+**쿼리 파라미터 (`GET [table]`)**:
+- `q` — 레지스트리가 지정한 검색 컬럼에 대한 대소문자 무시 부분일치 (`contains` + `mode: 'insensitive'`).
+- `limit` — 기본값 50, 최대 200.
+- `offset` — 페이지 오프셋 (0-based).
+
+**PATCH `/api/db-explorer/[table]/[id]` 요청 body**:
+```jsonc
+{
+  "label": "출고완료",      // editableFields 에 있는 컬럼만 유효
+  "sortOrder": 3,
+  "color": "#00A8B5"
+}
+```
+`editableFields` 외 컬럼이 body 에 포함되면 **400** (서버에서 키 필터링 후 거부).
+
+**에러 응답**: 표준 포맷(§17) 준수. 조회 불가 테이블 key → `404 { ok:false, error:"등록되지 않은 테이블입니다." }`.
+
+---
+
 **문서 갱신 규칙**: 새 endpoint 추가 또는 RBAC 변경 시 본 파일도 같은 커밋에서 갱신.
-**참고**: `CLAUDE.md` (도메인 규칙) · `src/lib/rbac.ts` (RBAC 매트릭스) · `src/lib/session.ts` (세션 헬퍼) · `src/lib/widget-spec/` (WidgetSpec schema/execute/presets).
+**참고**: `CLAUDE.md` (도메인 규칙) · `src/lib/rbac.ts` (RBAC 매트릭스) · `src/lib/session.ts` (세션 헬퍼) · `src/lib/widget-spec/` (WidgetSpec schema/execute/presets) · `src/lib/db-explorer/registry.ts` (DB 탐색기 화이트리스트).
