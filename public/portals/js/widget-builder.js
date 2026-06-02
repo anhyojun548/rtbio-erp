@@ -9,6 +9,7 @@
 
 var _catalog = null;       // data-catalog 응답 캐시 ({ catalog, kinds, aggregates, ... })
 var _galleryCache = null;  // widget-schema.examples 캐시
+var _pvTimer = null;       // dry-run 미리보기 debounce 타이머
 
 /* ── 소형 헬퍼 ── */
 function _esc(s) {
@@ -228,8 +229,13 @@ function _addFilterRow() {
   tplSel.addEventListener('change', function () {
     if (tplSel.value) { valInput.value = tplSel.value; valInput.disabled = true; }
     else { valInput.disabled = false; valInput.value = ''; valInput.focus(); }
+    schedulePreview();
   });
-  row.querySelector('.bf-del').addEventListener('click', function () { row.remove(); });
+  row.querySelector('.bf-del').addEventListener('click', function () { row.remove(); schedulePreview(); });
+  // 행 내부 변경 → 미리보기
+  row.querySelector('.bf-field').addEventListener('change', schedulePreview);
+  row.querySelector('.bf-op').addEventListener('change', schedulePreview);
+  valInput.addEventListener('input', schedulePreview);
 
   box.appendChild(row);
 }
@@ -322,6 +328,51 @@ function buildSpecFromForm() {
   return spec;
 }
 
+/* ── 저장 버튼 활성/비활성 ── */
+function _setSaveEnabled(on) {
+  var btn = _$('bSave');
+  if (btn) btn.disabled = !on;
+}
+
+/* ══════════════════════════════════════════
+   실시간 dry-run 미리보기 (debounce 400ms)
+   dry-run 실패 시 친절 에러 + 저장 비활성 → 잘못된 위젯 저장 방지
+   ══════════════════════════════════════════ */
+function schedulePreview() {
+  if (_pvTimer) clearTimeout(_pvTimer);
+  _pvTimer = setTimeout(previewBuilder, 400);
+}
+
+async function previewBuilder() {
+  var box = _$('bPreview');
+  if (!box) return;
+  var spec = buildSpecFromForm();
+  try {
+    var r = await fetch('/api/dashboard/widgets/spec', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spec: spec, dryRunOnly: true }),
+    });
+    var j = await r.json();
+    if (!r.ok || !j || !j.ok) {
+      var hint = (j && j.validationErrors && j.validationErrors[0] && (j.validationErrors[0].hint || j.validationErrors[0].message)) ||
+        (j && j.error) || '미리보기 실패';
+      box.innerHTML = '<div class="builder-err">' + _esc(hint) + '</div>';
+      _setSaveEnabled(false);
+      return;
+    }
+    box.innerHTML = '<div class="widget-body" id="bPreviewBody"></div>';
+    window.renderSpecResult(_$('bPreviewBody'), {
+      ok: true, result: j.preview, kind: spec.kind, title: spec.title,
+      subtitle: spec.subtitle, format: spec.format, style: spec.style,
+    });
+    _setSaveEnabled(true);
+  } catch (e) {
+    box.innerHTML = '<div class="builder-err">네트워크 오류</div>';
+    _setSaveEnabled(false);
+  }
+}
+
 /* ══════════════════════════════════════════
    빌더 열기/닫기
    ══════════════════════════════════════════ */
@@ -331,15 +382,20 @@ function openBuilder() {
     _fillSourceSelect(cat.catalog);
     _fillKindSelect(cat.kinds);
     _onSourceChange();           // 측정값/분류/필터/정렬 필드 채움 + kind 표시 제어
+    _setSaveEnabled(false);
+    var box = _$('bPreview');
+    if (box) box.innerHTML = '<div class="builder-hint">소스와 측정값을 선택하면 실데이터 미리보기가 표시됩니다.</div>';
     var ov = _$('builderOverlay');
     if (ov) ov.classList.add('open');
     if (window.closePicker) window.closePicker();
+    schedulePreview();           // 초기 미리보기 시도
   });
 }
 
 function closeBuilder() {
   var ov = _$('builderOverlay');
   if (ov) ov.classList.remove('open');
+  if (_pvTimer) { clearTimeout(_pvTimer); _pvTimer = null; }
 }
 
 /* ── 빌더 이벤트 배선 ── */
@@ -359,13 +415,21 @@ function _wireBuilder() {
   var addFilter = _$('bAddFilter');
   if (addFilter) addFilter.addEventListener('click', function () { _addFilterRow(); });
 
-  // 소스 변경 → 종속 필드 갱신
+  // 소스 변경 → 종속 필드 갱신 + 미리보기
   var src = _$('bSource');
-  if (src) src.addEventListener('change', function () { _onSourceChange(); });
+  if (src) src.addEventListener('change', function () { _onSourceChange(); schedulePreview(); });
 
-  // 차트 변경 → 영역 표시 제어
+  // 차트 변경 → 영역 표시 제어 + 미리보기
   var kind = _$('bKind');
-  if (kind) kind.addEventListener('change', function () { _onKindChange(); });
+  if (kind) kind.addEventListener('change', function () { _onKindChange(); schedulePreview(); });
+
+  // 나머지 폼 변경 → 미리보기
+  ['bTitle', 'bAggType', 'bAggField', 'bGroupBy', 'bOrderField', 'bOrderDir', 'bLimit'].forEach(function (id) {
+    var el = _$(id);
+    if (!el) return;
+    var ev = (el.tagName === 'SELECT') ? 'change' : 'input';
+    el.addEventListener(ev, schedulePreview);
+  });
 }
 
 /* ── 갤러리 lazy-load 훅 + 빌더 배선 ── */
