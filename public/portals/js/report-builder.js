@@ -627,7 +627,7 @@ function mockAiResponse(payload, userMessage) {
         organization: '주식회사 알티바이오',
         reporterName: payload.context.userName,
         phone: '02-1234-5678',
-        email: 'qc@altibio.kr',
+        email: 'qc@rtbio.com',
         duplicate: '무',
         productName: matchedProduct?.name || '리코탭플러스 무릎 보조기',
         itemName: '의료용 보조기',

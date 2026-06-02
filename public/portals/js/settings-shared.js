@@ -46,9 +46,9 @@
     phone:         '02-1234-5678',
     fax:           '02-1234-5679',
     // 이메일
-    smtpHost:      'smtp.rtbio.co.kr',
+    smtpHost:      'smtp.rtbio.com',
     smtpPort:      587,
-    senderEmail:   'admin@rtbio.co.kr',
+    senderEmail:   'admin@rtbio.com',
   };
 
   const STORAGE_KEY = 'rtbio-tenant-settings';

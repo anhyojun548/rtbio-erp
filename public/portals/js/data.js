@@ -777,15 +777,15 @@ let customClientTypes = ['대리점', '병원', '기타']; // user can add more
 
 // ── 8. 영업 사원 마스터 (2026-05-12 미팅: 마스터 계정 + 인센티브 계산) ──
 const SALES_REP_MASTERS = [
-  { id:'박진우', name:'박진우', email:'jw.park@altibio.co.kr', phone:'010-1111-2222',
+  { id:'박진우', name:'박진우', email:'jw.park@rtbio.com', phone:'010-1111-2222',
     clientIds:['C001','C002','C006','C007','C009','C011','C014','C015','C016','C018'],
     targetMonthly: 12000000,
     monthlyAchievement: { '2026-04': 8420000, '2026-03': 11200000, '2026-02': 9800000 } },
-  { id:'배경동', name:'배경동', email:'kd.bae@altibio.co.kr', phone:'010-3333-4444',
+  { id:'배경동', name:'배경동', email:'kd.bae@rtbio.com', phone:'010-3333-4444',
     clientIds:['C003','C004','C008','C010','C013','C017','C019'],
     targetMonthly: 10000000,
     monthlyAchievement: { '2026-04': 6920000, '2026-03': 9450000, '2026-02': 10100000 } },
-  { id:'신현호', name:'신현호', email:'hh.shin@altibio.co.kr', phone:'010-5555-6666',
+  { id:'신현호', name:'신현호', email:'hh.shin@rtbio.com', phone:'010-5555-6666',
     clientIds:['C005','C012','C020'],
     targetMonthly: 8000000,
     monthlyAchievement: { '2026-04': 4310000, '2026-03': 7820000, '2026-02': 8100000 } },
