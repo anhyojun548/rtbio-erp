@@ -149,8 +149,8 @@
   ];
 
   // ── WindyFlo branding ──
-  // 아이콘 파일: prototype/assets/windyflo-icon.png 에 배치
-  const WINDYFLO_ICON = 'assets/windyflo-icon.png';
+  // 아이콘 파일: public/portals/assets/windyflo-icon.png (절대경로 — 포털은 /admin 등으로 서빙되어 상대경로가 빗나감)
+  const WINDYFLO_ICON = '/portals/assets/windyflo-icon.png';
   const WINDYFLO_FALLBACK = '🌬️';
   const ASSISTANT_NAME = 'WindyFlo Assistant';
 
