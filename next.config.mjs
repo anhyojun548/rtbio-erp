@@ -1,3 +1,11 @@
+// ── 타임존 고정 (KST / Asia/Seoul) ─────────────────────────────────
+// 모든 "현재 시점" 계산(위젯 이번달/오늘/주간, 월간보고서, 유통기한, billingMonth 등)은
+// new Date() + 로컬시간 메서드(getMonth/getDate…)를 쓰므로 **런타임 TZ 에 의존**한다.
+// 운영(리눅스 컨테이너)은 기본 UTC 라 KST 와 9시간 어긋난다 → 여기서 KST 로 고정한다.
+// Node 는 런타임 process.env.TZ 변경을 tzset() 으로 반영(검증됨). 외부에서 TZ 가
+// 명시되면(컨테이너 env 등) 그것을 우선한다 — defense-in-depth.
+process.env.TZ = process.env.TZ || "Asia/Seoul";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
