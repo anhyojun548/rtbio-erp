@@ -516,7 +516,11 @@ async function _resyncSpecWidgetIds() {
         el.dataset.widgetId = row.id;
         window._specCache = window._specCache || {};
         window._specCache[row.id] = row.config.spec;
-        if (oldId && oldId !== row.id && window._specCache[oldId]) delete window._specCache[oldId];
+        if (oldId && oldId !== row.id) {
+          if (window._specCache[oldId]) delete window._specCache[oldId];
+          // 편집 중인 빌더가 이 위젯을 가리키면 편집 대상 id 도 따라가게(저장 유실 race 방지)
+          if (window._notifyWidgetIdRemap) window._notifyWidgetIdRemap(oldId, row.id);
+        }
       }
     });
   } catch (e) {

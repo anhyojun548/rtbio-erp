@@ -21,6 +21,20 @@ function _esc(s) {
 function _$(id) { return document.getElementById(id); }
 function _val(id) { var el = _$(id); return el ? el.value : ''; }
 function _setVal(id, v) { var el = _$(id); if (el) el.value = (v == null ? '' : v); }
+// 셀렉트에 해당 값 옵션이 없으면 추가 후 선택 — 편집 프리필 충실도용
+// (예: groupBy clientId 는 카탈로그에 미노출이라 옵션이 없음)
+var _GROUP_LABELS = { clientId: '거래처 (clientId)', productId: '제품 (productId)' };
+function _setSelEnsure(id, value) {
+  var el = _$(id);
+  if (!el) return;
+  var v = (value == null ? '' : String(value));
+  if (v && !Array.prototype.some.call(el.options, function (o) { return o.value === v; })) {
+    var opt = document.createElement('option');
+    opt.value = v; opt.textContent = _GROUP_LABELS[v] || v;
+    el.appendChild(opt);
+  }
+  el.value = v;
+}
 
 var _KIND_LABELS = {
   kpi: 'KPI', bar: '세로 막대', hbar: '가로 막대', line: '선 그래프',
@@ -416,14 +430,14 @@ function fillFormFromSpec(spec) {
   // 3) 측정값 (옵션은 _onSourceChange 가 이미 생성)
   var agg = data.aggregate || {};
   _setVal('bAggType', agg.type || '');
-  _setVal('bAggField', agg.field || '');
+  _setSelEnsure('bAggField', agg.field || '');
 
   // 4) 분류(그룹)
-  _setVal('bGroupBy', (data.groupBy && data.groupBy[0]) || '');
+  _setSelEnsure('bGroupBy', (data.groupBy && data.groupBy[0]) || '');
 
   // 5) 정렬/limit
   var ob = (data.orderBy && data.orderBy[0]) || null;
-  _setVal('bOrderField', (ob && ob.field) || '');
+  _setSelEnsure('bOrderField', (ob && ob.field) || '');
   _setVal('bOrderDir', (ob && ob.dir) || 'desc');
   _setVal('bLimit', data.limit != null ? String(data.limit) : '');
 
@@ -576,6 +590,15 @@ window.openBuilderForEdit = function (widgetId) {
   ensureCatalog().then(function () {
     openBuilder(spec, widgetId);
   });
+};
+
+/* ──────────────────────────────────────────
+   id 재발급 통지 — bulk sync 가 DB id 를 바꾸면 대시보드가 호출.
+   편집 중인 위젯이 remap 대상이면 편집 id 도 따라가 저장 유실 방지.
+   (추가 직후 ~3초 디바운스 동기화 중 편집/저장 race 해소)
+   ────────────────────────────────────────── */
+window._notifyWidgetIdRemap = function (oldId, newId) {
+  if (_editingWidgetId && oldId && _editingWidgetId === oldId) _editingWidgetId = newId;
 };
 
 /* ── 갤러리 lazy-load 훅 + 빌더 배선 ── */
