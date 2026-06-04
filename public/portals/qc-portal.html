@@ -1135,19 +1135,10 @@
  <h2>위젯 추가</h2>
  <button class="picker-close" id="pickerClose">✕</button>
  </div>
-<!-- AI 챗 — 말로 위젯 요청 (Flowise 준비 전: 가장 비슷한 템플릿 추천) -->
+<!-- windyflo 위젯 AI — 대화로 위젯 생성 (위젯 추가 모달 안) -->
  <div class="picker-ai">
   <div class="picker-ai-head">🤖 AI에게 말하기</div>
-  <div class="picker-ai-row">
-    <input type="text" id="pickerAiInput" class="form-input" maxlength="500"
-      placeholder="원하는 위젯을 말해보세요 (예: 이번 달 거래처별 매출)" />
-    <button class="tb-btn primary" id="pickerAiSend">보내기</button>
-  </div>
-  <div class="picker-ai-hint">
-    예: "재고 부족 품목" · "미수금" · "오늘 매출" — 지금은 비슷한 템플릿을 추천해요.
-    AI 자동 생성은 곧 (Flowise 연결 예정)
-  </div>
-  <div class="picker-ai-results" id="pickerAiResults"></div>
+  <flowise-fullchatbot></flowise-fullchatbot>
  </div>
  <div class="picker-section">
  <div class="picker-section-head">
@@ -4934,38 +4925,22 @@ document.addEventListener('DOMContentLoaded', () => {
  goTo('page-qc-dashboard'); // default page
 });
 </script>
-<!-- ── RTBIO 위젯 AI (Flowise · windyflo) — 대화형 위젯 생성 에이전트 ──
-     기존 목업 챗봇(.ai-toggle)은 숨기고 실제 AI 버블로 대체.
-     (ai-assistant.js 는 매뉴얼 검색 API 때문에 로드 유지) -->
+<!-- windyflo 위젯 AI 챗 (위젯 추가 모달) — 목업 챗봇은 숨김(우하단은 추후 다른 agent용) -->
 <style>
-.picker-ai{padding:16px 20px;border-bottom:1px solid var(--border,#e5e7eb);}
-.picker-ai-head{font-weight:600;margin-bottom:8px;}
-.picker-ai-row{display:flex;gap:8px;}
-.picker-ai-row .form-input{flex:1;}
-.picker-ai-hint{font-size:12px;color:var(--text-tertiary,#6b7280);margin-top:6px;line-height:1.5;}
-.picker-ai-results{margin-top:12px;display:flex;flex-direction:column;gap:10px;}
-.picker-ai-reply{font-size:13px;color:var(--text-secondary,#374151);}
-.picker-ai-card{border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px;background:var(--bg,#fff);}
-.picker-ai-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;}
-.picker-ai-card-title{font-weight:600;font-size:14px;}
-.picker-ai-preview{min-height:72px;}
-.picker-ai-empty,.picker-ai-loading{font-size:13px;color:var(--text-tertiary,#6b7280);padding:8px 0;}
 .ai-toggle, .ai-panel { display: none !important; }
+.picker-ai { padding:16px 20px; border-bottom:1px solid var(--border,#e5e7eb); }
+.picker-ai-head { font-weight:600; margin-bottom:8px; }
+flowise-fullchatbot { display:block; height:440px; border:1px solid var(--border,#e5e7eb); border-radius:8px; overflow:hidden; }
 </style>
 <script type="module">
   import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
-  Chatbot.init({
+  Chatbot.initFull({
     chatflowid: "e06fd2ea-da9f-4140-8502-5a171a664db8",
     apiHost: "https://www.windyflo.com",
-    theme: {
-      button: { backgroundColor: "#1B3A5C", right: 24, bottom: 24, size: 56, iconColor: "#ffffff" },
-      chatWindow: {
-        title: "RTBIO 위젯 AI",
-        welcomeMessage: "어떤 위젯을 만들까요?\n예: \"이번 달 거래처별 매출 위젯을 본인 이메일 대시보드에 만들어줘\"",
-        botMessage: { backgroundColor: "#f4f6f8", textColor: "#1f2937" },
-        userMessage: { backgroundColor: "#1B3A5C", textColor: "#ffffff" }
-      }
-    }
+    theme: { chatWindow: {
+      title: "RTBIO 위젯 AI",
+      welcomeMessage: "어떤 위젯을 만들까요?\n예: \"이번 달 거래처별 매출 위젯을 본인 이메일 대시보드에 만들어줘\""
+    } }
   });
 </script>
 </body>

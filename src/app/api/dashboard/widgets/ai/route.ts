@@ -3,7 +3,7 @@
  * 자연어 메시지를 받아 위젯을 "제안"한다(생성하지 않음 — 저장은 기존
  * POST /api/dashboard/widgets/spec 가 담당).
  *  - 지금: 로컬 매처(suggestWidgets) → 가장 비슷한 prefab top-3 (mode="suggest")
- *  - 나중: env FLOWISE_PREDICTION_URL 설정 시 Flowise 프록시 → spec (mode="spec") [후속 구현]
+ *  - 나중: env WINDYFLO_PREDICTION_URL 설정 시 windyflo 프록시 → spec (mode="spec") [후속 구현]
  * 인증: NextAuth 세션(인앱 로그인 사용자). 키/URL 은 서버 env 전용.
  */
 import { getServerSession } from "next-auth";
@@ -31,10 +31,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // ── Flowise 연결 심(seam) — env 설정 시 그 챗플로우로 프록시(실제 프록시는 후속) ──
-  if (process.env.FLOWISE_PREDICTION_URL) {
+  // ── windyflo 연결 심(seam) — env 설정 시 그 챗플로우로 프록시(실제 프록시는 후속) ──
+  if (process.env.WINDYFLO_PREDICTION_URL) {
     return Response.json(
-      { ok: false, error: "Flowise 연동은 준비 중입니다." },
+      { ok: false, error: "windyflo 연동은 준비 중입니다." },
       { status: 503 },
     );
   }

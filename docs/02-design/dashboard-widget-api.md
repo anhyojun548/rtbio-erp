@@ -1,6 +1,6 @@
-# Flowise 연동 API — 대시보드 위젯 빌더 가이드
+# windyflo 연동 API — 대시보드 위젯 빌더 가이드
 
-> 외부 LLM 에이전트(Flowise)가 자연어 요청을 **WidgetSpec(JSON)** 으로 변환해
+> 외부 LLM 에이전트(windyflo)가 자연어 요청을 **WidgetSpec(JSON)** 으로 변환해
 > RTBIO 대시보드에 **실시간 위젯**을 생성하기 위한 통합 가이드.
 > 이 문서는 `src/lib/widget-spec/*` + `src/app/api/dashboard/*` 실제 코드와 1:1 로 맞춰져 있다.
 >
@@ -10,11 +10,11 @@
 
 ## 1. 개요 + 에이전트 흐름
 
-Flowise 에이전트는 **데이터 스냅샷이 아니라 spec(실시간 쿼리 정의)** 을 저장한다.
+windyflo 에이전트는 **데이터 스냅샷이 아니라 spec(실시간 쿼리 정의)** 을 저장한다.
 즉 한 번 만들면, 대시보드를 열 때마다 그 spec 이 다시 실행돼 **최신 데이터**로 렌더된다.
 에이전트는 "값"이 아니라 "어떻게 구하는가(소스·필터·집계)"를 푸시한다.
 
-에이전트 루프는 4단계다:
+windyflo 에이전트 루프는 4단계다:
 
 ```
 [1] 학습   GET /api/dashboard/data-catalog   → 어떤 source/field/집계가 가능한가
@@ -46,7 +46,7 @@ Flowise 에이전트는 **데이터 스냅샷이 아니라 spec(실시간 쿼리
 Authorization: Bearer <YOUR_TOKEN>
 ```
 
-> `<YOUR_TOKEN>` 는 플레이스홀더다. 실제 토큰 값을 이 문서나 코드, Flowise 공유 플로우에
+> `<YOUR_TOKEN>` 는 플레이스홀더다. 실제 토큰 값을 이 문서나 코드, windyflo 공유 플로우에
 > **절대 하드코딩하지 않는다.** 운영 비밀로 관리한다.
 
 ### 동작 모델
@@ -81,7 +81,7 @@ Authorization: Bearer <YOUR_TOKEN>
 
 브라우저(로그인 세션)가 자연어 메시지를 보내면 위젯을 **제안**한다(저장은 안 함).
 - 지금: 로컬 매처가 가장 비슷한 prefab top-3 추천 → `{ ok, mode:"suggest", reply, suggestions:[{key,title,kind,source,score,spec}] }`.
-- 나중: 서버 env `FLOWISE_PREDICTION_URL` 설정 시 같은 라우트가 그 챗플로우로 프록시 → `{ ok, mode:"spec", reply, spec }`. 키/URL 은 서버 전용.
+- 나중: 서버 env `WINDYFLO_PREDICTION_URL` 설정 시 같은 라우트가 그 챗플로우로 프록시 → `{ ok, mode:"spec", reply, spec }`. 키/URL 은 서버 전용.
 
 실제 위젯 저장은 기존 `POST /api/dashboard/widgets/spec` 가 담당(인앱은 NextAuth 세션 인증).
 
@@ -468,7 +468,7 @@ data-catalog 가 반환하는 `templateVars` 목록:
 
 ---
 
-## 8. Flowise 설정
+## 8. windyflo 설정
 
 에이전트에 **도구 3개**를 등록하고, 시스템 프롬프트로 규칙을 주입한다.
 
@@ -488,7 +488,7 @@ data-catalog 가 반환하는 `templateVars` 목록:
 - Body(JSON): `{ "spec": { … }, "dryRunOnly": true, "forUser": "<requester-email>" }`
   - 먼저 `dryRunOnly:true` 로 검증 → 통과하면 `dryRunOnly` 빼고 다시 호출해 저장.
 
-> `<YOUR_TOKEN>` 은 Flowise Credential/환경변수로 주입하고 플로우 JSON 에 평문 저장하지 않는다.
+> `<YOUR_TOKEN>` 은 windyflo Credential/환경변수로 주입하고 플로우 JSON 에 평문 저장하지 않는다.
 
 ### 에이전트 시스템 프롬프트 (붙여넣기용)
 
