@@ -601,15 +601,6 @@
  </div>
  <!-- STAFF-E: 직원 관리 — 팀관리자/메타관리자(ADMIN·TENANT_OWNER)만 노출 (기본 숨김, init 에서 게이트) -->
  <div class="nav-item" id="nav-staff" data-page="page-staff" onclick="goTo('page-staff')" style="display:none">직원 관리</div>
- <!-- 경영지원팀 요청 #6 (2026-04-21): "발주관리" 페이지는 폐지 (매입매출장으로 통합).
- 메뉴에서는 disabled 처리 — 발주 상세는 매입매출장 행 클릭 시 모달로 표시됨 -->
- <div class="nav-item" style="font-size:13px;color:var(--text-tertiary);opacity:0.5;cursor:not-allowed;pointer-events:none;">
- <span>발주관리</span>
- <span style="font-size:11px;margin-left:auto;color:var(--text-tertiary);">→ 매입매출장</span>
- </div>
- <div class="nav-item disabled" style="opacity:0.4;pointer-events:none;cursor:default;">
- 매입관리 <span style="font-size:11px;margin-left:4px;">(사용안함)</span>
- </div>
  <!-- 알티바이오 ISO 13485 품질양식 보고서 작성 (AI 자동 채움 + PDF) -->
  <div class="nav-section">보고서</div>
  <div class="nav-item" data-page="page-reports" onclick="goTo('page-reports')">
