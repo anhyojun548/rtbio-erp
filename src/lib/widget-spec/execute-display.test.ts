@@ -28,3 +28,16 @@ it("resolver 없는 groupBy(status)는 값 유지", async () => {
     { now: new Date(), userId:"u", role:"ADMIN" });
   expect(r.series![0]?.label).toBe("ISSUED");
 });
+it("table 위젯은 displayColumns 로 큐레이트 + 관계 이름", async () => {
+  vi.mocked((prisma as any).order = { findMany: vi.fn() });
+  ((prisma as any).order.findMany as any).mockResolvedValue([
+    { id:"o1", orderNumber:"ORD-1", clientId:"c1", client:{name:"메디칼"}, status:"COMPLETED", orderDate:new Date("2026-06-01T00:00:00Z"), note:"x", billingMonth:"2026-06" },
+  ]);
+  const r = await executeWidgetSpec(
+    { version:"1.0", title:"x", kind:"table", data:{ source:"order", limit:5 } } as any,
+    { now: new Date(), userId:"u", role:"ADMIN" });
+  expect(Object.keys(r.rows![0]!)).toEqual(["주문번호","거래처","상태","주문일"]);
+  expect(r.rows![0]!["거래처"]).toBe("메디칼");
+  expect((prisma as any).order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+    include: { client: { select: { name: true } } } }));
+});

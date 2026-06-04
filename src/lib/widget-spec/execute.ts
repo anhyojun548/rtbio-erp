@@ -24,7 +24,12 @@ import {
   type WidgetSource,
   type WidgetSpec,
 } from "./schema";
-import { LABEL_RESOLVERS } from "./display";
+import {
+  LABEL_RESOLVERS,
+  getDisplayColumns,
+  getValueByPath,
+  buildIncludeForColumns,
+} from "./display";
 
 // ─────────────────────────────────────────────────────────────
 // 0. 실행 컨텍스트 / 결과 타입
@@ -560,10 +565,22 @@ export async function executeWidgetSpec(
   }
 
   // ── (C) aggregate 없음 → 행 목록 (table/list) ──────────
+  const cols = getDisplayColumns(source);
+  if (cols) {
+    const include = buildIncludeForColumns(cols);
+    const rawRows = (await delegate.findMany({
+      where, orderBy: buildOrderBy(spec.data.orderBy), take: limit ?? 50,
+      ...(include ? { include } : {}),
+    })) as Record<string, unknown>[];
+    const rows = rawRows.map((row) => {
+      const out: Record<string, unknown> = {};
+      for (const { field, label } of cols) out[label] = serializeValue(getValueByPath(row, field));
+      return out;
+    });
+    return { kind: spec.kind, rows };
+  }
   const rows = (await delegate.findMany({
-    where,
-    orderBy: buildOrderBy(spec.data.orderBy),
-    take: limit ?? 50,
+    where, orderBy: buildOrderBy(spec.data.orderBy), take: limit ?? 50,
   })) as Record<string, unknown>[];
   return { kind: spec.kind, rows: serializeRows(rows) };
 }
