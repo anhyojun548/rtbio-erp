@@ -140,15 +140,16 @@ const RAW_PREFABS: Record<string, SpecInput> = {
     action: { type: "navigate", to: "/admin/alerts/stock" },
   },
 
-  // 만료 임박 계약 — 30일 이내 종료.
-  // SalesContract 전용 source 부재(whitelist 고정) → conference.endDate 로 의미 근사.
+  // 만료 임박 계약 — 30일 이내 종료. SalesContract.endDate ∈ [오늘, +30일].
+  // 주의: endDate gte/lte 필터는 endDate=null(무기한) 계약을 자동 제외한다 —
+  //       "만료 임박" 의미상 정상(버그 아님).
   kpi_expiring_contracts: {
     version: "1.0",
     title: "만료 임박 계약",
     kind: "kpi",
     layout: { w: 3, h: 2 },
     data: {
-      source: "conference",
+      source: "salesContract",
       filter: {
         endDate: {
           gte: "{{now.startOfDay}}",
@@ -209,14 +210,15 @@ const RAW_PREFABS: Record<string, SpecInput> = {
   },
 
   // 만료 임박 계약 Top 5 — SalesContract endDate asc 30일 이내.
-  // source 부재 → conference.endDate 로 근사 (kpi_expiring_contracts 와 동일 사유).
+  // 주의: endDate gte/lte 필터는 endDate=null(무기한) 계약을 자동 제외한다 —
+  //       "만료 임박" 의미상 정상(kpi_expiring_contracts 와 동일).
   list_ending_contracts: {
     version: "1.0",
     title: "만료 임박 계약 Top 5",
     kind: "table",
     layout: { w: 6, h: 4 },
     data: {
-      source: "conference",
+      source: "salesContract",
       filter: {
         endDate: {
           gte: "{{now.startOfDay}}",
@@ -244,6 +246,18 @@ const RAW_PREFABS: Record<string, SpecInput> = {
     style: { icon: "🕑", color: "#1D4ED8" },
     action: { type: "navigate", to: "/admin/orders" },
   },
+
+  // ─────────────────────────── KPI 추가 3종 ───────────────────────────
+
+  kpi_daily_sales: { version:"1.0", title:"오늘 매출", kind:"kpi", layout:{w:3,h:2},
+    data:{ source:"invoice", filter:{ status:{in:["ISSUED","SENT"]}, issueDate:{ gte:"{{now.startOfDay}}" } }, aggregate:{type:"sum",field:"totalAmount"} },
+    format:{ value:{type:"currency",prefix:"₩",compact:true} }, style:{icon:"🗓️",color:"#1B3A5C"}, action:{type:"navigate",to:"/admin/invoices"} },
+  kpi_weekly_sales: { version:"1.0", title:"주간 매출(최근 7일)", kind:"kpi", layout:{w:3,h:2},
+    data:{ source:"invoice", filter:{ status:{in:["ISSUED","SENT"]}, issueDate:{ gte:"{{now.minus(7,'day')}}" } }, aggregate:{type:"sum",field:"totalAmount"} },
+    format:{ value:{type:"currency",prefix:"₩",compact:true} }, style:{icon:"📈",color:"#1B3A5C"}, action:{type:"navigate",to:"/admin/invoices"} },
+  kpi_received: { version:"1.0", title:"이번 달 수금", kind:"kpi", layout:{w:3,h:2},
+    data:{ source:"payment", filter:{ status:{in:["PARTIAL","PAID"]}, paidAt:{ gte:"{{now.startOfMonth}}", lt:"{{now.startOfMonth.plus(1,'month')}}" } }, aggregate:{type:"sum",field:"amount"} },
+    format:{ value:{type:"currency",prefix:"₩",compact:true} }, style:{icon:"💵",color:"#047857"}, action:{type:"navigate",to:"/admin/payments"} },
 };
 
 /**
