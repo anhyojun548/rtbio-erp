@@ -24,6 +24,7 @@ import {
   type WidgetSource,
   type WidgetSpec,
 } from "./schema";
+import { LABEL_RESOLVERS } from "./display";
 
 // ─────────────────────────────────────────────────────────────
 // 0. 실행 컨텍스트 / 결과 타입
@@ -599,6 +600,21 @@ async function runGroupBy(
         ? toNum(g._count)
         : extractAggValue(g, aggType, aggField),
   }));
+
+  // 라벨 해석: groupBy 필드가 ID면 참조 모델에서 이름 배치 조회
+  const resolver = LABEL_RESOLVERS[labelKey];
+  if (resolver) {
+    const ids = series.map((s) => s.label).filter((x) => x && x !== "—");
+    if (ids.length) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const refs = (await (prisma as any)[resolver.model].findMany({
+        where: { id: { in: ids } },
+        select: { id: true, [resolver.labelField]: true },
+      })) as Array<Record<string, unknown>>;
+      const nameById = new Map(refs.map((r) => [String(r.id), String(r[resolver.labelField] ?? r.id)]));
+      series = series.map((s) => ({ ...s, label: nameById.get(s.label) ?? s.label }));
+    }
+  }
 
   // 값 desc 정렬 후 limit (chart 가독성)
   series.sort((a, b) => b.value - a.value);
