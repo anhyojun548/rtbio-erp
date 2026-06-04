@@ -56,6 +56,10 @@ next-env.d.ts
 # Archives (prototype backup)
 *.zip
 
+# 2026-06-04: 벤더 Flowise 업스트림 덤프 (수천 파일·credential 템플릿 포함) — 추적 제외
+# (tsconfig 에서도 exclude. 앱 코드 아님 — 로컬 에이전트 작업용)
+windyflo/
+
 # Broken paths (historical)
 C:Users*/
 
