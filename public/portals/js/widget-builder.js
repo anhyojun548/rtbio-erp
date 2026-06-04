@@ -10,6 +10,7 @@
 var _catalog = null;       // data-catalog 응답 캐시 ({ catalog, kinds, aggregates, ... })
 var _galleryCache = null;  // widget-schema.examples 캐시
 var _pvTimer = null;       // dry-run 미리보기 debounce 타이머
+var _editingWidgetId = null; // 편집 모드면 대상 위젯의 DB id, 신규면 null
 
 /* ── 소형 헬퍼 ── */
 function _esc(s) {
@@ -19,6 +20,7 @@ function _esc(s) {
 }
 function _$(id) { return document.getElementById(id); }
 function _val(id) { var el = _$(id); return el ? el.value : ''; }
+function _setVal(id, v) { var el = _$(id); if (el) el.value = (v == null ? '' : v); }
 
 var _KIND_LABELS = {
   kpi: 'KPI', bar: '세로 막대', hbar: '가로 막대', line: '선 그래프',
@@ -395,14 +397,96 @@ async function previewBuilder() {
 }
 
 /* ══════════════════════════════════════════
+   편집 프리필 — spec → 폼 (buildSpecFromForm 역방향)
+   순서 중요: source → _onSourceChange(옵션 채움 + 필터행 초기화)
+              → kind → _onKindChange(표시제어)
+              → 측정/분류/정렬 값(옵션 존재해야 적용됨) → 제목 → 필터행 재구성(마지막)
+   ══════════════════════════════════════════ */
+function fillFormFromSpec(spec) {
+  var data = (spec && spec.data) || {};
+
+  // 1) 소스 → 종속 필드 옵션 채움 + 필터행 비움
+  _setVal('bSource', data.source || '');
+  _onSourceChange();
+
+  // 2) 차트 종류 → 측정/분류/정렬 영역 표시 제어
+  _setVal('bKind', spec.kind || '');
+  _onKindChange();
+
+  // 3) 측정값 (옵션은 _onSourceChange 가 이미 생성)
+  var agg = data.aggregate || {};
+  _setVal('bAggType', agg.type || '');
+  _setVal('bAggField', agg.field || '');
+
+  // 4) 분류(그룹)
+  _setVal('bGroupBy', (data.groupBy && data.groupBy[0]) || '');
+
+  // 5) 정렬/limit
+  var ob = (data.orderBy && data.orderBy[0]) || null;
+  _setVal('bOrderField', (ob && ob.field) || '');
+  _setVal('bOrderDir', (ob && ob.dir) || 'desc');
+  _setVal('bLimit', data.limit != null ? String(data.limit) : '');
+
+  // 6) 제목
+  _setVal('bTitle', spec.title || '');
+
+  // 7) 필터행 재구성 — { field: { op: value } }
+  var filter = data.filter || {};
+  Object.keys(filter).forEach(function (field) {
+    var ops = filter[field] || {};
+    Object.keys(ops).forEach(function (op) {
+      var value = ops[op];
+      _addFilterRow();
+      var rows = document.querySelectorAll('#bFilters .bfilter-row');
+      var row = rows[rows.length - 1];
+      if (!row) return;
+      var fieldSel = row.querySelector('.bf-field');
+      var opSel = row.querySelector('.bf-op');
+      var tplSel = row.querySelector('.bf-tpl');
+      var valInput = row.querySelector('.bf-val');
+      if (fieldSel) fieldSel.value = field;
+      if (opSel) opSel.value = op;
+
+      if (Array.isArray(value)) {
+        // in/notIn/between → 콤마 조인
+        if (valInput) valInput.value = value.join(',');
+      } else if (typeof value === 'string' && /^\{\{.*\}\}$/.test(value)) {
+        // 템플릿 변수 → bf-tpl 세팅 (change 핸들러가 val 채움+disable)
+        if (tplSel) {
+          tplSel.value = value;
+          // 템플릿이 _TPL_OPTS 목록에 없으면 option 으로 추가 후 선택
+          if (tplSel.value !== value) {
+            var opt = document.createElement('option');
+            opt.value = value; opt.textContent = value;
+            tplSel.appendChild(opt);
+            tplSel.value = value;
+          }
+          tplSel.dispatchEvent(new Event('change'));
+        } else if (valInput) {
+          valInput.value = value;
+        }
+      } else if (valInput) {
+        valInput.value = String(value);
+      }
+    });
+  });
+}
+
+/* ══════════════════════════════════════════
    빌더 열기/닫기
    ══════════════════════════════════════════ */
-function openBuilder() {
+function openBuilder(editSpec, editWidgetId) {
   ensureCatalog().then(function (cat) {
     if (!cat) { window.showToast('카탈로그 로드 실패'); return; }
     _fillSourceSelect(cat.catalog);
     _fillKindSelect(cat.kinds);
-    _onSourceChange();           // 측정값/분류/필터/정렬 필드 채움 + kind 표시 제어
+    if (editSpec) {
+      _editingWidgetId = editWidgetId || null;
+      fillFormFromSpec(editSpec);   // 현재 spec 으로 폼 프리필 (필드 옵션 + 필터행 포함)
+    } else {
+      _editingWidgetId = null;
+      _onSourceChange();           // 신규: 측정값/분류/필터/정렬 필드 채움 + kind 표시 제어
+    }
     _setSaveEnabled(false);
     var box = _$('bPreview');
     if (box) box.innerHTML = '<div class="builder-hint">소스와 측정값을 선택하면 실데이터 미리보기가 표시됩니다.</div>';
@@ -417,6 +501,7 @@ function closeBuilder() {
   var ov = _$('builderOverlay');
   if (ov) ov.classList.remove('open');
   if (_pvTimer) { clearTimeout(_pvTimer); _pvTimer = null; }
+  _editingWidgetId = null;     // 편집 상태 해제 (취소/닫기 시 다음 신규에 누수 방지)
 }
 
 /* ── 저장 → 그리드 추가 (갤러리와 동일 _saveSpec 경로) ── */
@@ -470,6 +555,18 @@ function _wireBuilder() {
     el.addEventListener(ev, schedulePreview);
   });
 }
+
+/* ══════════════════════════════════════════
+   편집 진입점 — 대시보드 컨텍스트 메뉴 "위젯 수정" 에서 호출.
+   widgetId = DB spec id (window._specCache 키). 캐시된 spec 으로 빌더를 프리필해 연다.
+   ══════════════════════════════════════════ */
+window.openBuilderForEdit = function (widgetId) {
+  var spec = (window._specCache || {})[widgetId];
+  if (!spec) { if (window.showToast) window.showToast('스펙을 찾을 수 없습니다'); return; }
+  ensureCatalog().then(function () {
+    openBuilder(spec, widgetId);
+  });
+};
 
 /* ── 갤러리 lazy-load 훅 + 빌더 배선 ── */
 document.addEventListener('DOMContentLoaded', function () {
