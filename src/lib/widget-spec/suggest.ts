@@ -52,6 +52,7 @@ export function suggestWidgets(message: string, limit = 3): WidgetSuggestion[] {
 
   for (const key of PREFAB_KEYS) {
     const spec = PREFAB_SPECS[key];
+    if (!spec) continue; // noUncheckedIndexedAccess 가드 (PREFAB_KEYS 는 항상 유효 키)
     const hints = PREFAB_HINTS[key] || [];
     let score = 0;
     for (const h of hints) if (norm.includes(normalize(h))) score += 2;
