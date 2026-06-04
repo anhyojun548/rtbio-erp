@@ -77,6 +77,16 @@ Authorization: Bearer <YOUR_TOKEN>
 
 ---
 
+## 인앱 AI 입구 (POST /api/dashboard/widgets/ai)
+
+브라우저(로그인 세션)가 자연어 메시지를 보내면 위젯을 **제안**한다(저장은 안 함).
+- 지금: 로컬 매처가 가장 비슷한 prefab top-3 추천 → `{ ok, mode:"suggest", reply, suggestions:[{key,title,kind,source,score,spec}] }`.
+- 나중: 서버 env `FLOWISE_PREDICTION_URL` 설정 시 같은 라우트가 그 챗플로우로 프록시 → `{ ok, mode:"spec", reply, spec }`. 키/URL 은 서버 전용.
+
+실제 위젯 저장은 기존 `POST /api/dashboard/widgets/spec` 가 담당(인앱은 NextAuth 세션 인증).
+
+---
+
 ## 3. 도구 ① — `GET /api/dashboard/data-catalog`
 
 **목적**: "무엇을 조회할 수 있는가" — source 별 필드/타입/집계가능여부/노트 + operator/aggregate/템플릿변수 목록.
