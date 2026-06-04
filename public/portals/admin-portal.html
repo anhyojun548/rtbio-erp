@@ -5766,5 +5766,25 @@ document.addEventListener('DOMContentLoaded', () => {
  goTo('page-dashboard');
 });
 </script>
+<!-- ── RTBIO 위젯 AI (Flowise · windyflo) — 대화형 위젯 생성 에이전트 ──
+     기존 목업 챗봇(.ai-toggle)은 숨기고 실제 AI 버블로 대체.
+     (ai-assistant.js 는 매뉴얼 검색 API 때문에 로드 유지) -->
+<style> .ai-toggle, .ai-panel { display: none !important; } </style>
+<script type="module">
+  import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
+  Chatbot.init({
+    chatflowid: "e06fd2ea-da9f-4140-8502-5a171a664db8",
+    apiHost: "https://www.windyflo.com",
+    theme: {
+      button: { backgroundColor: "#1B3A5C", right: 24, bottom: 24, size: 56, iconColor: "#ffffff" },
+      chatWindow: {
+        title: "RTBIO 위젯 AI",
+        welcomeMessage: "어떤 위젯을 만들까요?\n예: \"이번 달 거래처별 매출 위젯을 admin@rtbio.com 대시보드에 만들어줘\"",
+        botMessage: { backgroundColor: "#f4f6f8", textColor: "#1f2937" },
+        userMessage: { backgroundColor: "#1B3A5C", textColor: "#ffffff" }
+      }
+    }
+  });
+</script>
 </body>
 </html>
