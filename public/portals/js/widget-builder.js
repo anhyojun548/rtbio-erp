@@ -119,18 +119,19 @@ async function _saveSpec(spec) {
   return { id: j.id, spec: j.spec };
 }
 
-/* ── 갤러리 카드 클릭 → spec 저장 + 그리드 추가 ── */
+/* spec 1건을 저장+그리드 추가 (갤러리/AI 추천 공용). */
+async function _addSpecToGrid(spec) {
+  var res = await _saveSpec(spec);
+  window.addSpecWidgetToGrid(res.spec, res.id);
+  window.closePicker();
+  window.showToast('"' + (res.spec.title || spec.title) + '" 위젯을 추가했습니다');
+}
+
 async function addFromGallery(key) {
   var spec = _galleryCache[key];
   if (!spec) return;
-  try {
-    var res = await _saveSpec(spec);
-    window.addSpecWidgetToGrid(res.spec, res.id);
-    window.closePicker();
-    window.showToast('"' + spec.title + '" 위젯을 추가했습니다');
-  } catch (e) {
-    window.showToast('추가 실패: ' + (e && e.message ? e.message : ''));
-  }
+  try { await _addSpecToGrid(spec); }
+  catch (e) { window.showToast('추가 실패: ' + (e && e.message ? e.message : '')); }
 }
 
 /* ══════════════════════════════════════════
@@ -601,10 +602,94 @@ window._notifyWidgetIdRemap = function (oldId, newId) {
   if (_editingWidgetId && oldId && _editingWidgetId === oldId) _editingWidgetId = newId;
 };
 
+/* ── AI 챗 (피커 상단) — 말 → 템플릿 추천 ── */
+async function _previewSpecInto(el, spec) {
+  if (!el) return;
+  try {
+    var r = await fetch('/api/dashboard/widgets/spec', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spec: spec, dryRunOnly: true }),
+    });
+    var j = await r.json();
+    if (j && j.ok) {
+      window.renderSpecResult(el, {
+        ok: true, result: j.preview, kind: spec.kind, title: spec.title,
+        subtitle: spec.subtitle, format: spec.format, style: spec.style,
+      });
+    } else { el.innerHTML = '<div class="builder-err">미리보기 실패</div>'; }
+  } catch (e) { el.innerHTML = '<div class="builder-err">미리보기 오류</div>'; }
+}
+
+function _renderAiSuggestions(suggestions, reply) {
+  var box = _$('pickerAiResults');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!suggestions || !suggestions.length) {
+    box.innerHTML = '<div class="picker-ai-empty">' + _esc(reply || '비슷한 위젯을 못 찾았어요.') + '</div>';
+    return;
+  }
+  var head = document.createElement('div');
+  head.className = 'picker-ai-reply';
+  head.textContent = reply || '';
+  box.appendChild(head);
+  suggestions.forEach(function (s) {
+    var card = document.createElement('div');
+    card.className = 'picker-ai-card';
+    card.innerHTML =
+      '<div class="picker-ai-card-head">' +
+        '<span class="picker-ai-card-title">' + _esc(s.title) + '</span>' +
+        '<button class="tb-btn primary picker-ai-add">+ 추가</button>' +
+      '</div>' +
+      '<div class="picker-ai-preview"><div class="builder-hint">미리보기 불러오는 중…</div></div>';
+    box.appendChild(card);
+    _previewSpecInto(card.querySelector('.picker-ai-preview'), s.spec);
+    card.querySelector('.picker-ai-add').addEventListener('click', function () {
+      _addSpecToGrid(s.spec).catch(function (e) {
+        window.showToast('추가 실패: ' + (e && e.message ? e.message : ''));
+      });
+    });
+  });
+}
+
+async function submitAiChat() {
+  var input = _$('pickerAiInput');
+  var box = _$('pickerAiResults');
+  if (!input || !box) return;
+  var message = (input.value || '').trim();
+  if (!message) return;
+  box.innerHTML = '<div class="picker-ai-loading">추천을 찾는 중…</div>';
+  try {
+    var r = await fetch('/api/dashboard/widgets/ai', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message }),
+    });
+    var j = await r.json();
+    if (!r.ok || !j || !j.ok) {
+      box.innerHTML = '<div class="picker-ai-empty">' + _esc((j && j.error) || '요청 실패') + '</div>';
+      return;
+    }
+    _renderAiSuggestions(j.suggestions, j.reply);
+  } catch (e) {
+    box.innerHTML = '<div class="picker-ai-empty">네트워크 오류</div>';
+  }
+}
+
+function _wireAiChat() {
+  var send = _$('pickerAiSend');
+  if (send) send.addEventListener('click', submitAiChat);
+  var input = _$('pickerAiInput');
+  if (input) input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); submitAiChat(); }
+  });
+}
+
 /* ── 갤러리 lazy-load 훅 + 빌더 배선 ── */
 document.addEventListener('DOMContentLoaded', function () {
   window.onPickerOpen = function () { if (!_galleryCache) loadGallery(); };
   _wireBuilder();
+  _wireAiChat();
 });
 
 })();
