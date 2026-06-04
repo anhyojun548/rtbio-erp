@@ -944,7 +944,14 @@ document.addEventListener('DOMContentLoaded', async function () {
       removeWidget(ctxTargetId);
       showToast('위젯을 삭제했습니다');
     } else if (action === 'edit') {
-      openEditModal(ctxTargetId);
+      // spec 위젯이면 빌더를 현재 spec 으로 프리필해 열고, 아니면 제목만 편집(레거시/비-spec 폴백).
+      var elx = document.querySelector('[gs-id="' + ctxTargetId + '"]');
+      var wid = elx && elx.dataset.widgetId;
+      if (wid && window._specCache && window._specCache[wid] && window.openBuilderForEdit) {
+        window.openBuilderForEdit(wid);
+      } else {
+        openEditModal(ctxTargetId); // 폴백: 제목만(레거시/비-spec)
+      }
     } else if (action === 'duplicate') {
       // spec 위젯 복제: 캐시된 spec 을 새 DB id 로 재저장 후 그리드에 추가.
       if (el && el.dataset.widgetSpec === '1' && el.dataset.widgetId &&
