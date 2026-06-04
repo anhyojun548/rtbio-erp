@@ -507,7 +507,7 @@ git commit -m "docs(widget): 인앱 AI 입구 env(FLOWISE_*) + 연동 문서"
 **Files:** (없음 — 검증 전용)
 
 - [ ] **Step 1: 전체 타입체크** — Run: `npm run typecheck` · Expected: 에러 0
-- [ ] **Step 2: 전체 회귀** — Run: `npx vitest run` · Expected: 기존 614 + 신규 11(suggest 8 + route 3) = **625 통과**
+- [ ] **Step 2: 전체 회귀** — Run: `npx vitest run` · Expected: 기존 통과 수 + **신규 11(suggest 8 + route 3)**, 실패 0. (베이스라인이 614면 625; 절대값보다 **+11 델타**와 실패 0 을 기준으로 판단)
 - [ ] **Step 3: 문법** — Run: `node --check public/portals/js/widget-builder.js` · Expected: 통과
 - [ ] **Step 4: 브라우저 E2E (admin)** — dev 서버(`npm run dev`) 가동 중. 로그인(admin@rtbio.com) 후 `/admin`:
   1. `➕ 위젯 추가` 클릭 → 모달 상단에 "🤖 AI에게 말하기" 입력창 + 힌트 배너 보임.
