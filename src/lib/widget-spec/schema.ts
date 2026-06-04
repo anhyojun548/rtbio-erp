@@ -28,6 +28,7 @@ export const WIDGET_SOURCES = [
   "transaction", // 매입매출 거래원장 (TransactionLedger, 41K)
   "shipment", // 출고
   "conference", // 학회
+  "salesContract", // 판매계약
   "expiry", // 유통기한 로트
   "dataUsage", // 데이터 사용량
 ] as const;

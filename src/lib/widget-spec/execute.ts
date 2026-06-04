@@ -105,6 +105,8 @@ function delegateFor(source: WidgetSource): AnyDelegate {
       return prisma.shipment as unknown as AnyDelegate;
     case "conference":
       return prisma.conference as unknown as AnyDelegate;
+    case "salesContract":
+      return prisma.salesContract as unknown as AnyDelegate;
     case "expiry":
       return prisma.expiryLot as unknown as AnyDelegate;
     case "dataUsage":
@@ -127,6 +129,7 @@ const SOURCES_WITH_CLIENT_ID: ReadonlySet<WidgetSource> = new Set<WidgetSource>(
   "payment",
   "ledger",
   "client", // client 자신은 id 로 필터 (아래 특수 처리)
+  "salesContract", // 판매계약 (clientId 보유 → CLIENT 격리)
 ]);
 
 // ─────────────────────────────────────────────────────────────

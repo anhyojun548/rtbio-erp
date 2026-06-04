@@ -116,6 +116,17 @@ const DATA_CATALOG = {
       name: { type: "string" },
     },
   },
+  salesContract: {
+    label: "판매 계약",
+    fields: {
+      title: { type: "string", desc: "계약명" },
+      startDate: { type: "date", desc: "시작일" },
+      endDate: { type: "date", desc: "종료일" },
+      signed: { type: "boolean", desc: "서명 여부" },
+      "client.name": { type: "string", desc: "거래처명" },
+    },
+    note: "만료 임박 = endDate gte {{now.startOfDay}} lte {{now.startOfDay.plus(30,'day')}}. count 또는 endDate asc table.",
+  },
   expiry: {
     label: "유통기한 로트",
     fields: {
