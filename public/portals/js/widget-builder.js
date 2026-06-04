@@ -504,9 +504,19 @@ function closeBuilder() {
   _editingWidgetId = null;     // 편집 상태 해제 (취소/닫기 시 다음 신규에 누수 방지)
 }
 
-/* ── 저장 → 그리드 추가 (갤러리와 동일 _saveSpec 경로) ── */
+/* ── 저장 → 신규는 그리드 추가, 편집은 위젯 갱신 ── */
 async function saveBuilder() {
   var spec = buildSpecFromForm();
+
+  // 편집 모드 — 기존 위젯 갱신 (_specCache + 제목 + dry-run 재렌더 + saveDashboard 영속).
+  if (_editingWidgetId) {
+    if (window.updateSpecWidget) window.updateSpecWidget(_editingWidgetId, spec);
+    closeBuilder();              // _editingWidgetId 도 여기서 null 로 리셋
+    window.showToast('"' + (spec.title || '위젯') + '" 위젯을 수정했습니다');
+    return;
+  }
+
+  // 신규 모드 — 갤러리와 동일 _saveSpec 경로.
   try {
     var res = await _saveSpec(spec);
     window.addSpecWidgetToGrid(res.spec, res.id);

@@ -729,6 +729,44 @@ function addSpecWidgetToGrid(spec, savedId) {
   saveDashboard();
 }
 
+// 기존 spec 위젯 갱신 (편집 모드). widgetId 는 DB spec id (gs-id=widget-N 아님).
+//   dataset.widgetId 로 그리드 아이템 탐색 → _specCache/제목 갱신 → dry-run 재렌더 → saveDashboard 영속.
+function updateSpecWidget(widgetId, spec) {
+  var el = grid.getGridItems().filter(function (e) {
+    return e.dataset.widgetId === widgetId;
+  })[0];
+  if (!el) return;
+  window._specCache = window._specCache || {};
+  window._specCache[widgetId] = spec;
+  el.dataset.widgetTitle = spec.title;
+  var t = el.querySelector('.widget-title');
+  if (t) {
+    var ovr = el.dataset.widgetDateOverride;
+    t.textContent = spec.title + (ovr ? ' 🔶' : '');
+  }
+  // 즉시 재렌더(dry-run) — bulk sync 가 DB id 를 바꾸므로 data endpoint 대신 dry-run 사용.
+  var body = el.querySelector('.widget-body');
+  if (body) {
+    fetch('/api/dashboard/widgets/spec', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spec: spec, dryRunOnly: true }),
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.ok) {
+        renderSpecResult(body, {
+          ok: true, result: j.preview, kind: spec.kind, title: spec.title,
+          subtitle: spec.subtitle, format: spec.format, style: spec.style,
+        });
+      }
+    }).catch(function (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[dashboard] 위젯 갱신 미리보기 실패', widgetId, e);
+    });
+  }
+  // 영속: config.spec 갱신 → bulk sync (id 재발급은 _resyncSpecWidgetIds 가 처리).
+  saveDashboard();
+}
+
 // ── Toast ──
 function showToast(msg) {
   var toast = document.getElementById('toast');
@@ -744,6 +782,7 @@ window.showToast = showToast;
 // ── spec 렌더러/그리드 추가/피커 토글 — 빌더(widget-builder.js) 재사용 ──
 window.renderSpecResult = renderSpecResult;
 window.addSpecWidgetToGrid = addSpecWidgetToGrid;
+window.updateSpecWidget = updateSpecWidget;   // 빌더 편집 저장 → 위젯 갱신
 window.closePicker = closePicker;
 window._WIDGET = { COLORS: COLORS }; // 빌더가 색상 토큰 참조
 
