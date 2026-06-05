@@ -79,20 +79,73 @@
     // 2026-06 fix: prototype 의 client-mgmt.js UI 는 manager / paymentType / salesRep 키를 보지만
     //   백엔드 응답은 representative / paymentTerms / salesRepId (+ User join) 키 → 양방향 별칭.
     base.manager        = base.manager        || base.representative || base.contactName || '-';
+    base.phone          = base.phone          || '-';
+    base.email          = base.email          || '-';
+    base.address        = base.address        || '-';
     base.paymentMethod  = base.paymentMethod  || base.paymentTerms   || '';
     base.paymentType    = base.paymentType    || base.paymentTerms   || '';
-    // 영업담당자: salesRepName(join) / SALES_REPS 룩업 / fallback '-'
-    var repName = base.salesRepName;
+    // 영업담당자: API의 salesRep join → salesRepName(join) → SALES_REPS 룩업 → fallback '-'
+    var repName = (base.salesRep && typeof base.salesRep === 'object' && base.salesRep.name) || base.salesRepName;
     if (!repName && base.salesRepId && Array.isArray(window.SALES_REPS)) {
       var rep = window.SALES_REPS.find(function (r) { return r.id === base.salesRepId; });
       if (rep) repName = rep.name;
     }
-    base.salesRep       = base.salesRep       || repName || '-';
+    base.salesRep       = repName || '-'; // 문자열로 통일 (UI 가 ${c.salesRep} 직접 출력)
     base.closingPeriod  = base.closingPeriod  || '';
     base.priceListName  = base.priceListName  || 'RTBIO';
     base.invoiceType    = base.invoiceType    || 'RTBIO';
-    base.discounts      = base.discounts      || {};
-    base.fixedPrices    = base.fixedPrices    || [];
+
+    // ── 2026-06 핵심 fix: discounts 배열 → 객체 변환 (UI 의 c.discounts.knee 등 접근 호환) ──
+    // 백엔드 응답: discounts: [{ category: '리코탭플러스', discountRate: '0.55' }, ...]
+    // UI 기대:    discounts: { knee: 15, upper: 20, ... } (퍼센트 정수)
+    var rawDiscounts = base.discounts;
+    var discountObj = { knee: 0, upper: 0, lower: 0, sprint: 0 };
+    var discountList = []; // [{category, ratePct}] — 제품군별 전체 리스트 (UI 추가 표시용)
+    if (Array.isArray(rawDiscounts)) {
+      // 카테고리명 → prototype 4-부위 매핑 (제품군명에 들어있는 부위 키워드 추론)
+      var CAT_KEY_MAP = {
+        knee:   ['무릎', 'knee'],
+        upper:  ['상지', '리코탭플러스', '리스프린트', '바로웰핏', '알티네오', 'upper', 'arm'],
+        lower:  ['하지', 'lower', 'leg', 'foot', 'ankle'],
+        sprint: ['스프린트', '실린더', 'sprint', 'splint', 'cyl'],
+      };
+      rawDiscounts.forEach(function (d) {
+        var cat = String(d.category || '').trim();
+        var pct = Math.round(Number(d.discountRate || 0) * 100);
+        discountList.push({ category: cat, ratePct: pct });
+        for (var key in CAT_KEY_MAP) {
+          var hit = CAT_KEY_MAP[key].some(function (kw) { return cat.indexOf(kw) >= 0; });
+          if (hit && pct > discountObj[key]) discountObj[key] = pct;
+        }
+      });
+    } else if (rawDiscounts && typeof rawDiscounts === 'object') {
+      // 이미 객체 형태 (mock data) — 그대로 사용
+      discountObj = Object.assign(discountObj, rawDiscounts);
+    }
+    base.discounts = discountObj;
+    base.discountList = discountList;
+
+    // ── fixedPrices: 배열 → { productId: price } 객체 변환 ──
+    // 백엔드 응답: fixedPrices: [{ fixedPrice: '16479', product: {id, code, name} }]
+    // UI 기대:    fixedPrices: { 'P-RTP-UP': 16479, ... }
+    var rawFixed = base.fixedPrices;
+    var fixedObj = {};
+    var fixedListWithMeta = []; // [{productId, productName, price}] — 표시 보조
+    if (Array.isArray(rawFixed)) {
+      rawFixed.forEach(function (fp) {
+        var pid = (fp.product && fp.product.id) || fp.productId;
+        var pname = (fp.product && fp.product.name) || pid;
+        var price = Number(fp.fixedPrice || 0);
+        if (pid) {
+          fixedObj[pid] = price;
+          fixedListWithMeta.push({ productId: pid, productName: pname, price: price });
+        }
+      });
+    } else if (rawFixed && typeof rawFixed === 'object') {
+      fixedObj = rawFixed;
+    }
+    base.fixedPrices = fixedObj;
+    base.fixedPriceList = fixedListWithMeta;
     return base;
   }
 

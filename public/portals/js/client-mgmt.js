@@ -79,12 +79,29 @@ function renderClients(searchTerm) {
       : c.type === '병원'
       ? '<span class="badge badge-type-hospital">병원</span>'
       : `<span class="badge" style="background:var(--purple-light);color:var(--purple);">${c.type}</span>`;
-    const repName = (window.SALES_REPS || []).find(r => r.id === (window.CLIENT_REP_MAP || {})[c.id])?.name || '-';
-    const fixedPriceHTML = Object.keys(c.fixedPrices).length > 0
-      ? Object.entries(c.fixedPrices).map(([pid, price]) =>
-        `${getProductName(pid)}: ${formatCurrency(price)}`
-      ).join(', ')
+    // 2026-06: API 응답의 salesRep join 우선, mock CLIENT_REP_MAP 폴백
+    const repName = c.salesRep && c.salesRep !== '-'
+      ? c.salesRep
+      : ((window.SALES_REPS || []).find(r => r.id === (window.CLIENT_REP_MAP || {})[c.id])?.name || '-');
+    // 2026-06: fixedPrices 가 {} (mock) 또는 객체 변환 후 둘 다 지원
+    const _fixedEntries = (c.fixedPriceList && c.fixedPriceList.length)
+      ? c.fixedPriceList.map(f => [f.productId, f.price, f.productName])
+      : Object.entries(c.fixedPrices || {}).map(([pid, price]) => [pid, price, getProductName(pid)]);
+    const fixedPriceHTML = _fixedEntries.length > 0
+      ? _fixedEntries.slice(0, 8).map(([_pid, price, pname]) => `${pname}: ${formatCurrency(price)}`).join(', ')
+        + (_fixedEntries.length > 8 ? ` 외 ${_fixedEntries.length - 8}건` : '')
       : '없음';
+    // 2026-06: 제품군별 할인율 (discountList) — 엑셀의 진짜 카테고리 (리코탭플러스/리스프린트/...)
+    const discountListHTML = (c.discountList && c.discountList.length)
+      ? c.discountList.map(d => `<span class="discount-tag" style="background:var(--accent-light);color:var(--accent);">${d.category} ${d.ratePct}%</span>`).join('')
+      : '';
+    // 폴백: 기존 4부위 (mock data 호환). discountList 가 있으면 숨김.
+    const legacyDiscountHTML = !discountListHTML
+      ? `<span class="discount-tag">무릎 ${c.discounts.knee || 0}%</span>
+         <span class="discount-tag">상지 ${c.discounts.upper || 0}%</span>
+         <span class="discount-tag">하지 ${c.discounts.lower || 0}%</span>
+         <span class="discount-tag">스프린트 ${c.discounts.sprint || 0}%</span>`
+      : '';
     return `
       <div class="client-card">
         <div class="client-card-header">
@@ -96,14 +113,11 @@ function renderClients(searchTerm) {
         <div class="client-card-row"><span class="label">연락처</span><span>${c.phone}</span></div>
         <div class="client-card-row"><span class="label">이메일</span><span>${c.email}</span></div>
         <div class="client-card-row"><span class="label">주소</span><span>${c.address}</span></div>
-        <div class="client-card-row"><span class="label">결제방식</span><span>${c.paymentType}</span></div>
-        <div class="client-card-row"><span class="label">마감기간</span><span>${c.closingPeriod}</span></div>
-        <div class="client-card-row"><span class="label">명세서</span><span>${c.invoiceType}</span></div>
+        <div class="client-card-row"><span class="label">결제방식</span><span>${c.paymentType || '-'}</span></div>
+        <div class="client-card-row"><span class="label">마감기간</span><span>${c.closingPeriod || '-'}</span></div>
+        <div class="client-card-row"><span class="label">명세서</span><span>${c.invoiceType || '-'}</span></div>
         <div class="discount-tags">
-          <span class="discount-tag">무릎 ${c.discounts.knee}%</span>
-          <span class="discount-tag">상지 ${c.discounts.upper}%</span>
-          <span class="discount-tag">하지 ${c.discounts.lower}%</span>
-          <span class="discount-tag">스프린트 ${c.discounts.sprint}%</span>
+          ${discountListHTML || legacyDiscountHTML}
         </div>
         ${c.discountMatrix ? `
         <div class="discount-tags" style="margin-top:6px;">
@@ -400,11 +414,13 @@ function showClientDetail(clientId) {
   const typeBadge = c.type === '대리점'
     ? '<span class="badge badge-type-dealer">대리점</span>'
     : '<span class="badge badge-type-hospital">병원</span>';
-  const fixedPriceHTML = Object.keys(c.fixedPrices).length > 0
+  // 2026-06: fixedPriceList (API normalized) 우선, fixedPrices 객체 폴백
+  const _detailEntries = (c.fixedPriceList && c.fixedPriceList.length)
+    ? c.fixedPriceList.map(f => ({ pid: f.productId, price: f.price, name: f.productName }))
+    : Object.entries(c.fixedPrices || {}).map(([pid, price]) => ({ pid, price, name: getProductName(pid) }));
+  const fixedPriceHTML = _detailEntries.length > 0
     ? '<ul style="margin:4px 0 0 16px;font-size:13px;">' +
-      Object.entries(c.fixedPrices).map(([pid, price]) =>
-        `<li>${getProductName(pid)}: ${formatCurrency(price)}</li>`
-      ).join('') + '</ul>'
+      _detailEntries.map(f => `<li>${f.name}: ${formatCurrency(f.price)}</li>`).join('') + '</ul>'
     : '없음';
   const clientOrders = (window.ORDERS || []).filter(o => o.clientId === clientId);
   const clientRevenue = clientOrders.reduce((s, o) => s + calcOrderTotal(o), 0);
@@ -423,7 +439,11 @@ function showClientDetail(clientId) {
       <tr><td style="font-weight:600; color:var(--text-secondary);">결제방식</td><td>${c.paymentType}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">마감기간</td><td>${c.closingPeriod}</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">명세서</td><td>${c.invoiceType}</td></tr>
-      <tr><td style="font-weight:600; color:var(--text-secondary);">할인율</td><td>무릎 ${c.discounts.knee}% / 상지 ${c.discounts.upper}% / 하지 ${c.discounts.lower}% / 스프린트 ${c.discounts.sprint}%</td></tr>
+      <tr><td style="font-weight:600; color:var(--text-secondary);">할인율</td><td>${
+        (c.discountList && c.discountList.length)
+          ? c.discountList.map(d => `${d.category} <b>${d.ratePct}%</b>`).join(' / ')
+          : `무릎 ${c.discounts.knee || 0}% / 상지 ${c.discounts.upper || 0}% / 하지 ${c.discounts.lower || 0}% / 스프린트 ${c.discounts.sprint || 0}%`
+      }</td></tr>
       <tr><td style="font-weight:600; color:var(--text-secondary);">고정단가</td><td>${fixedPriceHTML}</td></tr>
       ${c.salesRep ? `<tr><td style="font-weight:600; color:var(--text-secondary);">영업담당자</td><td><b>${c.salesRep}</b></td></tr>` : ''}
       ${c.specialty ? `<tr><td style="font-weight:600; color:var(--text-secondary);">진료과</td><td>${c.specialty} ${c.doctorCount ? `(의사 ${c.doctorCount}명)` : ''}</td></tr>` : ''}
@@ -780,13 +800,15 @@ function buildClientFormHTML(client) {
           <label>할인율 설정</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <button type="button" class="btn btn-outline btn-sm" onclick="openDiscountPopup()"> 할인율 설정 (팝업)</button>
-            <span id="cf-disc-summary" style="font-size:12px;color:var(--text-secondary);">
-              무릎 <b>${c.discounts.knee}%</b> · 상지 <b>${c.discounts.upper}%</b> · 하지 <b>${c.discounts.lower}%</b> · 스프린트 <b>${c.discounts.sprint}%</b>
-            </span>
-            <input type="hidden" id="cf-disc-knee" value="${c.discounts.knee}">
-            <input type="hidden" id="cf-disc-upper" value="${c.discounts.upper}">
-            <input type="hidden" id="cf-disc-lower" value="${c.discounts.lower}">
-            <input type="hidden" id="cf-disc-sprint" value="${c.discounts.sprint}">
+            <span id="cf-disc-summary" style="font-size:12px;color:var(--text-secondary);">${
+              (c.discountList && c.discountList.length)
+                ? c.discountList.map(d => `${d.category} <b>${d.ratePct}%</b>`).join(' · ')
+                : `무릎 <b>${c.discounts.knee || 0}%</b> · 상지 <b>${c.discounts.upper || 0}%</b> · 하지 <b>${c.discounts.lower || 0}%</b> · 스프린트 <b>${c.discounts.sprint || 0}%</b>`
+            }</span>
+            <input type="hidden" id="cf-disc-knee"   value="${c.discounts.knee   || 0}">
+            <input type="hidden" id="cf-disc-upper"  value="${c.discounts.upper  || 0}">
+            <input type="hidden" id="cf-disc-lower"  value="${c.discounts.lower  || 0}">
+            <input type="hidden" id="cf-disc-sprint" value="${c.discounts.sprint || 0}">
           </div>
           <span class="form-note">카테고리별 기본 할인율. 품목별 개별 할인율은 등록 후 거래처 목록에서 별도 설정합니다.</span>
         </div>

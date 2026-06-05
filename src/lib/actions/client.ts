@@ -54,6 +54,16 @@ export async function listClients(opts: ListOpts = {}) {
     orderBy: [{ active: "desc" }, { name: "asc" }],
     include: {
       _count: { select: { addresses: true, orders: true } },
+      // 2026-06: 거래처관리 UI 카드/테이블이 할인율·고정가를 표시하려면 필요.
+      // (이전엔 _count 만 include 라 응답에 discounts/fixedPrices 가 없어 UI 가 'undefined%' 표시)
+      discounts: { select: { category: true, discountRate: true } },
+      fixedPrices: {
+        select: {
+          fixedPrice: true,
+          product: { select: { id: true, code: true, name: true, category: true, part: true } },
+        },
+      },
+      salesRep: { select: { id: true, name: true } },
     },
   });
 }
