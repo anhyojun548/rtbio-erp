@@ -64,7 +64,12 @@ function getGlobalDateRange() {
     var saved = localStorage.getItem(GLOBAL_DATE_KEY);
     if (saved) return JSON.parse(saved);
   } catch (e) {}
-  return { range: '30d', from: '2026-04-01', to: '2026-04-16' };
+  // 2026-06: KST 기준 최근 30일 (이전엔 2026-04-01~04-16 하드코딩)
+  var today = new Date();
+  var toKst = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  var fromD = new Date(today); fromD.setDate(fromD.getDate() - 29);
+  var fromKst = fromD.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  return { range: '30d', from: fromKst, to: toKst };
 }
 
 function saveGlobalDateRange(obj) {

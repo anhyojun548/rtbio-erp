@@ -688,8 +688,8 @@
  <option value="month">이번 달</option>
  <option value="custom">커스텀</option>
  </select>
- <input type="date" id="globalDateFrom" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;" value="2026-04-01">
- <input type="date" id="globalDateTo" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;" value="2026-04-16">
+ <input type="date" id="globalDateFrom" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;">
+ <input type="date" id="globalDateTo" class="form-input" style="display:none;height:32px;font-size:12px;padding:0 6px;width:130px;">
  </div>
  <button class="tb-btn primary" id="btnAddWidget">➕ 위젯 추가</button>
  </div>
@@ -805,11 +805,11 @@
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label>시작일</label>
- <input type="date" class="form-input" id="invoice-from" value="2026-04-01">
+ <input type="date" class="form-input" id="invoice-from">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label>종료일</label>
- <input type="date" class="form-input" id="invoice-to" value="2026-04-11">
+ <input type="date" class="form-input" id="invoice-to">
  </div>
  <div class="form-group" style="margin-bottom:0;min-width:160px;">
  <label>담당자 검색 (B-4)</label>
@@ -884,11 +884,11 @@
  <div class="filter-row mb-16" style="flex-wrap:wrap;">
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
- <input type="date" class="form-input" id="ledger-date-from" value="2026-04-01" style="max-width:160px;" onchange="renderLedger()">
+ <input type="date" class="form-input" id="ledger-date-from" style="max-width:160px;" onchange="renderLedger()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
- <input type="date" class="form-input" id="ledger-date-to" value="2026-04-11" style="max-width:160px;" onchange="renderLedger()">
+ <input type="date" class="form-input" id="ledger-date-to" style="max-width:160px;" onchange="renderLedger()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">정렬</label>
@@ -949,11 +949,11 @@
  <div class="filter-row mb-16" style="background:var(--surface);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--border);flex-wrap:wrap;">
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
- <input type="date" class="form-input" id="report-date-from" value="2026-04-01" style="max-width:160px;" onchange="renderReport()">
+ <input type="date" class="form-input" id="report-date-from" style="max-width:160px;" onchange="renderReport()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
- <input type="date" class="form-input" id="report-date-to" value="2026-04-11" style="max-width:160px;" onchange="renderReport()">
+ <input type="date" class="form-input" id="report-date-to" style="max-width:160px;" onchange="renderReport()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">거래처 유형</label>
@@ -1005,7 +1005,7 @@
  <div class="filter-row mb-16">
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">매입일자</label>
- <input type="date" class="form-input" value="2026-04-11" style="max-width:180px;">
+ <input type="date" id="purchase-date" class="form-input" style="max-width:180px;">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">공급업체</label>
@@ -1362,11 +1362,11 @@
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
- <input type="date" class="form-input" value="2026-04-01" style="max-width:160px;" onchange="renderClientLedger()">
+ <input type="date" id="client-ledger-date-from" class="form-input" style="max-width:160px;" onchange="renderClientLedger()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
- <input type="date" class="form-input" value="2026-04-11" style="max-width:160px;" onchange="renderClientLedger()">
+ <input type="date" id="client-ledger-date-to" class="form-input" style="max-width:160px;" onchange="renderClientLedger()">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">담당자</label>
@@ -1419,11 +1419,11 @@
  <div class="filter-row mb-16">
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">시작일</label>
- <input type="date" class="form-input" value="2026-04-01" style="max-width:160px;">
+ <input type="date" id="journal-date-from" class="form-input" style="max-width:160px;">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">종료일</label>
- <input type="date" class="form-input" value="2026-04-11" style="max-width:160px;">
+ <input type="date" id="journal-date-to" class="form-input" style="max-width:160px;">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">거래처</label>
@@ -3231,7 +3231,7 @@ function sendLedgerEmail() {
 }
 
 function confirmLedgerClose() {
- const dateFrom = document.getElementById('ledger-date-from')?.value || '2026-04-01';
+ const dateFrom = document.getElementById('ledger-date-from')?.value || new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}).slice(0,8) + '01';
  const dateTo = document.getElementById('ledger-date-to')?.value || '2026-04-11';
  showModal(
  '마감 확정',
@@ -3263,7 +3263,7 @@ function renderReport() {
    monthHost.innerHTML = buildMonthQuickPicker('report-date-from', 'report-date-to', 2026);
    monthHost.dataset.inited = '1';
  }
- const dateFrom = document.getElementById('report-date-from')?.value || '2026-04-01';
+ const dateFrom = document.getElementById('report-date-from')?.value || new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}).slice(0,8) + '01';
  const dateTo = document.getElementById('report-date-to')?.value || '2026-04-11';
  const clientType = document.getElementById('report-client-type')?.value || 'all';
  const managerFilter = document.getElementById('report-manager-filter')?.value || 'all';
@@ -4182,7 +4182,7 @@ function addPaymentRow() {
  <td><input type="text" placeholder="입금자명"></td>
  <!-- 경영지원팀 #2-1: 천 단위 콤마 자동 -->
  <td><input type="text" placeholder="0" style="text-align:right;font-variant-numeric:tabular-nums;" oninput="formatPaymentAmountInput(this)" data-expected="0"></td>
- <td><input type="date" value="2026-04-11"></td>
+ <td><input type="date" value="${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})}"></td>
  <td><input type="text" placeholder="적요"></td>
  <td><span class="badge badge-pending">미입금</span></td>
  `;
@@ -5687,6 +5687,22 @@ function showOrderEditHistory(orderId) {
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
+ // 2026-06: 매입매출장/거래처원장/마감원장/보고서/매입/대시보드 등의 날짜 input 기본값을
+ //          KST 오늘 기준 "이번달 1일 ~ 오늘" 로 동적 세팅 (이전엔 2026-04-01 ~ 04-11 하드코딩)
+ try {
+   const today = new Date();
+   const todayKst = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+   const [y, m] = todayKst.split('-');
+   const monthStart = `${y}-${m}-01`;
+   const _set = (id, val) => { const el = document.getElementById(id); if (el && !el.value) el.value = val; };
+   // from = 이번달 1일
+   ['globalDateFrom','invoice-from','ledger-date-from','report-date-from','journal-date-from','client-ledger-date-from']
+     .forEach(id => _set(id, monthStart));
+   // to = KST 오늘
+   ['globalDateTo','invoice-to','ledger-date-to','report-date-to','journal-date-to','client-ledger-date-to','purchase-date']
+     .forEach(id => _set(id, todayKst));
+ } catch (e) { console.warn('default date init failed', e); }
+
  try { renderDashboard(); } catch(e) {}
  renderOrders('all');
  renderClients('');
