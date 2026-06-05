@@ -5766,14 +5766,27 @@ flowise-fullchatbot { display:block; height:440px; border:1px solid var(--border
 </style>
 <script type="module">
   import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
-  Chatbot.initFull({
-    chatflowid: "e06fd2ea-da9f-4140-8502-5a171a664db8",
-    apiHost: "https://www.windyflo.com",
-    theme: { chatWindow: {
-      title: "RTBIO 위젯 AI",
-      welcomeMessage: "어떤 위젯을 만들까요?\n예: \"이번 달 거래처별 매출 위젯을 본인 이메일 대시보드에 만들어줘\""
-    } }
-  });
+  // forUser = 로그인 사용자 이메일(자동). CURRENT_USER 는 data-loader 가 비동기로 채우므로 폴링 대기.
+  (function initWhenUserReady(tries) {
+    var email = window.CURRENT_USER && window.CURRENT_USER.email;
+    var cfg = {
+      chatflowid: "e06fd2ea-da9f-4140-8502-5a171a664db8",
+      apiHost: "https://www.windyflo.com",
+      theme: { chatWindow: {
+        title: "RTBIO 위젯 AI",
+        welcomeMessage: "어떤 위젯을 만들까요?\n예: \"이번 달 거래처별 매출 막대그래프 위젯 만들어줘\""
+      } }
+    };
+    if (email) {
+      cfg.chatflowConfig = { vars: { forUser: email } };
+      Chatbot.initFull(cfg);
+    } else if (tries < 100) {
+      setTimeout(function () { initWhenUserReady(tries + 1); }, 100);
+    } else {
+      console.warn("[widget-ai] CURRENT_USER.email 미확보 — forUser 없이 init");
+      Chatbot.initFull(cfg);
+    }
+  })(0);
 </script>
 </body>
 </html>
