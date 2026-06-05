@@ -22,7 +22,8 @@ import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { validateWidgetSpec } from "@/lib/widget-spec/schema";
 import { executeWidgetSpec } from "@/lib/widget-spec/execute";
-import { resolveTargetUserId } from "./forUser";
+import { resolveTargetUserId, pickForUserEmail } from "./forUser";
+import { SERVICE_PRINCIPAL } from "@/lib/widget-spec/api-auth";
 
 const unauthorized = () =>
   Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -82,14 +83,26 @@ export async function POST(req: Request) {
   }
 
   // 3) 저장 — config 에 full spec 보존
-  // forUser(email) 가 있으면 그 유저의 대시보드에 저장 (Flowise 토큰 흐름: 요청자 대상).
+  // forUser: X-RTBIO-ForUser 헤더(포털이 로그인 이메일 주입) 우선 > 본문 forUser.
   let userId: string;
   try {
-    const forUser =
-      body && typeof body === "object" && typeof body.forUser === "string"
-        ? body.forUser
-        : undefined;
-    userId = await resolveTargetUserId(user.id, forUser);
+    const forUserEmail = pickForUserEmail(
+      req.headers.get("x-rtbio-foruser"),
+      body && typeof body === "object"
+        ? (body as { forUser?: unknown }).forUser
+        : undefined,
+    );
+    if (forUserEmail) {
+      userId = await resolveTargetUserId(user.id, forUserEmail);
+    } else if (user.id === SERVICE_PRINCIPAL.userId) {
+      // 토큰(서비스) 요청인데 대상 이메일이 없다 → 오저장 방지
+      return Response.json(
+        { ok: false, error: "저장 대상 사용자를 알 수 없습니다 (X-RTBIO-ForUser 누락)" },
+        { status: 400 },
+      );
+    } else {
+      userId = user.id; // 실 세션 사용자 → 본인 대시보드
+    }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     return Response.json({ ok: false, error: message }, { status: 400 });
