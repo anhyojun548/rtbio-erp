@@ -13,12 +13,12 @@ describe("LABEL_RESOLVERS", () => {
 });
 
 describe("normalizeGroupBy (LLM 별칭 보정)", () => {
-  it("clientName / client.name / client → clientId", () => {
+  it("scalarFields 미제공(레거시): clientName / client.name / client → clientId", () => {
     expect(normalizeGroupBy(["clientName"])).toEqual(["clientId"]);
     expect(normalizeGroupBy(["client.name"])).toEqual(["clientId"]);
     expect(normalizeGroupBy(["client"])).toEqual(["clientId"]);
   });
-  it("productName / product.name → productId", () => {
+  it("scalarFields 미제공(레거시): productName / product.name → productId", () => {
     expect(normalizeGroupBy(["productName"])).toEqual(["productId"]);
     expect(normalizeGroupBy(["product.name"])).toEqual(["productId"]);
   });
@@ -28,6 +28,19 @@ describe("normalizeGroupBy (LLM 별칭 보정)", () => {
   });
   it("대소문자 무시", () => {
     expect(normalizeGroupBy(["ClientName"])).toEqual(["clientId"]);
+  });
+  it("소스 인지: 실제 clientName 스칼라 보유 소스(transaction)는 보정하지 않음", () => {
+    const tx = new Set(["clientName", "clientCode", "totalAmount"]);
+    expect(normalizeGroupBy(["clientName"], tx)).toEqual(["clientName"]);
+  });
+  it("소스 인지: clientId FK 보유 소스(invoice)는 clientName/client.name → clientId", () => {
+    const inv = new Set(["clientId", "totalAmount", "issueDate"]);
+    expect(normalizeGroupBy(["clientName"], inv)).toEqual(["clientId"]);
+    expect(normalizeGroupBy(["client.name"], inv)).toEqual(["clientId"]);
+  });
+  it("소스 인지: 별칭도 FK도 스칼라에 없으면 원본 유지(Prisma 가 명확히 에러내도록)", () => {
+    const tx = new Set(["clientName", "totalAmount"]); // clientId 없음
+    expect(normalizeGroupBy(["client.name"], tx)).toEqual(["client.name"]);
   });
 });
 describe("getDisplayColumns", () => {

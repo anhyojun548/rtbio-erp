@@ -16,6 +16,7 @@
  *    · aggregate 없음            → prisma.X.findMany(...)  → rows   (table/list)
  *  + comparison(previousPeriod/previousYear) → 동일 filter 의 날짜창을 이동해 재조회
  */
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   WIDGET_SOURCES,
@@ -118,6 +119,39 @@ function delegateFor(source: WidgetSource): AnyDelegate {
       throw new Error(`허용되지 않은 위젯 소스입니다: ${String(_exhaustive)}`);
     }
   }
+}
+
+// source → Prisma DMMF 모델명 (스칼라 필드 조회용). delegateFor 와 동일 대응.
+const SOURCE_MODEL: Record<WidgetSource, string> = {
+  invoice: "Invoice",
+  order: "Order",
+  payment: "Payment",
+  ledger: "ClosingLedger",
+  client: "Client",
+  product: "Product",
+  productSize: "ProductSize",
+  transaction: "TransactionLedger",
+  shipment: "Shipment",
+  conference: "Conference",
+  salesContract: "SalesContract",
+  expiry: "ExpiryLot",
+  dataUsage: "DataUsage",
+};
+
+const scalarFieldsCache = new Map<WidgetSource, ReadonlySet<string>>();
+
+/** 소스 모델의 실제 스칼라/enum 필드 집합 (groupBy 별칭 보정용). DMMF 런타임 메타에서 추출. */
+function scalarFieldsForSource(source: WidgetSource): ReadonlySet<string> {
+  const cached = scalarFieldsCache.get(source);
+  if (cached) return cached;
+  const model = Prisma.dmmf.datamodel.models.find((m) => m.name === SOURCE_MODEL[source]);
+  const set = new Set(
+    (model?.fields ?? [])
+      .filter((f) => f.kind === "scalar" || f.kind === "enum")
+      .map((f) => f.name),
+  );
+  scalarFieldsCache.set(source, set);
+  return set;
 }
 
 /**
@@ -537,7 +571,7 @@ export async function executeWidgetSpec(
 
   // ── (A) groupBy 있음 → 차트 계열 ────────────────────────
   if (groupBy && groupBy.length > 0) {
-    return await runGroupBy(delegate, where, groupBy, aggregate, spec, limit);
+    return await runGroupBy(delegate, where, groupBy, aggregate, spec, limit, source);
   }
 
   // ── (B) groupBy 없음 + aggregate → KPI 단일 값 ─────────
@@ -597,12 +631,14 @@ async function runGroupBy(
   aggregate: WidgetSpec["data"]["aggregate"],
   spec: WidgetSpec,
   limit: number | undefined,
+  source: WidgetSource,
 ): Promise<WidgetResult> {
   const aggType = aggregate?.type ?? "count";
   const aggField = aggregate?.field ?? null;
 
-  // LLM 별칭 보정: clientName/client.name → clientId 등 (Prisma 는 스칼라 FK 만 허용)
-  const by = normalizeGroupBy(groupBy);
+  // LLM 별칭 보정(소스 인지): clientName/client.name → clientId 등.
+  // 단, 해당 소스에 실제 그 스칼라가 있으면(예: TransactionLedger.clientName) 보정하지 않음.
+  const by = normalizeGroupBy(groupBy, scalarFieldsForSource(source));
   // groupBy 의 distinct/count 는 Prisma groupBy 가 자체 지원
   const args: Record<string, unknown> = { by, where };
   if (aggType === "count" || aggType === "countDistinct") {
@@ -615,7 +651,8 @@ async function runGroupBy(
   }
 
   const grouped = (await delegate.groupBy(args)) as Record<string, unknown>[];
-  const labelKey = groupBy[0]!;
+  // 결과는 coerced 키(by)로 그룹화되므로 라벨키도 by[0] 사용 (LABEL_RESOLVERS 의 id→이름 해석도 여기 의존).
+  const labelKey = by[0]!;
   let series: WidgetSeriesPoint[] = grouped.map((g) => ({
     label: String(g[labelKey] ?? "—"),
     value:

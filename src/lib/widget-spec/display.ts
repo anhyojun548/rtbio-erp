@@ -6,7 +6,7 @@ export const LABEL_RESOLVERS: Record<string, { model: string; labelField: string
 
 /**
  * groupBy 별칭 보정 — LLM(빌더)이 "거래처별"을 자연스럽게 `clientName`/`client.name` 로 쓰는데
- * Prisma groupBy 는 스칼라 FK(`clientId`)만 받는다. 흔한 표시필드 별칭을 FK 로 정규화.
+ * 대부분 소스의 Prisma groupBy 는 스칼라 FK(`clientId`)만 받는다. 흔한 표시필드 별칭을 FK 로 정규화.
  * (라벨은 LABEL_RESOLVERS 가 FK → 이름으로 해석하므로 차트엔 거래처명이 표시됨.)
  */
 const GROUPBY_ALIASES: Record<string, string> = {
@@ -18,8 +18,24 @@ const GROUPBY_ALIASES: Record<string, string> = {
   product: "productId",
 };
 
-export function normalizeGroupBy(fields: string[]): string[] {
-  return fields.map((f) => GROUPBY_ALIASES[f.toLowerCase()] ?? f);
+/**
+ * 소스 인지 보정. `scalarFields`(해당 소스의 실제 스칼라 필드 집합)를 주면:
+ *  1) 이미 실제 스칼라인 필드는 그대로 둔다 — 예: `TransactionLedger.clientName`(비정규화 문자열)는 보정 금지.
+ *  2) 별칭이고 그 FK 가 실제 스칼라일 때만 FK 로 보정 — 예: `Invoice.clientName`→`clientId`.
+ *  3) 어느 쪽도 아니면 원본 유지(Prisma 가 명확한 에러를 내도록).
+ * `scalarFields` 미제공 시(레거시/단위테스트)는 무조건 별칭 보정(구버전 동작).
+ */
+export function normalizeGroupBy(
+  fields: string[],
+  scalarFields?: ReadonlySet<string>,
+): string[] {
+  return fields.map((f) => {
+    if (scalarFields?.has(f)) return f; // 실제 스칼라 → 보정하지 않음
+    const alias = GROUPBY_ALIASES[f.toLowerCase()];
+    if (!alias) return f;
+    if (!scalarFields || scalarFields.has(alias)) return alias;
+    return f;
+  });
 }
 
 /** 소스별 table 표시 컬럼(순서·한글 라벨; 관계는 dot). 미정의 소스는 폴백(원시 6컬럼). */
