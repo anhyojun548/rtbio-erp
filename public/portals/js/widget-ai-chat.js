@@ -278,7 +278,7 @@
     // 갤러리(.picker-section)와 동일한 24px 인셋 + RTBIO 디자인 토큰(teal 액센트)로 톤 통일.
     var css =
       ".ai-toggle,.ai-panel{display:none!important}" +
-      ".picker-ai{padding:14px 24px 12px!important;border-bottom:1px solid var(--border,#e5e7eb)}" +
+      ".picker-ai{padding:14px 24px 4px!important}" +
       ".picker-ai-head{display:none!important}" +
       "#wac,.wac{display:flex;flex-direction:column;height:420px;background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:var(--radius,12px);overflow:hidden;font-family:inherit}" +
       ".wac-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--surface,#fff)}" +
