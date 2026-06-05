@@ -39,6 +39,16 @@ describe("resolveTemplate — week 토큰", () => {
     expect(r.getDate()).toBe(8); // 2026-06-08
   });
 
+  it("음수 plus 허용(빌더가 minus 대신 plus(-N) 생성): plus(-5,'month') = 5개월 전", () => {
+    const r = resolveTemplate("{{now.startOfMonth.plus(-5,'month')}}", now) as Date;
+    expect(r.getFullYear()).toBe(2026);
+    expect(r.getMonth()).toBe(0); // 6월(idx 5) - 5 = 1월(idx 0)
+    expect(r.getDate()).toBe(1);
+    // minus(N) 와 동치
+    const eq = resolveTemplate("{{now.startOfMonth.minus(5,'month')}}", now) as Date;
+    expect(r.getTime()).toBe(eq.getTime());
+  });
+
   it("기존 토큰 회귀: startOfMonth / today / thisMonth", () => {
     const m = resolveTemplate("{{now.startOfMonth}}", now) as Date;
     expect(m.getDate()).toBe(1);

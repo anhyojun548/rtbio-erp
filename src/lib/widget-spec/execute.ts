@@ -237,7 +237,8 @@ function ym(d: Date): string {
 
 /** "minus(30,'day')" / "plus(1,'month')" 토큰 1개를 base Date 에 적용. */
 function applyOp(base: Date, op: string): Date {
-  const m = op.match(/^(minus|plus)\(\s*(\d+)\s*,\s*['"](day|week|month|year)['"]\s*\)$/);
+  // 음수도 허용: 빌더가 minus(N) 대신 plus(-N) 을 만드는 경우가 있어 둘 다 받는다.
+  const m = op.match(/^(minus|plus)\(\s*(-?\d+)\s*,\s*['"](day|week|month|year)['"]\s*\)$/);
   if (!m) throw new Error(`템플릿 연산을 해석할 수 없습니다: ${op}`);
   const sign = m[1] === "minus" ? -1 : 1;
   const amount = Number.parseInt(m[2]!, 10) * sign;
