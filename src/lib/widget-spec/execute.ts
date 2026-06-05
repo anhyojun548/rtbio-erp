@@ -669,7 +669,8 @@ async function runGroupBy(
   // 결과는 coerced 키(by)로 그룹화되므로 라벨키도 by[0] 사용 (LABEL_RESOLVERS 의 id→이름 해석도 여기 의존).
   const labelKey = by[0]!;
   let series: WidgetSeriesPoint[] = grouped.map((g) => ({
-    label: String(g[labelKey] ?? "—"),
+    // 날짜(DateTime)로 그룹된 경우 Date 객체를 'YYYY-MM-DD' 로 포맷 (라인/시계열 X축 라벨이 풀 GMT 문자열로 나오던 문제 해결)
+    label: g[labelKey] instanceof Date ? ymd(g[labelKey] as Date) : String(g[labelKey] ?? "—"),
     value:
       aggType === "count" || aggType === "countDistinct"
         ? toNum(g._count)
@@ -691,9 +692,15 @@ async function runGroupBy(
     }
   }
 
-  // 값 desc 정렬 후 limit (chart 가독성)
-  series.sort((a, b) => b.value - a.value);
-  if (limit) series = series.slice(0, limit);
+  if (spec.kind === "line") {
+    // 시계열 라인은 라벨(날짜) 오름차순 — 추이선이 시간순으로 그려지도록. limit 있으면 최근 N개.
+    series.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+    if (limit && series.length > limit) series = series.slice(series.length - limit);
+  } else {
+    // 랭킹 차트(bar/pie 등)는 값 내림차순 + 상위 limit (가독성)
+    series.sort((a, b) => b.value - a.value);
+    if (limit) series = series.slice(0, limit);
+  }
 
   return { kind: spec.kind, series };
 }
