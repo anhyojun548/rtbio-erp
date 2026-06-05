@@ -52,15 +52,16 @@ const DATA_CATALOG = {
     note: "실수금 = status in [PARTIAL,PAID] + sum:amount",
   },
   ledger: {
-    label: "마감원장 (ClosingLedger)",
+    label: "마감원장 (ClosingLedger) — 거래처×월 단위",
     fields: {
       closingMonth: { type: "string", desc: "마감월 YYYY-MM" },
+      clientId: { type: "string", desc: "거래처 (groupBy 가능 — '거래처별' 미수금/매출 시 사용, 라벨은 거래처명으로 자동 표시)" },
       carryOver: { type: "decimal", agg: true, desc: "전월 이월" },
       monthlySales: { type: "decimal", agg: true, desc: "당월 매출" },
       received: { type: "decimal", agg: true, desc: "당월 수금" },
       balance: { type: "decimal", agg: true, desc: "미수금 잔액" },
     },
-    note: "미수금 합계 = closingMonth={{thisMonth}} + sum:balance",
+    note: "전체 미수금 합계 = filter closingMonth={{thisMonth}} + sum:balance. 거래처별 미수금 = 거기에 groupBy clientId 추가.",
   },
   client: {
     label: "거래처",
