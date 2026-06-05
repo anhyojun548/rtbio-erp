@@ -480,6 +480,20 @@ function _scheduleDashboardSync(items) {
           };
         }),
     };
+    // 방어: 이미 DB 에 저장된 spec 위젯(isSpec+widgetId)인데 spec 을 해석하지 못한
+    // 항목이 있으면 파괴적 deleteMany→create 를 보류한다. 그대로 진행하면 해당 위젯이
+    // config.spec 없이 재생성 → 다음 로드에서 spec 없는 항목으로 드롭되어 조용히 유실된다
+    // (실제 '최근 거래명세서' 표 위젯 유실 원인). localStorage 는 이미 저장됐고,
+    // 재로드시 _addRestoredSpecWidget 가 _specCache 를 다시 채우므로 이후 save 에서 재시도된다.
+    var unresolved = items.filter(function (it) {
+      return it && it.preset && it.isSpec && it.widgetId && !it.spec;
+    });
+    if (unresolved.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[dashboard] spec 미해석 위젯 ' + unresolved.length +
+        '건 — 파괴적 DB sync 보류(위젯 유실 방지). 새로고침 후 재시도됩니다.');
+      return;
+    }
     var hasSpec = payload.items.some(function (it) { return it.config && it.config.spec; });
     fetch('/api/dashboard/widgets/bulk', {
       method: 'POST',
