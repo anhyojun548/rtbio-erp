@@ -954,23 +954,8 @@
  <button class="btn btn-primary btn-sm" onclick="submitReceiving()">입고 확정</button>
  </div>
 
- <!-- Recent History -->
- <div class="section-header" style="margin-top:32px;">최근 입고 이력</div>
- <div class="inv-table-wrap">
- <table class="data-table" id="recv-history-table">
- <thead>
- <tr>
- <th>입고일</th>
- <th>공급처</th>
- <th class="text-right">품목수</th>
- <th class="text-right">총수량</th>
- <th>등록자</th>
- <th>상태</th>
- </tr>
- </thead>
- <tbody id="recv-history-body"></tbody>
- </table>
- </div>
+ <!-- Recent History (2026-06: 공통 패널 — 기간 + 검색 + 페이지네이션 + CSV) -->
+ <div style="margin-top:32px;" id="recv-history-host"></div>
  </div>
  </div>
 
@@ -1012,24 +997,8 @@
  <button class="btn btn-primary btn-sm" onclick="submitAdjustment()">조정 확정</button>
  </div>
 
- <!-- Adjustment History -->
- <div class="section-header" style="margin-top:32px;">조정 이력</div>
- <div class="inv-table-wrap">
- <table class="data-table" id="adj-history-table">
- <thead>
- <tr>
- <th>조정일</th>
- <th>제품</th>
- <th style="text-align:center;">규격</th>
- <th class="text-right">조정수량</th>
- <th>사유</th>
- <th style="min-width:160px;">비고</th>
- <th>처리자</th>
- </tr>
- </thead>
- <tbody id="adj-history-body"></tbody>
- </table>
- </div>
+ <!-- Adjustment History (2026-06: 공통 패널) -->
+ <div style="margin-top:32px;" id="adj-history-host"></div>
  </div>
  </div>
 
@@ -1315,6 +1284,149 @@ function navigateTo(pageId) {
 // 2026-05-22: NoticeModule 품질관리팀으로 초기화
 if (typeof NoticeModule !== 'undefined') {
   NoticeModule.init({ authorTeam: '품질관리팀' });
+}
+
+// ── Shared: 이력 패널 (기간 필터 + 검색 + 페이지네이션 + CSV) ──
+// 2026-06: 누적 이력이 많아져도 운영 가능하도록. 샘플출고/입고/조정 등 공통 사용.
+// opts: {
+//   hostId, data, dateField, searchFields:[fn|string], columns:[{label, render, csv?, align?}],
+//   csvFilename, days (default 30), perPage (default 25), title
+// }
+function renderHistoryPanel(opts) {
+ const host = document.getElementById(opts.hostId);
+ if (!host) return;
+ const perPage = opts.perPage || 25;
+ const days = opts.days || 30;
+ // 상태는 host 에 부착 (페이지 이동/필터 변경에도 보존)
+ if (!host._state) {
+   const todayKst = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+   const fromD = new Date(); fromD.setDate(fromD.getDate() - days + 1);
+   host._state = {
+     from: fromD.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
+     to: todayKst,
+     q: '',
+     page: 1,
+   };
+ }
+ const state = host._state;
+
+ const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+ const _stripHtml = s => String(s ?? '').replace(/<[^>]+>/g, '');
+ const _normDate = v => String(v ?? '').slice(0, 10);
+
+ function applyFilters() {
+   let rows = (opts.data || []).slice();
+   rows = rows.filter(r => {
+     const d = _normDate(r[opts.dateField]);
+     if (!d) return false;
+     if (state.from && d < state.from) return false;
+     if (state.to && d > state.to) return false;
+     return true;
+   });
+   if (state.q) {
+     const q = state.q.toLowerCase();
+     rows = rows.filter(r => (opts.searchFields || []).some(f => {
+       const v = typeof f === 'function' ? f(r) : r[f];
+       return String(v || '').toLowerCase().includes(q);
+     }));
+   }
+   rows.sort((a, b) => _normDate(b[opts.dateField]).localeCompare(_normDate(a[opts.dateField])));
+   return rows;
+ }
+
+ function exportCsv(rows) {
+   const cols = opts.columns;
+   const head = cols.map(c => '"' + String(c.label || '').replace(/"/g, '""') + '"').join(',');
+   const body = rows.map(r => cols.map(c => {
+     const v = typeof c.csv === 'function' ? c.csv(r) : _stripHtml(c.render(r));
+     return '"' + String(v ?? '').replace(/"/g, '""') + '"';
+   }).join(',')).join('\r\n');
+   const csv = '﻿' + head + '\r\n' + body;
+   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+   const url = URL.createObjectURL(blob);
+   const a = document.createElement('a');
+   a.href = url;
+   a.download = (opts.csvFilename || 'history') + '-' + new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }) + '.csv';
+   document.body.appendChild(a); a.click(); a.remove();
+   URL.revokeObjectURL(url);
+ }
+
+ function paginationHtml(cur, total, hid) {
+   if (total <= 1) return '';
+   const out = [];
+   out.push(`<button class="btn btn-outline btn-sm" data-hp-page="${Math.max(1, cur-1)}" ${cur===1?'disabled':''}>←</button>`);
+   const set = new Set([1, total]);
+   for (let i = Math.max(2, cur-2); i <= Math.min(total-1, cur+2); i++) set.add(i);
+   const sorted = Array.from(set).sort((a,b) => a-b);
+   let prev = 0;
+   for (const p of sorted) {
+     if (p - prev > 1) out.push('<span style="padding:6px;color:var(--text-muted);">…</span>');
+     out.push(`<button class="btn ${p===cur?'btn-primary':'btn-outline'} btn-sm" data-hp-page="${p}">${p}</button>`);
+     prev = p;
+   }
+   out.push(`<button class="btn btn-outline btn-sm" data-hp-page="${Math.min(total, cur+1)}" ${cur===total?'disabled':''}>→</button>`);
+   return out.join('');
+ }
+
+ function render() {
+   const filtered = applyFilters();
+   const total = filtered.length;
+   const totalPages = Math.max(1, Math.ceil(total / perPage));
+   if (state.page > totalPages) state.page = totalPages;
+   const start = (state.page - 1) * perPage;
+   const pageRows = filtered.slice(start, start + perPage);
+   const cols = opts.columns;
+
+   host.innerHTML = `
+     ${opts.title ? `<div class="section-header" style="margin-bottom:8px;">${opts.title}</div>` : ''}
+     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; padding:8px 0; border-bottom:1px solid var(--border);">
+       <span style="font-size:12px; color:var(--text-muted);">기간</span>
+       <input type="date" id="${opts.hostId}-from" value="${state.from}" style="font-size:13px; padding:4px 8px;">
+       <span style="color:var(--text-muted);">~</span>
+       <input type="date" id="${opts.hostId}-to" value="${state.to}" style="font-size:13px; padding:4px 8px;">
+       <button class="btn btn-ghost btn-sm" id="${opts.hostId}-q-clear" data-hp-quick="30" title="최근 30일">최근 30일</button>
+       <button class="btn btn-ghost btn-sm" data-hp-quick="90" title="최근 90일">90일</button>
+       <button class="btn btn-ghost btn-sm" data-hp-quick="365" title="최근 1년">1년</button>
+       <input type="text" id="${opts.hostId}-q" placeholder="🔍 검색..." value="${state.q}" style="font-size:13px; padding:4px 8px; min-width:160px;">
+       <button class="btn btn-outline btn-sm" id="${opts.hostId}-csv">⬇ CSV</button>
+       <span style="margin-left:auto; font-size:12px; color:var(--text-muted);">
+         총 <b>${total.toLocaleString()}</b>건${total > 0 ? ` · ${(start+1).toLocaleString()}–${Math.min(start+perPage, total).toLocaleString()} / ${state.page}p of ${totalPages}p` : ''}
+       </span>
+     </div>
+     <div class="inv-table-wrap">
+       <table class="data-table" style="font-size:13px;">
+         <thead><tr>${cols.map(c => `<th${c.align?` style="text-align:${c.align}"`:''}>${c.label}</th>`).join('')}</tr></thead>
+         <tbody>
+           ${pageRows.length === 0
+             ? `<tr><td colspan="${cols.length}" style="text-align:center; padding:32px; color:var(--text-muted);">조건에 맞는 이력이 없습니다.</td></tr>`
+             : pageRows.map(r => `<tr>${cols.map(c => `<td${c.align?` style="text-align:${c.align}"`:''}>${c.render(r) ?? ''}</td>`).join('')}</tr>`).join('')
+           }
+         </tbody>
+       </table>
+     </div>
+     <div style="display:flex; gap:4px; justify-content:center; margin-top:12px;">${paginationHtml(state.page, totalPages, opts.hostId)}</div>
+   `;
+
+   host.querySelector(`#${opts.hostId}-from`).addEventListener('change', e => { state.from = e.target.value; state.page = 1; render(); });
+   host.querySelector(`#${opts.hostId}-to`).addEventListener('change', e => { state.to = e.target.value; state.page = 1; render(); });
+   host.querySelector(`#${opts.hostId}-q`).addEventListener('input', _debounce(e => { state.q = e.target.value; state.page = 1; render(); }, 250));
+   host.querySelector(`#${opts.hostId}-csv`).addEventListener('click', () => exportCsv(filtered));
+   host.querySelectorAll('[data-hp-page]').forEach(b => b.addEventListener('click', e => {
+     state.page = parseInt(e.currentTarget.dataset.hpPage, 10) || 1;
+     render();
+   }));
+   host.querySelectorAll('[data-hp-quick]').forEach(b => b.addEventListener('click', e => {
+     const d = parseInt(e.currentTarget.dataset.hpQuick, 10);
+     const today = new Date();
+     const from = new Date(today); from.setDate(from.getDate() - d + 1);
+     state.from = from.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+     state.to = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+     state.page = 1;
+     render();
+   }));
+ }
+
+ render();
 }
 
 // ── Shared: render time bar into a container ──
@@ -4474,44 +4586,39 @@ function selectSampleClient(clientId) {
 }
 
 function renderSampleHistory() {
- const area = document.getElementById('sample-history-area');
- area.innerHTML = `
- <div class="sample-history-title">
- 최근 샘플 출고 내역 <span class="count" style="background:var(--primary-lighter); color:var(--primary); font-size:12px; font-weight:700; padding:2px 8px; border-radius:10px;">${SAMPLE_HISTORY.length}</span>
- </div>
- <div class="sample-list">
- ${SAMPLE_HISTORY.map(s => {
- const client = getClient(s.clientId);
- const staff = QC_STAFF.find(st => st.id === s.staffId);
- const statusBadgeCls = s.status === '출고완료' ? 'badge-complete' : 'badge-pending';
- // Support both old (single item) and new (items array) format
- const items = s.items || [{ productId: s.productId, size: s.size, qty: s.qty }];
- const itemsText = items.map(i => {
- const p = PRODUCTS.find(x => x.id === i.productId);
- return `${p ? p.name : i.productId} ${i.size} x${i.qty}`;
- });
- const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
+ const _itemsOf = s => s.items || [{ productId: s.productId, size: s.size, qty: s.qty }];
+ const _itemsText = s => _itemsOf(s).map(i => {
+   const p = (window.PRODUCTS || PRODUCTS).find(x => x.id === i.productId);
+   return `${p ? p.name : i.productId} ${i.size||''} x${i.qty}`;
+ }).join(', ');
+ const _totalQty = s => _itemsOf(s).reduce((sum, i) => sum + (i.qty || 0), 0);
+ const _staffName = s => (QC_STAFF.find(st => st.id === s.staffId)?.name) || '-';
 
- return `
- <div class="sample-item">
- <div class="sample-item-main">
- <div class="client">${client ? client.name : s.clientId} <span style="font-size:11px; color:var(--text-muted);">${items.length}개 품목 · ${totalQty}개</span></div>
- <div class="product">${itemsText.join(', ')}</div>
- </div>
- <div class="sample-item-meta">
- <span class="badge ${statusBadgeCls}">${s.status}</span>
- <span> ${s.reason}</span>
- <span> ${formatDate(s.date)}</span>
- ${staff ? `<span style="display:inline-flex; align-items:center; gap:4px;">
- <span class="staff-avatar" style="background:${staff.color}; width:20px; height:20px; font-size:9px;">${staff.name.charAt(0)}</span>
- ${staff.name}
- </span>` : ''}
- </div>
- </div>
- `;
- }).join('')}
- </div>
- `;
+ renderHistoryPanel({
+   hostId: 'sample-history-area',
+   data: SAMPLE_HISTORY,
+   dateField: 'date',
+   title: '최근 샘플 출고 내역',
+   csvFilename: 'sample-shipments',
+   searchFields: [
+     s => getClient(s.clientId)?.name,
+     _itemsText,
+     'reason',
+     _staffName,
+     'id',
+   ],
+   columns: [
+     { label: '날짜',  align: 'center', render: s => formatDate(s.date), csv: s => s.date },
+     { label: '거래처', render: s => getClient(s.clientId)?.name || s.clientId },
+     { label: '품목',  render: s => _itemsText(s) },
+     { label: '수량합', align: 'right', render: s => _totalQty(s) },
+     { label: '사유',  render: s => s.reason || '-' },
+     { label: '담당자', render: s => _staffName(s) },
+     { label: '상태',  align: 'center',
+       render: s => `<span class="badge ${s.status==='출고완료'?'badge-complete':'badge-pending'}">${s.status}</span>`,
+       csv: s => s.status },
+   ],
+ });
 }
 
 
@@ -4581,21 +4688,25 @@ function renderReceiving() {
  </tr>
  `;
 
- // History
- const histBody = document.getElementById('recv-history-body');
- histBody.innerHTML = RECV_HISTORY.map(h => {
- const statusBadgeCls = h.status === '확정' ? 'badge-complete' : 'badge-pending';
- return `
- <tr>
- <td>${formatDate(h.date)}</td>
- <td class="fw-600">${h.supplier}</td>
- <td class="text-right">${h.itemCount}건</td>
- <td class="text-right fw-600">${formatNumber(h.totalQty)}개</td>
- <td>${h.staff}</td>
- <td><span class="badge ${statusBadgeCls}">${h.status}</span></td>
- </tr>
- `;
- }).join('');
+ // History — 2026-06: 공통 패널 (기간 + 검색 + 페이지네이션 + CSV)
+ renderHistoryPanel({
+   hostId: 'recv-history-host',
+   data: RECV_HISTORY,
+   dateField: 'date',
+   title: '최근 입고 이력',
+   csvFilename: 'receiving-history',
+   searchFields: ['supplier', 'staff', 'status'],
+   columns: [
+     { label: '입고일', align: 'center', render: h => formatDate(h.date), csv: h => h.date },
+     { label: '공급처', render: h => `<b>${h.supplier || '-'}</b>`, csv: h => h.supplier || '' },
+     { label: '품목수', align: 'right', render: h => `${h.itemCount || 0}건`, csv: h => h.itemCount || 0 },
+     { label: '총수량', align: 'right', render: h => `<b>${formatNumber(h.totalQty || 0)}개</b>`, csv: h => h.totalQty || 0 },
+     { label: '등록자', render: h => h.staff || '-' },
+     { label: '상태', align: 'center',
+       render: h => `<span class="badge ${h.status==='확정'?'badge-complete':'badge-pending'}">${h.status||'-'}</span>`,
+       csv: h => h.status || '' },
+   ],
+ });
 }
 
 function addReceivingRow() {
@@ -4784,23 +4895,30 @@ function renderAdjustment() {
  `;
  }).join('');
 
- // History
- const histBody = document.getElementById('adj-history-body');
- histBody.innerHTML = ADJ_HISTORY.map(h => {
- const diffClass = h.adjQty > 0 ? 'diff-plus' : 'diff-minus';
- const diffText = h.adjQty > 0 ? `+${h.adjQty}` : `${h.adjQty}`;
- return `
- <tr>
- <td>${formatDate(h.date)}</td>
- <td class="fw-600">${h.product}</td>
- <td style="text-align:center;">${h.size}</td>
- <td class="text-right"><span class="${diffClass}">${diffText}</span></td>
- <td>${h.reason}</td>
- <td>${h.note || '-'}</td>
- <td>${h.staff}</td>
- </tr>
- `;
- }).join('');
+ // History — 2026-06: 공통 패널 (기간 + 검색 + 페이지네이션 + CSV)
+ renderHistoryPanel({
+   hostId: 'adj-history-host',
+   data: ADJ_HISTORY,
+   dateField: 'date',
+   title: '조정 이력',
+   csvFilename: 'inventory-adjustments',
+   searchFields: ['product', 'reason', 'staff', 'note'],
+   columns: [
+     { label: '조정일', align: 'center', render: h => formatDate(h.date), csv: h => h.date },
+     { label: '제품',   render: h => `<b>${h.product || '-'}</b>`, csv: h => h.product || '' },
+     { label: '규격',   align: 'center', render: h => h.size || '-' },
+     { label: '조정수량', align: 'right',
+       render: h => {
+         const cls = h.adjQty > 0 ? 'diff-plus' : 'diff-minus';
+         const txt = h.adjQty > 0 ? `+${h.adjQty}` : `${h.adjQty}`;
+         return `<span class="${cls}">${txt}</span>`;
+       },
+       csv: h => h.adjQty },
+     { label: '사유',   render: h => h.reason || '-' },
+     { label: '비고',   render: h => h.note || '-' },
+     { label: '처리자', render: h => h.staff || '-' },
+   ],
+ });
 }
 
 // 품질팀: 재고조정 확정 — ADJ_ROWS 의 diff(=actual-system) 가 0 아닌 행만 DB 로 일괄 전송.
