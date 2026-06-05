@@ -20,3 +20,29 @@ export async function resolveTargetUserId(
   if (!u) throw new Error(`forUser 사용자를 찾을 수 없습니다: ${forUser}`);
   return u.id;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * 위젯 저장 대상 이메일 선택.
+ * 우선순위: 헤더(X-RTBIO-ForUser) > 본문 forUser.
+ * 가드: 빈값 · 미치환 템플릿("{{") · 이메일 형식 아님 → 무시.
+ * 유효 후보 없으면 undefined.
+ */
+export function pickForUserEmail(
+  headerVal: string | null,
+  bodyVal: unknown,
+): string | undefined {
+  const candidates: Array<string | null> = [
+    headerVal,
+    typeof bodyVal === "string" ? bodyVal : null,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    const t = c.trim();
+    if (!t || t.includes("{{")) continue;
+    if (!EMAIL_RE.test(t)) continue;
+    return t;
+  }
+  return undefined;
+}
