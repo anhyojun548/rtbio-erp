@@ -87,6 +87,32 @@ function getTimeInfo() {
   };
 }
 
+// ── Default Date Range (모든 포털 공통) ──
+// 2026-06: 새로 페이지 열 때 기본 기간은 "최근 7일 (KST)" — 사용자가 직접 바꾼 값은 보존.
+//   from = 오늘 - 6일,  to = 오늘  (총 7일 포함)
+function getKstRecentDays(n) {
+  const today = new Date();
+  const toKst = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  const fromD = new Date(today); fromD.setDate(fromD.getDate() - (n - 1));
+  const fromKst = fromD.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  return { from: fromKst, to: toKst };
+}
+// 각 포털 DOMContentLoaded 에서 호출 — { fromIds: [...], toIds: [...], todayIds: [...] }
+//   - fromIds : from 값으로 채울 input id 리스트
+//   - toIds   : to 값으로 채울 input id 리스트
+//   - todayIds: 단일 date input 으로 오늘만 채울 id 리스트 (입력용 폼 등)
+//   이미 value 가 있으면 덮지 않음 (localStorage 등 사용자 입력 보존).
+function setDefaultDateRanges(opts) {
+  const { from, to } = getKstRecentDays(7);
+  const _set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = val;
+  };
+  (opts.fromIds || []).forEach(id => _set(id, from));
+  (opts.toIds   || []).forEach(id => _set(id, to));
+  (opts.todayIds|| []).forEach(id => _set(id, to));
+}
+
 // ── Status Badge HTML ──
 function statusBadge(status) {
   const map = {

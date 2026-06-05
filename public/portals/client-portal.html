@@ -655,6 +655,10 @@
 // data-loader.js 가 DOMContentLoaded 를 가로채서 /api/* 를 모두 받은 뒤 큐를 flush 하므로,
 // 이 핸들러는 window.CURRENT_USER / window.CLIENTS 가 채워진 상태로 실행된다.
 document.addEventListener('DOMContentLoaded', function clientPortalBootstrap() {
+  // 2026-06: 날짜 input 기본값 KST 최근 7일
+  try {
+    setDefaultDateRanges({ fromIds: ['hist-from'], toIds: ['hist-to'] });
+  } catch (e) { console.warn('default date init failed', e); }
   const me = window.CURRENT_USER;
   const loadingPage   = document.getElementById('page-loading');
   const loginPage     = document.getElementById('page-login');

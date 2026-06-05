@@ -685,11 +685,11 @@
  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
  <div class="form-group" style="margin-bottom:0;">
  <label>시작일</label>
- <input type="date" class="form-input" id="sales-from" value="2026-04-01">
+ <input type="date" class="form-input" id="sales-from">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label>종료일</label>
- <input type="date" class="form-input" id="sales-to" value="2026-04-16">
+ <input type="date" class="form-input" id="sales-to">
  </div>
  <div class="form-group" style="margin-bottom:0;">
  <label>유형</label>
@@ -1967,7 +1967,7 @@ function showConferenceModal() {
  <option>정형외과</option><option>신경외과</option><option>재활의학</option><option>기타</option>
  </select>
  </div>
- <div class="form-group"><label>날짜</label><input type="date" class="form-input" id="conf-date" value="2026-04-16"></div>
+ <div class="form-group"><label>날짜</label><input type="date" class="form-input" id="conf-date" value="${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})}"></div>
  <div class="form-group"><label>방명록 건수</label><input type="number" class="form-input" id="conf-visitors" placeholder="예: 100" value="100"></div>
  <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">담당자별 배분은 등록 후 수정 가능합니다.</div>
  `;
@@ -2463,6 +2463,14 @@ function applyClientFilter() {
 // Init
 // ══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
+ // 2026-06: 날짜 input 기본값 KST 최근 7일
+ try {
+   setDefaultDateRanges({
+     fromIds: ['sales-from'],
+     toIds:   ['sales-to'],
+     // conf-date 는 모달 안에 있어 페이지 로드 시점엔 DOM 에 없음 — 인라인 value 로 처리
+   });
+ } catch (e) { console.warn('default date init failed', e); }
  renderExecDashboard();
  renderUsageInput('C002');
  renderClientStatus('all', 'name');

@@ -5687,20 +5687,14 @@ function showOrderEditHistory(orderId) {
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
- // 2026-06: 매입매출장/거래처원장/마감원장/보고서/매입/대시보드 등의 날짜 input 기본값을
- //          KST 오늘 기준 "이번달 1일 ~ 오늘" 로 동적 세팅 (이전엔 2026-04-01 ~ 04-11 하드코딩)
+ // 2026-06: 모든 페이지의 날짜 input 기본값을 KST "최근 7일" 로 동적 세팅
+ //          (이전엔 2026-04-01 ~ 04-11 하드코딩)
  try {
-   const today = new Date();
-   const todayKst = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-   const [y, m] = todayKst.split('-');
-   const monthStart = `${y}-${m}-01`;
-   const _set = (id, val) => { const el = document.getElementById(id); if (el && !el.value) el.value = val; };
-   // from = 이번달 1일
-   ['globalDateFrom','invoice-from','ledger-date-from','report-date-from','journal-date-from','client-ledger-date-from']
-     .forEach(id => _set(id, monthStart));
-   // to = KST 오늘
-   ['globalDateTo','invoice-to','ledger-date-to','report-date-to','journal-date-to','client-ledger-date-to','purchase-date']
-     .forEach(id => _set(id, todayKst));
+   setDefaultDateRanges({
+     fromIds: ['globalDateFrom','invoice-from','ledger-date-from','report-date-from','journal-date-from','client-ledger-date-from'],
+     toIds:   ['globalDateTo','invoice-to','ledger-date-to','report-date-to','journal-date-to','client-ledger-date-to'],
+     todayIds:['purchase-date'],
+   });
  } catch (e) { console.warn('default date init failed', e); }
 
  try { renderDashboard(); } catch(e) {}
