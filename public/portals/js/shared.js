@@ -113,6 +113,251 @@ function setDefaultDateRanges(opts) {
   (opts.todayIds|| []).forEach(id => _set(id, to));
 }
 
+// ── Shared: 이력 패널 (기간 필터 + 검색 + 페이지네이션 + CSV) ──
+// 2026-06: 누적 이력이 많아져도 운영 가능하도록. qc/admin 등 공통 사용.
+// opts: {
+//   hostId, data, dateField, searchFields:[fn|string], columns:[{label, render, csv?, align?}],
+//   csvFilename, days (default 30), perPage (default 25), title
+// }
+function renderHistoryPanel(opts) {
+  const host = document.getElementById(opts.hostId);
+  if (!host) return;
+  const perPage = opts.perPage || 25;
+  const days = opts.days || 30;
+  if (!host._state) {
+    const todayKst = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    const fromD = new Date(); fromD.setDate(fromD.getDate() - days + 1);
+    host._state = {
+      from: fromD.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
+      to: todayKst,
+      q: '',
+      page: 1,
+    };
+  }
+  const state = host._state;
+
+  const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+  const _stripHtml = s => String(s ?? '').replace(/<[^>]+>/g, '');
+  const _normDate = v => String(v ?? '').slice(0, 10);
+
+  function applyFilters() {
+    let rows = (opts.data || []).slice();
+    rows = rows.filter(r => {
+      const d = _normDate(r[opts.dateField]);
+      if (!d) return false;
+      if (state.from && d < state.from) return false;
+      if (state.to && d > state.to) return false;
+      return true;
+    });
+    if (state.q) {
+      const q = state.q.toLowerCase();
+      rows = rows.filter(r => (opts.searchFields || []).some(f => {
+        const v = typeof f === 'function' ? f(r) : r[f];
+        return String(v || '').toLowerCase().includes(q);
+      }));
+    }
+    rows.sort((a, b) => _normDate(b[opts.dateField]).localeCompare(_normDate(a[opts.dateField])));
+    return rows;
+  }
+
+  function exportCsv(rows) {
+    const cols = opts.columns;
+    const head = cols.map(c => '"' + String(c.label || '').replace(/"/g, '""') + '"').join(',');
+    const body = rows.map(r => cols.map(c => {
+      const v = typeof c.csv === 'function' ? c.csv(r) : _stripHtml(c.render(r));
+      return '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    }).join(',')).join('\r\n');
+    const csv = '﻿' + head + '\r\n' + body;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (opts.csvFilename || 'history') + '-' + new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function paginationHtml(cur, total) {
+    if (total <= 1) return '';
+    const out = [];
+    out.push(`<button class="btn btn-outline btn-sm" data-hp-page="${Math.max(1, cur-1)}" ${cur===1?'disabled':''}>←</button>`);
+    const set = new Set([1, total]);
+    for (let i = Math.max(2, cur-2); i <= Math.min(total-1, cur+2); i++) set.add(i);
+    const sorted = Array.from(set).sort((a,b) => a-b);
+    let prev = 0;
+    for (const p of sorted) {
+      if (p - prev > 1) out.push('<span style="padding:6px;color:var(--text-muted);">…</span>');
+      out.push(`<button class="btn ${p===cur?'btn-primary':'btn-outline'} btn-sm" data-hp-page="${p}">${p}</button>`);
+      prev = p;
+    }
+    out.push(`<button class="btn btn-outline btn-sm" data-hp-page="${Math.min(total, cur+1)}" ${cur===total?'disabled':''}>→</button>`);
+    return out.join('');
+  }
+
+  function render() {
+    const filtered = applyFilters();
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (state.page > totalPages) state.page = totalPages;
+    const start = (state.page - 1) * perPage;
+    const pageRows = filtered.slice(start, start + perPage);
+    const cols = opts.columns;
+
+    host.innerHTML = `
+      ${opts.title ? `<div class="section-header" style="margin-bottom:8px;">${opts.title}</div>` : ''}
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; padding:8px 0; border-bottom:1px solid var(--border);">
+        <span style="font-size:12px; color:var(--text-muted);">기간</span>
+        <input type="date" id="${opts.hostId}-from" value="${state.from}" style="font-size:13px; padding:4px 8px;">
+        <span style="color:var(--text-muted);">~</span>
+        <input type="date" id="${opts.hostId}-to" value="${state.to}" style="font-size:13px; padding:4px 8px;">
+        <button class="btn btn-ghost btn-sm" data-hp-quick="7" title="최근 7일">최근 7일</button>
+        <button class="btn btn-ghost btn-sm" data-hp-quick="30" title="최근 30일">30일</button>
+        <button class="btn btn-ghost btn-sm" data-hp-quick="90" title="최근 90일">90일</button>
+        <button class="btn btn-ghost btn-sm" data-hp-quick="365" title="최근 1년">1년</button>
+        <input type="text" id="${opts.hostId}-q" placeholder="🔍 검색..." value="${state.q}" style="font-size:13px; padding:4px 8px; min-width:160px;">
+        <button class="btn btn-outline btn-sm" id="${opts.hostId}-csv">⬇ CSV</button>
+        <span style="margin-left:auto; font-size:12px; color:var(--text-muted);">
+          총 <b>${total.toLocaleString()}</b>건${total > 0 ? ` · ${(start+1).toLocaleString()}–${Math.min(start+perPage, total).toLocaleString()} / ${state.page}p of ${totalPages}p` : ''}
+        </span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" style="font-size:13px;">
+          <thead><tr>${cols.map(c => `<th${c.align?` style="text-align:${c.align}"`:''}>${c.label}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${pageRows.length === 0
+              ? `<tr><td colspan="${cols.length}" style="text-align:center; padding:32px; color:var(--text-muted);">조건에 맞는 이력이 없습니다.</td></tr>`
+              : pageRows.map(r => `<tr>${cols.map(c => `<td${c.align?` style="text-align:${c.align}"`:''}>${c.render(r) ?? ''}</td>`).join('')}</tr>`).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex; gap:4px; justify-content:center; margin-top:12px;">${paginationHtml(state.page, totalPages)}</div>
+    `;
+
+    host.querySelector(`#${opts.hostId}-from`).addEventListener('change', e => { state.from = e.target.value; state.page = 1; render(); });
+    host.querySelector(`#${opts.hostId}-to`).addEventListener('change', e => { state.to = e.target.value; state.page = 1; render(); });
+    host.querySelector(`#${opts.hostId}-q`).addEventListener('input', _debounce(e => { state.q = e.target.value; state.page = 1; render(); }, 250));
+    host.querySelector(`#${opts.hostId}-csv`).addEventListener('click', () => exportCsv(filtered));
+    host.querySelectorAll('[data-hp-page]').forEach(b => b.addEventListener('click', e => {
+      state.page = parseInt(e.currentTarget.dataset.hpPage, 10) || 1;
+      render();
+    }));
+    host.querySelectorAll('[data-hp-quick]').forEach(b => b.addEventListener('click', e => {
+      const d = parseInt(e.currentTarget.dataset.hpQuick, 10);
+      const today = new Date();
+      const from = new Date(today); from.setDate(from.getDate() - d + 1);
+      state.from = from.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+      state.to = today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+      state.page = 1;
+      render();
+    }));
+  }
+
+  render();
+}
+
+// 2026-06: 비-시계열(거래처 목록 등) 페이지네이션 패널 — 기간 필터 없이 검색+페이지네이션+CSV 만.
+// opts: { hostId, data, searchFields, columns, csvFilename, perPage (default 25), title, sortBy?(fn) }
+function renderListPanel(opts) {
+  const host = document.getElementById(opts.hostId);
+  if (!host) return;
+  const perPage = opts.perPage || 25;
+  if (!host._state) host._state = { q: '', page: 1 };
+  const state = host._state;
+
+  const _debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+  const _stripHtml = s => String(s ?? '').replace(/<[^>]+>/g, '');
+
+  function applyFilters() {
+    let rows = (opts.data || []).slice();
+    if (state.q) {
+      const q = state.q.toLowerCase();
+      rows = rows.filter(r => (opts.searchFields || []).some(f => {
+        const v = typeof f === 'function' ? f(r) : r[f];
+        return String(v || '').toLowerCase().includes(q);
+      }));
+    }
+    if (typeof opts.sortBy === 'function') rows.sort(opts.sortBy);
+    return rows;
+  }
+
+  function exportCsv(rows) {
+    const cols = opts.columns;
+    const head = cols.map(c => '"' + String(c.label || '').replace(/"/g, '""') + '"').join(',');
+    const body = rows.map(r => cols.map(c => {
+      const v = typeof c.csv === 'function' ? c.csv(r) : _stripHtml(c.render(r));
+      return '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    }).join(',')).join('\r\n');
+    const csv = '﻿' + head + '\r\n' + body;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (opts.csvFilename || 'list') + '-' + new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function paginationHtml(cur, total) {
+    if (total <= 1) return '';
+    const out = [];
+    out.push(`<button class="btn btn-outline btn-sm" data-lp-page="${Math.max(1, cur-1)}" ${cur===1?'disabled':''}>←</button>`);
+    const set = new Set([1, total]);
+    for (let i = Math.max(2, cur-2); i <= Math.min(total-1, cur+2); i++) set.add(i);
+    const sorted = Array.from(set).sort((a,b) => a-b);
+    let prev = 0;
+    for (const p of sorted) {
+      if (p - prev > 1) out.push('<span style="padding:6px;color:var(--text-muted);">…</span>');
+      out.push(`<button class="btn ${p===cur?'btn-primary':'btn-outline'} btn-sm" data-lp-page="${p}">${p}</button>`);
+      prev = p;
+    }
+    out.push(`<button class="btn btn-outline btn-sm" data-lp-page="${Math.min(total, cur+1)}" ${cur===total?'disabled':''}>→</button>`);
+    return out.join('');
+  }
+
+  function render() {
+    const filtered = applyFilters();
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (state.page > totalPages) state.page = totalPages;
+    const start = (state.page - 1) * perPage;
+    const pageRows = filtered.slice(start, start + perPage);
+    const cols = opts.columns;
+
+    host.innerHTML = `
+      ${opts.title ? `<div class="section-header" style="margin-bottom:8px;">${opts.title}</div>` : ''}
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; padding:8px 0; border-bottom:1px solid var(--border);">
+        <input type="text" id="${opts.hostId}-q" placeholder="🔍 검색..." value="${state.q}" style="font-size:13px; padding:4px 8px; min-width:200px;">
+        <button class="btn btn-outline btn-sm" id="${opts.hostId}-csv">⬇ CSV</button>
+        <span style="margin-left:auto; font-size:12px; color:var(--text-muted);">
+          총 <b>${total.toLocaleString()}</b>건${total > 0 ? ` · ${(start+1).toLocaleString()}–${Math.min(start+perPage, total).toLocaleString()} / ${state.page}p of ${totalPages}p` : ''}
+        </span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" style="font-size:13px;">
+          <thead><tr>${cols.map(c => `<th${c.align?` style="text-align:${c.align}"`:''}>${c.label}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${pageRows.length === 0
+              ? `<tr><td colspan="${cols.length}" style="text-align:center; padding:32px; color:var(--text-muted);">조건에 맞는 항목이 없습니다.</td></tr>`
+              : pageRows.map(r => `<tr>${cols.map(c => `<td${c.align?` style="text-align:${c.align}"`:''}>${c.render(r) ?? ''}</td>`).join('')}</tr>`).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex; gap:4px; justify-content:center; margin-top:12px;">${paginationHtml(state.page, totalPages)}</div>
+    `;
+
+    host.querySelector(`#${opts.hostId}-q`).addEventListener('input', _debounce(e => { state.q = e.target.value; state.page = 1; render(); }, 250));
+    host.querySelector(`#${opts.hostId}-csv`).addEventListener('click', () => exportCsv(filtered));
+    host.querySelectorAll('[data-lp-page]').forEach(b => b.addEventListener('click', e => {
+      state.page = parseInt(e.currentTarget.dataset.lpPage, 10) || 1;
+      render();
+    }));
+  }
+
+  render();
+}
+
 // ── Status Badge HTML ──
 function statusBadge(status) {
   const map = {
