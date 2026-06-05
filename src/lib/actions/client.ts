@@ -49,7 +49,7 @@ export async function listClients(opts: ListOpts = {}) {
     ];
   }
 
-  return prisma.client.findMany({
+  const clients = await prisma.client.findMany({
     where,
     orderBy: [{ active: "desc" }, { name: "asc" }],
     include: {
@@ -63,9 +63,18 @@ export async function listClients(opts: ListOpts = {}) {
           product: { select: { id: true, code: true, name: true, category: true, part: true } },
         },
       },
-      salesRep: { select: { id: true, name: true } },
     },
   });
+  // salesRepId 는 public.User 로의 크로스스키마 앱-레벨 참조 (Prisma 관계 불가) → 별도 조회로 해석.
+  const repIds = [...new Set(clients.map((c) => c.salesRepId).filter((x): x is string => !!x))];
+  const reps = repIds.length
+    ? await prisma.user.findMany({ where: { id: { in: repIds } }, select: { id: true, name: true } })
+    : [];
+  const repById = new Map(reps.map((r) => [r.id, r]));
+  return clients.map((c) => ({
+    ...c,
+    salesRep: c.salesRepId ? (repById.get(c.salesRepId) ?? null) : null,
+  }));
 }
 
 export async function getClient(id: string) {
