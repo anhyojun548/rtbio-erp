@@ -581,7 +581,7 @@
  </div>
  <div class="nav-item" data-page="page-journal" onclick="goTo('page-journal')">
  매입매출장
- <span class="nav-badge-count" id="nav-pending-badge"></span>
+ <span class="nav-badge-count" id="nav-pending-badge" style="display:none;"></span>
  </div>
  <div class="nav-item" data-page="page-client-ledger" onclick="goTo('page-client-ledger')">
  거래처원장
@@ -1992,8 +1992,12 @@ function renderDashboard() {
  </div>
  `;
 
- // Pending badge in nav
- document.getElementById('nav-pending-badge').textContent = _pendingOrders;
+ // Pending badge in nav (2026-06: 0 이면 숨김 — 빈 박스가 '-' 처럼 보이던 문제 차단)
+ const _navBadge = document.getElementById('nav-pending-badge');
+ if (_navBadge) {
+   _navBadge.textContent = _pendingOrders > 0 ? _pendingOrders : '';
+   _navBadge.style.display = _pendingOrders > 0 ? '' : 'none';
+ }
 
  // Time bar
  const ti = getTimeInfo();
