@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { Button } from "@/components/shared/Button";
+import { SignOutLink } from "@/components/shared/SignOutLink";
 import type { UserRole } from "@prisma/client";
 
 const ROLE_HOME: Record<UserRole, string> = {
@@ -156,7 +157,7 @@ export default async function HomePage() {
           <p>RTBIO 업무 자동화 시스템 · Phase 5 (2026)</p>
           <p className="mt-1">
             <Link href="/admin" className="text-primary hover:underline"> 데이터 탐색기 (41K건)</Link> {" · "}
-            <Link href="/api/auth/signout" className="text-ink-muted hover:text-primary hover:underline">로그아웃</Link>
+            <SignOutLink className="text-ink-muted hover:text-primary hover:underline" />
           </p>
         </div>
       </div>
