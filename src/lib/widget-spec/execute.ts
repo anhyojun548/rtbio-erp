@@ -170,6 +170,7 @@ const SOURCES_WITH_CLIENT_ID: ReadonlySet<WidgetSource> = new Set<WidgetSource>(
 // ─────────────────────────────────────────────────────────────
 // 2. 템플릿 변수 해석
 //    {{now}} {{now.startOfMonth}} {{now.endOfMonth}} {{now.startOfYear}}
+//    {{now.startOfDay}} {{now.startOfWeek}} {{now.endOfWeek}}  (주: 월요일 시작)
 //    {{now.minus(30,'day')}} {{now.plus(1,'month')}}
 //    {{now.startOfMonth.plus(1,'month')}}  (체이닝 1단계)
 //    {{today}} → 'YYYY-MM-DD'   {{thisMonth}} → 'YYYY-MM'
@@ -209,6 +210,17 @@ function startOfYear(d: Date): Date {
 }
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
+/** 이번 주 월요일 00:00 (ISO 주, 월요일 시작). getDay(): 0=일~6=토 */
+function startOfWeek(d: Date): Date {
+  const day = d.getDay();
+  const back = day === 0 ? 6 : day - 1; // 월요일까지 거슬러 갈 일수
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, 0, 0, 0, 0);
+}
+/** 이번 주 끝 = 다음 주 월요일 00:00 - 1ms (일요일 23:59:59.999) */
+function endOfWeek(d: Date): Date {
+  const s = startOfWeek(d);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 7, 0, 0, 0, 0 - 1);
 }
 
 function ymd(d: Date): string {
@@ -269,6 +281,8 @@ function resolveExpression(expr: string, now: Date): Date | string {
     else if (t === "endOfMonth") d = endOfMonth(d);
     else if (t === "startOfYear") d = startOfYear(d);
     else if (t === "startOfDay") d = startOfDay(d);
+    else if (t === "startOfWeek") d = startOfWeek(d);
+    else if (t === "endOfWeek") d = endOfWeek(d);
     else if (t.startsWith("minus(") || t.startsWith("plus(")) d = applyOp(d, t);
     else throw new Error(`알 수 없는 템플릿 연산입니다: ${t}`);
   }

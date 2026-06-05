@@ -61,6 +61,9 @@ export type FilterOperator = (typeof FILTER_OPERATORS)[number];
  *   {{now.startOfMonth}}           — 이번 달 1일 00:00
  *   {{now.endOfMonth}}             — 이번 달 말일 23:59:59
  *   {{now.startOfYear}}
+ *   {{now.startOfDay}}             — 오늘 00:00
+ *   {{now.startOfWeek}}            — 이번 주 월요일 00:00 (이번 주)
+ *   {{now.endOfWeek}}              — 이번 주 일요일 23:59:59
  *   {{now.minus(30,'day')}}        — 30일 전
  *   {{now.minus(1,'month')}}       — 1개월 전
  *   {{now.plus(1,'month')}}
