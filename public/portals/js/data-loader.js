@@ -271,11 +271,28 @@
         //  · orderDate(ISO Date) → date 'YYYY-MM-DD' 문자열 (renderHistory 의 o.date.startsWith)
         //  · items[i]: quantity → qty, unitPrice/lineTotal Decimal string → number
         //  · shippingType: '택배' default (prototype 표시용)
-        //  · time: '00:00' default
+        //  · time: 'HH:MM' KST (없으면 '00:00')
+        //
+        // 2026-06 fix: toISOString() 은 UTC 라 KST 새벽(00:00~09:00)에 생성된 주문이
+        // "어제" 로 분류되어 "오늘 확정/오늘 출고" 카운터에서 누락됐다.
+        // KST(Asia/Seoul) 로컬 날짜·시각으로 통일.
+        const _kstDate = (iso) => {
+          try { return new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
+          catch (e) { return ''; }
+        };
+        const _kstTime = (iso) => {
+          try {
+            const s = new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour12: false });
+            return s.slice(0, 5); // 'HH:MM'
+          } catch (e) { return '00:00'; }
+        };
         const normOrders = (bs.orders || []).map(o => {
           const norm = normalizeOrder(o);
           if (norm.orderDate && !norm.date) {
-            try { norm.date = new Date(norm.orderDate).toISOString().slice(0, 10); } catch (e) { norm.date = ''; }
+            norm.date = _kstDate(norm.orderDate);
+          }
+          if (!norm.time && norm.orderDate) {
+            norm.time = _kstTime(norm.orderDate);
           }
           if (!norm.time) norm.time = '00:00';
           if (!norm.shippingType) norm.shippingType = '택배';
@@ -421,11 +438,26 @@
       // 1) 정규화 단계 (window.*)
       const _normClients  = clients   ? (Array.isArray(clients)  ? clients  : (clients.data  ?? [])).map(normalizeClient) : [];
       const _normProducts = products  ? (Array.isArray(products) ? products : (products.data ?? [])) : [];
+      // 2026-06 fix: KST 기준 날짜/시각 (이전엔 toISOString() 의 UTC 라
+      // KST 새벽 주문이 "어제"로 분류돼 QC 발주확정의 "오늘 확정/오늘 출고"에서 누락됐음)
+      const _adminKstDate = (iso) => {
+        try { return new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
+        catch (e) { return ''; }
+      };
+      const _adminKstTime = (iso) => {
+        try {
+          const s = new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour12: false });
+          return s.slice(0, 5);
+        } catch (e) { return '00:00'; }
+      };
       const _normOrders   = orders    ? (Array.isArray(orders)   ? orders   : (orders.data   ?? [])).map(o => {
         const norm = normalizeOrder(o);
-        // prototype 호환 alias: orderDate → date 'YYYY-MM-DD', time '00:00', shippingType '택배' default
+        // prototype 호환 alias: orderDate → date 'YYYY-MM-DD' (KST), time 'HH:MM' (KST), shippingType '택배' default
         if (norm.orderDate && !norm.date) {
-          try { norm.date = new Date(norm.orderDate).toISOString().slice(0, 10); } catch (e) { norm.date = ''; }
+          norm.date = _adminKstDate(norm.orderDate);
+        }
+        if (!norm.time && norm.orderDate) {
+          norm.time = _adminKstTime(norm.orderDate);
         }
         if (!norm.time) norm.time = '00:00';
         if (!norm.shippingType) norm.shippingType = '택배';

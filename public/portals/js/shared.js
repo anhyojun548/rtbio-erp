@@ -63,15 +63,19 @@ function formatDateFull(dateStr) {
 }
 
 // ── Time Display & Cutoff ──
+// 2026-06 fix: 실시간 시각 사용 (이전엔 시연용 14:22 하드코딩이라 시간바·확정/출고 시각이 실제와 어긋남)
 function getTimeInfo() {
-  // 시연용: 현재 시간 14:22 고정 (택배 마감 전)
-  const hour = 14, min = 22;
+  const now = new Date();
+  const hour = now.getHours();
+  const min = now.getMinutes();
   const cutoffHour = 15, cutoffMin = 30;
   const remainMin = (cutoffHour * 60 + cutoffMin) - (hour * 60 + min);
-  const remainH = Math.floor(remainMin / 60);
-  const remainM = remainMin % 60;
+  const absRemain = Math.abs(remainMin);
+  const remainH = Math.floor(absRemain / 60);
+  const remainM = absRemain % 60;
   let level = 'safe'; // green
-  if (remainMin <= 30) level = 'danger';
+  if (remainMin <= 0) level = 'danger';
+  else if (remainMin <= 30) level = 'danger';
   else if (remainMin <= 120) level = 'warn';
 
   return {

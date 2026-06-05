@@ -30,6 +30,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "prototype", "-p", "3461", "-L"],
       "port": 3461
+    },
+    {
+      "name": "portals",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "public", "-p", "3462", "-L"],
+      "port": 3462
     }
   ]
 }
