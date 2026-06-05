@@ -29,6 +29,7 @@ import {
   getDisplayColumns,
   getValueByPath,
   buildIncludeForColumns,
+  normalizeGroupBy,
 } from "./display";
 
 // ─────────────────────────────────────────────────────────────
@@ -600,8 +601,10 @@ async function runGroupBy(
   const aggType = aggregate?.type ?? "count";
   const aggField = aggregate?.field ?? null;
 
+  // LLM 별칭 보정: clientName/client.name → clientId 등 (Prisma 는 스칼라 FK 만 허용)
+  const by = normalizeGroupBy(groupBy);
   // groupBy 의 distinct/count 는 Prisma groupBy 가 자체 지원
-  const args: Record<string, unknown> = { by: groupBy, where };
+  const args: Record<string, unknown> = { by, where };
   if (aggType === "count" || aggType === "countDistinct") {
     args._count = true;
   } else {

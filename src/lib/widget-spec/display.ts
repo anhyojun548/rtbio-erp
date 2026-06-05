@@ -4,6 +4,24 @@ export const LABEL_RESOLVERS: Record<string, { model: string; labelField: string
   productId: { model: "product", labelField: "name" },
 };
 
+/**
+ * groupBy 별칭 보정 — LLM(빌더)이 "거래처별"을 자연스럽게 `clientName`/`client.name` 로 쓰는데
+ * Prisma groupBy 는 스칼라 FK(`clientId`)만 받는다. 흔한 표시필드 별칭을 FK 로 정규화.
+ * (라벨은 LABEL_RESOLVERS 가 FK → 이름으로 해석하므로 차트엔 거래처명이 표시됨.)
+ */
+const GROUPBY_ALIASES: Record<string, string> = {
+  clientname: "clientId",
+  "client.name": "clientId",
+  client: "clientId",
+  productname: "productId",
+  "product.name": "productId",
+  product: "productId",
+};
+
+export function normalizeGroupBy(fields: string[]): string[] {
+  return fields.map((f) => GROUPBY_ALIASES[f.toLowerCase()] ?? f);
+}
+
 /** 소스별 table 표시 컬럼(순서·한글 라벨; 관계는 dot). 미정의 소스는 폴백(원시 6컬럼). */
 export const DISPLAY_COLUMNS: Record<string, Array<{ field: string; label: string }>> = {
   order: [
