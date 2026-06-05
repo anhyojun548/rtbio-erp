@@ -176,7 +176,13 @@ export const widgetFormatSchema = z
         decimals: z.number().int().min(0).max(4).default(0),
       })
       .optional(),
-    legend: z.enum(["top", "right", "bottom", "none"]).default("right").optional(),
+    // LLM 이 boolean(true/false) 으로 보내는 경우가 많아 관대하게 coerce.
+    legend: z
+      .preprocess(
+        (v) => (v === true ? "right" : v === false ? "none" : v),
+        z.enum(["top", "right", "bottom", "none"]).default("right"),
+      )
+      .optional(),
   })
   .describe("표시 포맷");
 
@@ -212,7 +218,8 @@ export const widgetPermissionSchema = z
   .object({
     roles: z
       .array(z.enum(["TENANT_OWNER", "ADMIN", "EXEC", "QC", "CLIENT", "SUPER_ADMIN"]))
-      .describe("이 위젯을 볼 수 있는 역할"),
+      .optional()
+      .describe("이 위젯을 볼 수 있는 역할 (생략 시 제한 없음)"),
     rowLevel: z
       .enum(["none", "ownClientOnly"])
       .default("none")
