@@ -740,10 +740,21 @@ function buildClientFormHTML(client) {
         <div class="form-group">
           <label>결제방식</label>
           <select id="cf-payment">
-            <option value="당월말카드" ${c.paymentType === '당월말카드' ? 'selected' : ''}>당월말카드</option>
-            <option value="사용량카드" ${c.paymentType === '사용량카드' ? 'selected' : ''}>사용량카드</option>
-            <option value="계좌이체" ${c.paymentType === '계좌이체' ? 'selected' : ''}>계좌이체</option>
-            <option value="3개월후결제" ${c.paymentType === '3개월후결제' ? 'selected' : ''}>3개월후결제</option>
+            ${(() => {
+              const opts = [
+                '', // 선택안함
+                // 2026-06: 경영지원팀 엑셀 기반 14종
+                '당월말(카드결제)','당월말(계좌입금)',
+                '익월말(카드결제)','익월말(계좌입금)','익월초(카드결제)',
+                '익월말사용량(카드결제)',
+                '사용량(카드결제)','사용량(계좌입금)',
+                '3개월단위(계좌입금)','총미수금30%(카드)',
+                // 기존 옵션 호환
+                '당월말카드','사용량카드','계좌이체','3개월후결제',
+              ];
+              const sel = c.paymentType || '';
+              return opts.map(o => `<option value="${o}" ${sel === o ? 'selected' : ''}>${o || '— 선택 —'}</option>`).join('');
+            })()}
           </select>
         </div>
         <div class="form-group">
