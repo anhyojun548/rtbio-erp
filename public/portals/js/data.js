@@ -292,17 +292,34 @@ const SHIP_STAGES = [
   { id:'done', name:'출고완료', icon:'✅', color:'#2E7D32' },
 ];
 
+// 2026-06 fix: KST 기준 날짜 (이전엔 toISOString() 의 UTC 기준이라 KST 자정~오전 9시
+// 사이에 어제 날짜로 잡혔고, mock ORDERS 의 date 가 2026-04-11 로 박혀 있어 "오늘 확정/
+// 오늘 출고" 카운터가 항상 0이었음)
+function getKstDateString(offsetDays) {
+  const todayKst = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  if (!offsetDays) return todayKst;
+  const [y, m, d] = todayKst.split('-').map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
+  base.setUTCDate(base.getUTCDate() + offsetDays);
+  return `${base.getUTCFullYear()}-${String(base.getUTCMonth()+1).padStart(2,'0')}-${String(base.getUTCDate()).padStart(2,'0')}`;
+}
+const _TODAY = getKstDateString(0);
+const _D_MINUS_1 = getKstDateString(-1);
+const _D_MINUS_2 = getKstDateString(-2);
+const _D_MINUS_3 = getKstDateString(-3);
+
 // ── 샘플 발주 데이터 (12건) ──
+// 날짜는 항상 "오늘 기준" 으로 살아 움직임 — ID 의 0411 등은 식별자라 그대로 유지.
 const ORDERS = [
   // 접수 (오늘, 아직 미확정) — 3건
-  { id:'ORD-0411-001', clientId:'C001', date:'2026-04-11', time:'09:32', status:'접수',
+  { id:'ORD-0411-001', clientId:'C001', date:_TODAY, time:'09:32', status:'접수',
     stage:null, assigneeId:null, shippingType:'택배', altAddress:null,
     items:[
       { productId:'P001', size:'M', qty:10, unitPrice:20900 },
       { productId:'P008', size:'M', qty:20, unitPrice:18050 },
     ]
   },
-  { id:'ORD-0411-002', clientId:'C002', date:'2026-04-11', time:'10:15', status:'접수',
+  { id:'ORD-0411-002', clientId:'C002', date:_TODAY, time:'10:15', status:'접수',
     stage:null, assigneeId:null, shippingType:'택배', altAddress:'분당 서울대병원 정형외과 3층',
     items:[
       { productId:'P004', size:'L', qty:5, unitPrice:24500 },
@@ -310,7 +327,7 @@ const ORDERS = [
       { productId:'P022', size:'S', qty:30, unitPrice:11640 },
     ]
   },
-  { id:'ORD-0411-003', clientId:'C005', date:'2026-04-11', time:'11:45', status:'접수',
+  { id:'ORD-0411-003', clientId:'C005', date:_TODAY, time:'11:45', status:'접수',
     stage:null, assigneeId:null, shippingType:'방문수령', altAddress:null,
     items:[
       { productId:'P015', size:'L', qty:15, unitPrice:19400 },
@@ -318,14 +335,14 @@ const ORDERS = [
   },
 
   // 확정 (오늘, 당일출고 확정됨) — 3건
-  { id:'ORD-0411-004', clientId:'C003', date:'2026-04-11', time:'08:10', status:'확정',
+  { id:'ORD-0411-004', clientId:'C003', date:_TODAY, time:'08:10', status:'확정',
     stage:'waiting', assigneeId:'S001', shippingType:'택배', altAddress:null,
     items:[
       { productId:'P002', size:'L', qty:8, unitPrice:23250 },
       { productId:'P011', size:'M', qty:5, unitPrice:24440 },
     ]
   },
-  { id:'ORD-0411-005', clientId:'C004', date:'2026-04-11', time:'08:45', status:'확정',
+  { id:'ORD-0411-005', clientId:'C004', date:_TODAY, time:'08:45', status:'확정',
     stage:'barcode', assigneeId:'S002', shippingType:'택배',
     altAddress:'세종시 조치원읍 세종로 12 세종병원 물리치료실',
     items:[
@@ -333,7 +350,7 @@ const ORDERS = [
       { productId:'P003', size:'M', qty:5, unitPrice:35200 },
     ]
   },
-  { id:'ORD-0411-006', clientId:'C001', date:'2026-04-11', time:'09:00', status:'확정',
+  { id:'ORD-0411-006', clientId:'C001', date:_TODAY, time:'09:00', status:'확정',
     stage:'setting', assigneeId:'S003', shippingType:'택배', altAddress:null,
     items:[
       { productId:'P019', size:'L', qty:3, unitPrice:63050 },
@@ -342,20 +359,20 @@ const ORDERS = [
   },
 
   // 출고중 — 3건
-  { id:'ORD-0411-007', clientId:'C002', date:'2026-04-11', time:'07:50', status:'출고중',
+  { id:'ORD-0411-007', clientId:'C002', date:_TODAY, time:'07:50', status:'출고중',
     stage:'packing', assigneeId:'S004', shippingType:'택배', altAddress:null,
     items:[
       { productId:'P005', size:'M', qty:6, unitPrice:28800 },
       { productId:'P010', size:'L', qty:10, unitPrice:16560 },
     ]
   },
-  { id:'ORD-0411-008', clientId:'C003', date:'2026-04-11', time:'07:30', status:'출고중',
+  { id:'ORD-0411-008', clientId:'C003', date:_TODAY, time:'07:30', status:'출고중',
     stage:'invoice', assigneeId:'S005', shippingType:'택배', altAddress:null,
     items:[
       { productId:'P023', size:'M', qty:40, unitPrice:14000 },
     ]
   },
-  { id:'ORD-0410-009', clientId:'C005', date:'2026-04-10', time:'14:20', status:'출고중',
+  { id:'ORD-0410-009', clientId:'C005', date:_D_MINUS_1, time:'14:20', status:'출고중',
     stage:'done', assigneeId:'S006', shippingType:'퀵', altAddress:null,
     items:[
       { productId:'P006', size:'Free', qty:3, unitPrice:43650 },
@@ -363,20 +380,20 @@ const ORDERS = [
   },
 
   // 완료 (이전 날짜) — 3건
-  { id:'ORD-0410-010', clientId:'C001', date:'2026-04-10', time:'09:15', status:'완료',
+  { id:'ORD-0410-010', clientId:'C001', date:_D_MINUS_1, time:'09:15', status:'완료',
     stage:'done', assigneeId:'S001', shippingType:'택배', altAddress:null, trackingNo:'CJ123456789012',
     items:[
       { productId:'P001', size:'M', qty:15, unitPrice:20900 },
       { productId:'P015', size:'S', qty:10, unitPrice:19400 },
     ]
   },
-  { id:'ORD-0409-011', clientId:'C004', date:'2026-04-09', time:'10:00', status:'완료',
+  { id:'ORD-0409-011', clientId:'C004', date:_D_MINUS_2, time:'10:00', status:'완료',
     stage:'done', assigneeId:'S002', shippingType:'택배', altAddress:null, trackingNo:'CJ987654321098',
     items:[
       { productId:'P002', size:'L', qty:5, unitPrice:22000 },
     ]
   },
-  { id:'ORD-0408-012', clientId:'C002', date:'2026-04-08', time:'11:30', status:'완료',
+  { id:'ORD-0408-012', clientId:'C002', date:_D_MINUS_3, time:'11:30', status:'완료',
     stage:'done', assigneeId:'S003', shippingType:'택배', altAddress:null, trackingNo:'HJ112233445566',
     items:[
       { productId:'P027', size:'M', qty:20, unitPrice:15520 },
@@ -420,7 +437,8 @@ function getStaffName(staffId) {
 
 // ── 오늘 통계 (대시보드용) ──
 // 2026-05 동적화 — 칸반 "오늘" 필터, 대시보드 today stats 가 실 데이터 기준 동작하도록.
-const TODAY = new Date().toISOString().slice(0, 10);
+// 2026-06: TODAY 는 KST 기준으로 ORDERS 정의 전(_TODAY)에서 계산 — 여기선 별칭만 노출.
+const TODAY = _TODAY;
 const todayOrders = ORDERS.filter(o => o.date === TODAY);
 const todayRevenue = todayOrders.reduce((sum, o) => sum + calcOrderTotal(o), 0);
 const pendingOrders = ORDERS.filter(o => o.status === '접수').length;

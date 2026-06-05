@@ -673,7 +673,7 @@
  <div class="main-header">
  <div>
  <div class="main-title">발주확정</div>
- <div class="main-subtitle">2026.04.11 (금) &middot; 접수된 발주를 확인하고 확정합니다</div>
+ <div class="main-subtitle" id="confirm-header-date">&nbsp;&middot; 접수된 발주를 확인하고 확정합니다</div>
  </div>
  </div>
 
@@ -1382,6 +1382,15 @@ function getOrderItemsOneLine(order) {
 
 function renderConfirmPage() {
  renderTimeBar('confirm-time-bar');
+
+ // 2026-06 fix: 헤더 서브타이틀 날짜 KST 실시간화 (이전엔 "2026.04.11 (금)" 하드코딩)
+ const headerDateEl = document.getElementById('confirm-header-date');
+ if (headerDateEl) {
+   const kst = new Date(TODAY + 'T00:00:00+09:00');
+   const dow = ['일','월','화','수','목','금','토'][kst.getDay()];
+   const y = kst.getFullYear(), m = String(kst.getMonth()+1).padStart(2,'0'), d = String(kst.getDate()).padStart(2,'0');
+   headerDateEl.innerHTML = `${y}.${m}.${d} (${dow}) &middot; 접수된 발주를 확인하고 확정합니다`;
+ }
 
  const pending = ORDERS.filter(o => o.status === '접수');
  const confirmedToday = ORDERS.filter(o => o.date === TODAY && (o.status === '확정' || o.status === '출고중'));
