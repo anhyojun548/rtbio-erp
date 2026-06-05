@@ -244,12 +244,17 @@
         if (typeof showToast === 'function') showToast('제목과 본문은 필수입니다', 'error');
         return;
       }
+      // 2026-06 fix: 백엔드 필드명에 정확히 맞춤
+      //   - createdBy:_authorTeam → authorTeam (POST route 가 최상위에서 추출)
+      //   - targetIds → targetClientIds (createNoticeSchema)
+      //   이전엔 둘 다 불일치 → 모든 발송이 'authorTeam 필수' 400 에러로 실패하고
+      //   거래처 포털엔 아무 공지도 전달되지 않았음.
       const noticePayload = {
         title, body,
         target: document.getElementById('notice-new-target').value,
-        targetIds: Array.from(document.getElementById('notice-new-targetIds')?.selectedOptions || []).map(function(o) { return o.value; }),
+        targetClientIds: Array.from(document.getElementById('notice-new-targetIds')?.selectedOptions || []).map(function(o) { return o.value; }),
         priority: document.getElementById('notice-new-priority').value,
-        createdBy: _authorTeam,
+        authorTeam: _authorTeam,
         expiresAt: document.getElementById('notice-new-expires').value || null,
         pinned: document.getElementById('notice-new-pinned').checked,
       };
