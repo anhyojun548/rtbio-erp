@@ -3878,6 +3878,7 @@ let _selectedReceivableClientId = null;
 
 // QA fix(2026-06-02): 미수금 = ClosingLedger.balance. Payment(RECEIVABLES) 가 아님.
 // 거래처별로 balance>0 인 모든 마감월을 합산 (대시보드 위젯 total_ar 와 동일 출처 → 수치 정합).
+// 2026-06: 라벨 의미 명확화 — 누적 매출/입금 + 가장 오래된 미수 마감월 기반 연체일수 추가
 function _clientReceivableAgg() {
  const leds = (typeof LEDGERS !== 'undefined' && LEDGERS) ? LEDGERS : (window.LEDGERS || []);
  const agg = {};
@@ -3887,12 +3888,30 @@ function _clientReceivableAgg() {
   let a = agg[l.clientId];
   if (!a) {
    const c = (typeof CLIENTS !== 'undefined') ? CLIENTS.find(x => x.id === l.clientId) : null;
-   a = agg[l.clientId] = { cid: l.clientId, name: c ? c.name : l.clientId, type: c ? (c.type || '-') : '-', sales: 0, paid: 0, carry: 0, bal: 0, month: '' };
+   a = agg[l.clientId] = {
+     cid: l.clientId, name: c ? c.name : l.clientId, type: c ? (c.type || '-') : '-',
+     sales: 0, paid: 0, carry: 0, bal: 0,
+     latestMonth: '',   // 가장 최신 미수 마감월
+     oldestMonth: '',   // 가장 오래된 미수 마감월 (연체일수 계산 기준)
+   };
   }
   a.bal += b; a.sales += Number(l.monthlySales) || 0; a.paid += Number(l.received) || 0;
   if ((Number(l.carryOver) || 0) > 0) a.carry += (Number(l.carryOver) || 0);
-  if (String(l.closingMonth) > a.month) a.month = l.closingMonth;
+  const cm = String(l.closingMonth);
+  if (cm > a.latestMonth) a.latestMonth = cm;
+  if (!a.oldestMonth || cm < a.oldestMonth) a.oldestMonth = cm;
  }
+ // 연체일수 계산 (KST 기준) — 가장 오래된 미수 마감월의 마지막 날부터 오늘까지
+ const todayKst = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+ const [ty, tm, td] = todayKst.split('-').map(Number);
+ const todayUtc = Date.UTC(ty, tm - 1, td);
+ Object.values(agg).forEach(a => {
+   if (!a.oldestMonth) { a.overdueDays = 0; return; }
+   const [y, m] = a.oldestMonth.split('-').map(Number);
+   // 해당 월의 마지막 날 — 다음달 1일에서 1일 뺀 날짜
+   const monthEndUtc = Date.UTC(y, m, 0); // m 은 1-based 라 m=4 → Date.UTC(2026, 4, 0) = 4월 30일
+   a.overdueDays = Math.max(0, Math.floor((todayUtc - monthEndUtc) / (24 * 3600 * 1000)));
+ });
  return agg;
 }
 function renderReceivables() {
@@ -3938,11 +3957,14 @@ function renderReceivables() {
  }
  rows.sort((a, b) => {
  if (sortBy === 'amount-desc') return b.bal - a.bal;
- if (sortBy === 'overdue-desc') return b.carry - a.carry;
+ // 2026-06: '연체 오래된순' = overdueDays 큰 순 (이전엔 carry 기준이라 의미 불일치)
+ if (sortBy === 'overdue-desc') return (b.overdueDays || 0) - (a.overdueDays || 0);
  return a.name.localeCompare(b.name, 'ko');
  });
 
  // 2026-06: 공통 List 패널 (검색 + 페이지네이션 + CSV)
+ //   라벨 정리: "최근 매출/입금" → "누적 매출/입금" (balance>0 인 마감월 모두 합산)
+ //              "경과" 한 컬럼 → "마감월" + "이월" + "연체일수" 3개로 분리
  renderListPanel({
    hostId: 'receivables-host',
    data: rows,
@@ -3953,14 +3975,40 @@ function renderReceivables() {
    columns: [
      { label: '거래처', render: x => `<strong>${x.name}</strong>`, csv: x => x.name },
      { label: '유형',   render: x => x.type || '-' },
-     { label: '최근 매출', align: 'right', render: x => formatCurrency(x.sales), csv: x => x.sales },
-     { label: '최근 입금', align: 'right', render: x => `<span style="color:var(--success);">${formatCurrency(x.paid)}</span>`, csv: x => x.paid },
-     { label: '미수금',   align: 'right', render: x => `<b style="color:var(--danger);">${formatCurrency(x.bal)}</b>`, csv: x => x.bal },
-     { label: '경과',     align: 'right',
-       render: x => `${x.month || '-'}${x.carry > 0 ? ' · 이월 ' + formatCurrency(x.carry) : ''}`,
-       csv: x => (x.month || '') + (x.carry > 0 ? ' / 이월:' + x.carry : '') },
-     { label: '상태', render: x => x.carry > 0 ? '<span class="aging-danger">연체</span>' : '<span class="aging-normal">정상</span>', csv: x => x.carry > 0 ? '연체' : '정상' },
-     { label: '분석', align: 'center', render: x => `<button class="btn btn-outline btn-sm" onclick="selectReceivableClient('${x.cid}')">분석</button>`, csv: () => '' },
+     { label: '누적 매출', align: 'right',
+       render: x => `<span title="미수가 남은 모든 마감월 매출 합계">${formatCurrency(x.sales)}</span>`,
+       csv: x => x.sales },
+     { label: '누적 입금', align: 'right',
+       render: x => `<span style="color:var(--success);" title="미수가 남은 모든 마감월 입금 합계">${formatCurrency(x.paid)}</span>`,
+       csv: x => x.paid },
+     { label: '미수금', align: 'right',
+       render: x => `<b style="color:var(--danger);">${formatCurrency(x.bal)}</b>`,
+       csv: x => x.bal },
+     { label: '마감월', align: 'center',
+       render: x => x.latestMonth || x.month || '-',
+       csv: x => x.latestMonth || x.month || '' },
+     { label: '이월', align: 'right',
+       render: x => x.carry > 0 ? `<span style="color:var(--warning);">${formatCurrency(x.carry)}</span>` : '-',
+       csv: x => x.carry || 0 },
+     { label: '연체일수', align: 'right',
+       render: x => {
+         const d = x.overdueDays || 0;
+         if (d <= 0) return '<span style="color:var(--text-muted);">-</span>';
+         const color = d > 60 ? 'var(--danger)' : d > 30 ? 'var(--warning)' : 'var(--text)';
+         return `<span style="color:${color};font-weight:600;" title="가장 오래된 미수 마감월(${x.oldestMonth||'-'}) 부터 오늘까지">${d}일</span>`;
+       },
+       csv: x => x.overdueDays || 0 },
+     { label: '상태', align: 'center',
+       render: x => {
+         const d = x.overdueDays || 0;
+         if (d > 60)  return '<span class="aging-danger">연체</span>';
+         if (d > 30)  return '<span class="aging-warning">주의</span>';
+         return '<span class="aging-normal">정상</span>';
+       },
+       csv: x => { const d = x.overdueDays || 0; return d > 60 ? '연체' : d > 30 ? '주의' : '정상'; } },
+     { label: '분석', align: 'center',
+       render: x => `<button class="btn btn-outline btn-sm" onclick="selectReceivableClient('${x.cid}')">분석</button>`,
+       csv: () => '' },
    ],
  });
 
