@@ -829,24 +829,32 @@ function showEditClientForm(clientId) {
 async function _submitClientForm(clientId, isEdit) {
   const btn = document.getElementById('cf-submit-btn');
 
-  // 폼 값 수집
+  // 2026-06 fix: 폼 값 → DB 필드명으로 변환해서 전송
+  //   manager       → representative   (DB 컬럼)
+  //   paymentType   → paymentTerms     (DB 컬럼; closingPeriod 는 DB 스키마에 없어서 폼에 입력 시 합쳐 저장)
+  //   invoiceType   → 현재 DB 스키마에 없음. 일단 미전송 (TODO: schema 확장)
+  //   discounts.*   → 클라이언트 별도 upsert (아래 ClientDiscount API)
+  const cfManager       = document.getElementById('cf-manager')?.value.trim() || '';
+  const cfPaymentType   = document.getElementById('cf-payment')?.value || '';
+  const cfClosingPeriod = document.getElementById('cf-closing')?.value || '';
+  // paymentTerms: "당월말(카드결제) · 1일~말일" 처럼 합성 (closingPeriod 가 있을 때만)
+  const paymentTerms = cfClosingPeriod ? `${cfPaymentType} · ${cfClosingPeriod}` : cfPaymentType;
   const payload = {
-    name:          document.getElementById('cf-name')?.value.trim(),
-    type:          document.getElementById('cf-type')?.value,
-    manager:       document.getElementById('cf-manager')?.value.trim(),
-    phone:         document.getElementById('cf-phone')?.value.trim(),
-    email:         document.getElementById('cf-email')?.value.trim(),
-    address:       document.getElementById('cf-address')?.value.trim(),
-    paymentType:   document.getElementById('cf-payment')?.value,
-    closingPeriod: document.getElementById('cf-closing')?.value,
-    invoiceType:   document.getElementById('cf-invoice-type')?.value,
-    discounts: {
-      knee:   parseFloat(document.getElementById('cf-disc-knee')?.value)   || 0,
-      upper:  parseFloat(document.getElementById('cf-disc-upper')?.value)  || 0,
-      lower:  parseFloat(document.getElementById('cf-disc-lower')?.value)  || 0,
-      sprint: parseFloat(document.getElementById('cf-disc-sprint')?.value) || 0,
-    },
-    salesRepId: document.getElementById('cf-sales-rep')?.value || null,
+    name:           document.getElementById('cf-name')?.value.trim(),
+    type:           document.getElementById('cf-type')?.value,
+    representative: cfManager || undefined,
+    phone:          document.getElementById('cf-phone')?.value.trim(),
+    email:          document.getElementById('cf-email')?.value.trim(),
+    address:        document.getElementById('cf-address')?.value.trim(),
+    paymentTerms:   paymentTerms || undefined,
+    salesRepId:     document.getElementById('cf-sales-rep')?.value || null,
+  };
+  // 카테고리 할인율은 별도 API 로 (createClient/updateClient 스키마에 discounts 없음)
+  const _discounts = {
+    knee:   parseFloat(document.getElementById('cf-disc-knee')?.value)   || 0,
+    upper:  parseFloat(document.getElementById('cf-disc-upper')?.value)  || 0,
+    lower:  parseFloat(document.getElementById('cf-disc-lower')?.value)  || 0,
+    sprint: parseFloat(document.getElementById('cf-disc-sprint')?.value) || 0,
   };
 
   if (!payload.name) {
@@ -874,13 +882,7 @@ async function _submitClientForm(clientId, isEdit) {
     // 카테고리별 할인율 (openDiscountPopup 결과) 별도 upsert.
     // discountRate 0~1 미만, 0% 는 row 무의미하므로 스킵.
     if (savedId) {
-      const catDiscounts = {
-        knee:   payload.discounts.knee,
-        upper:  payload.discounts.upper,
-        lower:  payload.discounts.lower,
-        sprint: payload.discounts.sprint,
-      };
-      for (const [cat, pct] of Object.entries(catDiscounts)) {
+      for (const [cat, pct] of Object.entries(_discounts)) {
         const rate = (pct || 0) / 100;
         if (rate <= 0 || rate >= 1) continue;
         try {

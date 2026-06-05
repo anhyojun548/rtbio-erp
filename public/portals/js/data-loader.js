@@ -76,12 +76,21 @@
       ? Object.assign({}, c, { type: mapped, _typeEnum: c.type })
       : Object.assign({}, c);
     // prototype 호환 derived fields (API 응답에 없는 필드 fallback)
-    // prototype 의 client card / getClientById 등이 참조하는 필드들
+    // 2026-06 fix: prototype 의 client-mgmt.js UI 는 manager / paymentType / salesRep 키를 보지만
+    //   백엔드 응답은 representative / paymentTerms / salesRepId (+ User join) 키 → 양방향 별칭.
     base.manager        = base.manager        || base.representative || base.contactName || '-';
-    base.salesRep       = base.salesRep       || base.salesRepName   || '-';
-    base.paymentMethod  = base.paymentMethod  || base.paymentTerms   || '계좌이체';
-    base.closingPeriod  = base.closingPeriod  || '1월~말일';
+    base.paymentMethod  = base.paymentMethod  || base.paymentTerms   || '';
+    base.paymentType    = base.paymentType    || base.paymentTerms   || '';
+    // 영업담당자: salesRepName(join) / SALES_REPS 룩업 / fallback '-'
+    var repName = base.salesRepName;
+    if (!repName && base.salesRepId && Array.isArray(window.SALES_REPS)) {
+      var rep = window.SALES_REPS.find(function (r) { return r.id === base.salesRepId; });
+      if (rep) repName = rep.name;
+    }
+    base.salesRep       = base.salesRep       || repName || '-';
+    base.closingPeriod  = base.closingPeriod  || '';
     base.priceListName  = base.priceListName  || 'RTBIO';
+    base.invoiceType    = base.invoiceType    || 'RTBIO';
     base.discounts      = base.discounts      || {};
     base.fixedPrices    = base.fixedPrices    || [];
     return base;
@@ -364,7 +373,7 @@
         return;
       }
 
-      // 2-B) 관리자 분기 — 기존 15-endpoint + KanbanColumn 병렬 호출
+      // 2-B) 관리자 분기 — 기존 15-endpoint + KanbanColumn + EXEC 영업담당자 병렬 호출
       const endpoints = [
         '/api/clients',
         '/api/products',
@@ -381,6 +390,7 @@
         '/api/conferences',
         '/api/expiry',
         '/api/shipments/columns',  // ⭐ ENH-2: KanbanColumn 6단계 (DB cuid 매핑용)
+        '/api/users?role=EXEC&active=ACTIVE', // 2026-06: 영업담당자 (SALES_REPS 실데이터)
       ];
 
       const responses = await Promise.all(endpoints.map(url => fetch(url)));
@@ -405,6 +415,7 @@
         ledger, notices, udi, settings, manuals, procurement,
         txns, conferences, expiry,
         kanbanCols,  // ⭐ ENH-2
+        execUsers,   // 2026-06: 영업담당자
       ] = await Promise.all(responses.map(_safeJson));
 
       // 권한 거부 로그 (디버그용)
@@ -485,9 +496,20 @@
       const _normExpiry   = expiry    ? (Array.isArray(expiry)   ? expiry   : (expiry.data   ?? [])) : [];
       // ⭐ ENH-2: KanbanColumn 정렬 (sortOrder asc) — prototype moveToNextStage 가 인덱스로 참조
       const _normKanban   = kanbanCols ? (Array.isArray(kanbanCols) ? kanbanCols : []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0)) : [];
+      // 2026-06: EXEC 사용자 → SALES_REPS (id/name 만, prototype UI 가 참조)
+      const _normSalesReps = execUsers
+        ? (Array.isArray(execUsers) ? execUsers : (execUsers.data ?? []))
+            .map(u => ({ id: u.id, name: u.name || u.email }))
+        : [];
+      // CLIENT.salesRepId → repName 룩업 보조용 (normalizeClient 가 SALES_REPS 보고 채움 → 1차 normalize 이미 끝났을 수 있어 재정규화 필요)
+      window.SALES_REPS = _normSalesReps;
+
+      // 1.5) clients 재정규화 — SALES_REPS 가 준비된 후 salesRep 이름이 채워지도록
+      const _normClientsWithRep = (clients ? (Array.isArray(clients) ? clients : (clients.data ?? [])) : [])
+        .map(normalizeClient);
 
       // 2) window.* 노출
-      window.CLIENTS              = _normClients;
+      window.CLIENTS              = _normClientsWithRep.length ? _normClientsWithRep : _normClients;
       window.PRODUCTS             = _normProducts;
       window.ORDERS               = _normOrders;
       window.INVOICE_HISTORY      = _normInvoices;
@@ -512,7 +534,8 @@
         arr.length = 0;
         for (let i = 0; i < next.length; i++) arr.push(next[i]);
       };
-      try { if (typeof CLIENTS              !== 'undefined') _replaceAdmin(CLIENTS,              _normClients);  } catch (e) {}
+      try { if (typeof CLIENTS              !== 'undefined') _replaceAdmin(CLIENTS,              window.CLIENTS);  } catch (e) {}
+      try { if (typeof SALES_REPS           !== 'undefined') _replaceAdmin(SALES_REPS,           _normSalesReps);  } catch (e) {}
       try { if (typeof PRODUCTS             !== 'undefined') _replaceAdmin(PRODUCTS,             _normProducts); } catch (e) {}
       try { if (typeof ORDERS               !== 'undefined') _replaceAdmin(ORDERS,               _normOrders);   } catch (e) {}
       try { if (typeof INVOICE_HISTORY      !== 'undefined') _replaceAdmin(INVOICE_HISTORY,      _normInvoices); } catch (e) {}
