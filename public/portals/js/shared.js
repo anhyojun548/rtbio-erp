@@ -409,7 +409,12 @@ function showToast(message, type = 'success') {
 }
 
 // ── Modal ──
-function showModal(title, bodyHTML, onConfirm) {
+// 2026-06: 4번째 인자 opts 추가(하위호환) — { confirmLabel, confirmClass }
+//   미지정 시 기존과 동일('확인'/'btn-primary'). 편집='저장', 삭제='삭제'(btn-danger) 구분용.
+function showModal(title, bodyHTML, onConfirm, opts) {
+  opts = opts || {};
+  const confirmLabel = opts.confirmLabel || (onConfirm ? '확인' : '닫기');
+  const confirmClass = opts.confirmClass || 'btn-primary';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -418,7 +423,7 @@ function showModal(title, bodyHTML, onConfirm) {
       <div class="modal-body">${bodyHTML}</div>
       <div class="modal-footer">
         ${onConfirm ? '<button class="btn btn-outline modal-cancel">취소</button>' : ''}
-        <button class="btn btn-primary modal-confirm">${onConfirm ? '확인' : '닫기'}</button>
+        <button class="btn ${confirmClass} modal-confirm">${confirmLabel}</button>
       </div>
     </div>
   `;

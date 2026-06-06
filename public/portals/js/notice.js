@@ -173,6 +173,7 @@
             <div style="display:flex;gap:4px;">
               <button class="btn btn-outline btn-sm" onclick="NoticeModule.preview('${n.id}')">미리보기</button>
               <button class="btn btn-outline btn-sm" onclick="NoticeModule.edit('${n.id}')">편집</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="NoticeModule.confirmDelete('${n.id}')">삭제</button>
             </div>
           </div>
           <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;">${escapeHtml(n.body)}</div>
@@ -445,7 +446,9 @@
     }
   }
 
-  // ── 편집 / 삭제 ──────────────────────────────────────────────────
+  // ── 편집 (실제 수정 폼) ───────────────────────────────────────────
+  // 2026-06: 이전엔 "편집" 버튼이 삭제 확인 모달이었음(확인 누르면 삭제). 분리함.
+  //   수정 가능: 제목/본문/긴급도/상단고정/만료일 (target·대상거래처는 백엔드 불변)
   function edit(noticeId) {
     var n = (global.NOTICES || []).find(function(x) { return x.id === noticeId; });
     if (!n) return;
@@ -453,13 +456,94 @@
       if (typeof showToast === 'function') showToast('공지 편집은 모달 기능이 필요합니다', 'info');
       return;
     }
-    showModal('공지 관리 — ' + escapeHtml(n.title), `
-      <div style="font-size:14px; line-height:1.6; margin-bottom:16px;">
-        <strong>${escapeHtml(n.title)}</strong><br>
-        <span style="color:var(--text-secondary); font-size:12px;">${n.createdBy} · ${n.createdAt}</span>
+    var am = getAuthorMeta(n.createdBy);
+    var expVal = n.expiresAt ? String(n.expiresAt).slice(0, 10) : '';
+    showModal('공지 편집', `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>제목 *</label>
+          <input type="text" class="form-input" id="notice-edit-title" value="${escapeHtml(n.title)}">
+        </div>
+        <div class="form-group">
+          <label>긴급도</label>
+          <select class="form-select" id="notice-edit-priority">
+            <option value="NORMAL" ${n.priority !== 'HIGH' ? 'selected' : ''}>일반</option>
+            <option value="HIGH" ${n.priority === 'HIGH' ? 'selected' : ''}>긴급</option>
+          </select>
+        </div>
       </div>
-      <div style="background:var(--bg-soft); border-radius:6px; padding:12px; font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
-        ${escapeHtml(n.body)}
+      <div class="form-group">
+        <label>본문 *</label>
+        <textarea class="form-input" id="notice-edit-body" rows="5">${escapeHtml(n.body)}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;">
+        <div class="form-group">
+          <label>만료일 (선택)</label>
+          <input type="date" class="form-input" id="notice-edit-expires" value="${expVal}">
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="notice-edit-pinned" ${n.pinned ? 'checked' : ''}> 상단 고정 (📌)</label>
+        </div>
+      </div>
+      <div class="form-group" style="background:var(--bg);padding:8px 12px;border-radius:6px;font-size:12px;color:var(--text-muted);">
+        ${am.icon} ${escapeHtml(n.createdBy)} · ${escapeHtml(String(n.createdAt || ''))} · 대상: ${escapeHtml(targetLabel(n))}
+        <span style="display:block;margin-top:2px;">발송 대상은 수정할 수 없습니다 (변경 필요 시 삭제 후 재발송).</span>
+      </div>
+    `, function() {
+      var title = document.getElementById('notice-edit-title').value.trim();
+      var body  = document.getElementById('notice-edit-body').value.trim();
+      if (!title || !body) {
+        if (typeof showToast === 'function') showToast('제목과 본문은 필수입니다', 'error');
+        return;
+      }
+      var patch = {
+        title: title,
+        body: body,
+        priority: document.getElementById('notice-edit-priority').value,
+        pinned: document.getElementById('notice-edit-pinned').checked,
+        expiresAt: document.getElementById('notice-edit-expires').value || null,
+      };
+      _applyEdit(noticeId, patch);
+    }, { confirmLabel: '저장', confirmClass: 'btn-primary' });
+  }
+
+  // 수정 반영 — PATCH /api/notices/:id + 인메모리 갱신
+  function _applyEdit(noticeId, patch) {
+    function _local() {
+      var arr = global.NOTICES || [];
+      var idx = arr.findIndex(function(x) { return x.id === noticeId; });
+      if (idx !== -1) arr[idx] = Object.assign({}, arr[idx], patch);
+      render();
+    }
+    if (global.apiClient && typeof global.apiClient.patch === 'function') {
+      global.apiClient.patch('/api/notices/' + noticeId, patch)
+        .then(function() {
+          _local();
+          if (typeof showToast === 'function') showToast('공지사항이 수정되었습니다', 'success');
+        })
+        .catch(function(err) {
+          if (typeof showToast === 'function') showToast(err.message || '수정 실패', 'error');
+        });
+    } else {
+      _local();
+      if (typeof showToast === 'function') showToast('공지사항이 수정되었습니다', 'success');
+    }
+  }
+
+  // ── 삭제 (편집과 분리된 별도 액션) ────────────────────────────────
+  function confirmDelete(noticeId) {
+    var n = (global.NOTICES || []).find(function(x) { return x.id === noticeId; });
+    if (!n) return;
+    if (typeof showModal !== 'function') {
+      if (typeof confirm === 'function' && confirm('이 공지를 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.')) {
+        _deleteNotice(noticeId);
+      }
+      return;
+    }
+    showModal('공지 삭제', `
+      <div style="font-size:14px; line-height:1.6; margin-bottom:12px;">
+        <strong>${escapeHtml(n.title)}</strong><br>
+        <span style="color:var(--text-secondary); font-size:12px;">${escapeHtml(String(n.createdBy || ''))} · ${escapeHtml(String(n.createdAt || ''))}</span>
       </div>
       <div style="color:var(--danger); font-size:13px;">
         이 공지를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.
@@ -501,6 +585,7 @@
     compose,
     preview,
     edit,
+    confirmDelete,
     deleteNotice: _deleteNotice,
     toggleSpecific,
     pageTemplate,
