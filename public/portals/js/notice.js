@@ -49,6 +49,10 @@
   let _authorTeam = '경영지원팀';
   let _hostId = 'notices-grid';
 
+  // 2026-06: "특정 업체" 선택 상태 (compose 모달 열 때마다 초기화)
+  let _specificSelected = new Set(); // 선택된 client id
+  let _specificSearch = '';          // 검색어
+
   // ── 초기화 ────────────────────────────────────────────────────────
   function init(opts) {
     opts = opts || {};
@@ -187,8 +191,9 @@
       console.warn('NoticeModule.compose: showModal()이 정의되지 않음');
       return;
     }
-    const clientOptions = (global.CLIENTS || [])
-      .map(c => `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.type)})</option>`).join('');
+    // 2026-06: 모달 열 때마다 특정-업체 선택 상태 초기화
+    _specificSelected = new Set();
+    _specificSearch = '';
     const am = getAuthorMeta(_authorTeam);
 
     showModal(`공지사항 작성 — ${am.icon} ${_authorTeam}`, `
@@ -225,10 +230,17 @@
         </div>
       </div>
       <div class="form-group" id="notice-specific-wrap" style="display:none;">
-        <label>대상 업체 선택 (다중)</label>
-        <select multiple class="form-select" id="notice-new-targetIds" size="6" style="height:auto;">
-          ${clientOptions}
-        </select>
+        <label>대상 업체 선택</label>
+        <!-- 선택된 업체 칩 영역 -->
+        <div id="notice-specific-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;padding:7px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);margin-bottom:8px;align-items:center;"></div>
+        <!-- 검색 + 일괄 -->
+        <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <input type="text" class="form-input" id="notice-specific-search" placeholder="🔍 업체명/유형 검색..." style="flex:1;min-width:160px;" oninput="NoticeModule._filterSpecific(this.value)">
+          <button type="button" class="btn btn-outline btn-sm" onclick="NoticeModule._specificSelectAll()">검색결과 전체선택</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="NoticeModule._specificClearAll()">전체해제</button>
+        </div>
+        <!-- 체크박스 목록 -->
+        <div id="notice-specific-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;"></div>
       </div>
       <div class="form-group">
         <label><input type="checkbox" id="notice-new-pinned"> 상단 고정 (📌 표시)</label>
@@ -249,10 +261,16 @@
       //   - targetIds → targetClientIds (createNoticeSchema)
       //   이전엔 둘 다 불일치 → 모든 발송이 'authorTeam 필수' 400 에러로 실패하고
       //   거래처 포털엔 아무 공지도 전달되지 않았음.
+      const _target = document.getElementById('notice-new-target').value;
+      // SPECIFIC 일 때 선택 0건이면 발송 막기 (백엔드도 거부하지만 UX 선제 안내)
+      if (_target === 'SPECIFIC' && _specificSelected.size === 0) {
+        if (typeof showToast === 'function') showToast('대상 업체를 1개 이상 선택해주세요', 'error');
+        return;
+      }
       const noticePayload = {
         title, body,
-        target: document.getElementById('notice-new-target').value,
-        targetClientIds: Array.from(document.getElementById('notice-new-targetIds')?.selectedOptions || []).map(function(o) { return o.value; }),
+        target: _target,
+        targetClientIds: Array.from(_specificSelected),  // 체크박스 선택 상태에서 수집
         priority: document.getElementById('notice-new-priority').value,
         authorTeam: _authorTeam,
         expiresAt: document.getElementById('notice-new-expires').value || null,
@@ -317,6 +335,83 @@
     const v   = document.getElementById('notice-new-target').value;
     const el  = document.getElementById('notice-specific-wrap');
     if (el) el.style.display = v === 'SPECIFIC' ? 'block' : 'none';
+    if (v === 'SPECIFIC') _renderSpecificPicker(); // 처음 펼칠 때 목록·칩 채움
+  }
+
+  // ── "특정 업체" 선택 위젯 ──────────────────────────────────────────
+  function _specificClients() {
+    return (global.CLIENTS || []).filter(function (c) { return c && c.id; });
+  }
+  function _specificFiltered() {
+    const q = (_specificSearch || '').trim().toLowerCase();
+    if (!q) return _specificClients();
+    return _specificClients().filter(function (c) {
+      return String(c.name || '').toLowerCase().includes(q)
+          || String(c.type || '').toLowerCase().includes(q)
+          || String(c.code || '').toLowerCase().includes(q);
+    });
+  }
+  function _renderSpecificChips() {
+    const host = document.getElementById('notice-specific-chips');
+    if (!host) return;
+    const sel = _specificClients().filter(function (c) { return _specificSelected.has(c.id); });
+    if (sel.length === 0) {
+      host.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">선택된 업체 없음 — 아래 목록에서 체크하세요</span>';
+      return;
+    }
+    host.innerHTML = sel.map(function (c) {
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-lighter,#E3F2FD);color:var(--primary,#1B3A5C);font-size:12px;font-weight:600;padding:3px 6px 3px 9px;border-radius:12px;">'
+        + escapeHtml(c.name)
+        + '<button type="button" title="제거" onclick="NoticeModule._toggleSpecific(\'' + c.id + '\', false)" '
+        + 'style="border:none;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">&times;</button>'
+        + '</span>';
+    }).join('');
+  }
+  function _renderSpecificList() {
+    const host = document.getElementById('notice-specific-list');
+    if (!host) return;
+    const rows = _specificFiltered();
+    if (rows.length === 0) {
+      host.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">검색 결과가 없습니다.</div>';
+      return;
+    }
+    host.innerHTML = rows.map(function (c) {
+      const checked = _specificSelected.has(c.id) ? 'checked' : '';
+      const typeBadge = c.type
+        ? '<span class="badge" style="font-size:10px;margin-left:auto;">' + escapeHtml(c.type) + '</span>' : '';
+      return '<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;" '
+        + 'onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'
+        + '<input type="checkbox" ' + checked + ' onchange="NoticeModule._toggleSpecific(\'' + c.id + '\', this.checked)">'
+        + '<span>' + escapeHtml(c.name) + '</span>'
+        + typeBadge
+        + '</label>';
+    }).join('');
+  }
+  function _renderSpecificCount() {
+    // 칩 영역이 카운트를 겸하므로 별도 표시는 chips 안 메시지로 충분.
+  }
+  function _renderSpecificPicker() {
+    _renderSpecificChips();
+    _renderSpecificList();
+  }
+  // onchange/onclick 핸들러
+  function _toggleSpecific(id, checked) {
+    if (checked) _specificSelected.add(id);
+    else _specificSelected.delete(id);
+    // 칩과 목록 둘 다 갱신 (칩 X 클릭 시 목록 체크 해제 반영 위해)
+    _renderSpecificPicker();
+  }
+  function _filterSpecific(value) {
+    _specificSearch = value || '';
+    _renderSpecificList(); // 칩은 검색과 무관하므로 목록만 갱신
+  }
+  function _specificSelectAll() {
+    _specificFiltered().forEach(function (c) { _specificSelected.add(c.id); });
+    _renderSpecificPicker();
+  }
+  function _specificClearAll() {
+    _specificSelected = new Set();
+    _renderSpecificPicker();
   }
 
   // ── 미리보기 ──────────────────────────────────────────────────────
@@ -412,6 +507,11 @@
     AUTHOR_META,
     getAuthorMeta,
     getNoticeTargetCount,
+    // 2026-06: "특정 업체" 선택 위젯 핸들러 (인라인 onclick/oninput/onchange 용)
+    _toggleSpecific,
+    _filterSpecific,
+    _specificSelectAll,
+    _specificClearAll,
   };
 
   // 하위 호환 (admin-portal 기존 함수명 그대로 유지)
