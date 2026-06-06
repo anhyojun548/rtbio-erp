@@ -165,6 +165,60 @@
     return base;
   }
 
+  // ── KST 날짜 포맷터 (data-loader 는 shared.js 보다 먼저 로드되므로 자체 구현) ──
+  function _fmtKstDateTime(v) {
+    if (!v) return '';
+    var s = String(v);
+    // 이미 'YYYY-MM-DD HH:MM' 형태(mock)면 그대로
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) return s.slice(0, 16);
+    try {
+      var d = new Date(v);
+      if (isNaN(d.getTime())) return s;
+      var date = d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });        // YYYY-MM-DD
+      var time = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour12: false }).slice(0, 5); // HH:MM
+      return date + ' ' + time;
+    } catch (e) { return s; }
+  }
+  function _fmtKstDate(v) {
+    if (!v) return '';
+    var s = String(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    try {
+      var d = new Date(v);
+      if (isNaN(d.getTime())) return s.slice(0, 10);
+      return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    } catch (e) { return s.slice(0, 10); }
+  }
+
+  // 2026-06: 공지(Notice) 정규화 — DB 응답을 prototype 표시 계약에 맞춤.
+  //  · createdBy 가 cuid(user.id) 로 오던 문제 → createdByTeam(팀명) 으로 치환
+  //    (notice.js render/preview, client-portal 팝업·목록 이 모두 createdBy 를 "팀명"으로 표시)
+  //  · 원본 user.id 는 createdById 로 보존
+  //  · createdAt(ISO) → 'YYYY-MM-DD HH:MM' (KST), expiresAt(ISO) → 'YYYY-MM-DD' (KST)
+  //  · recipients[] → targetIds[] 평탄화 (admin 분기. client bootstrap 은 서버가 이미 처리)
+  function normalizeNotice(n) {
+    if (!n || typeof n !== 'object') return n;
+    var base = Object.assign({}, n);
+    var KNOWN_TEAMS = ['경영지원팀', '영업팀', '품질관리팀', '품질팀', '임원진'];
+    // createdBy 가 이미 팀명이면 유지(mock), 아니면 createdByTeam 사용
+    if (base.createdByTeam) {
+      base.createdById = base.createdBy;     // 원본 user.id 보존
+      base.createdBy = base.createdByTeam;
+    } else if (base.createdBy && KNOWN_TEAMS.indexOf(base.createdBy) === -1) {
+      // createdByTeam 이 없고 createdBy 가 팀명도 아니면(=cuid) 라벨 폴백
+      base.createdById = base.createdBy;
+      base.createdBy = '발신팀';
+    }
+    base.createdAt = _fmtKstDateTime(base.createdAt);
+    if (base.expiresAt) base.expiresAt = _fmtKstDate(base.expiresAt);
+    // targetIds 평탄화 (없을 때만 — client bootstrap 응답엔 이미 존재)
+    if (!Array.isArray(base.targetIds) && Array.isArray(base.recipients)) {
+      base.targetIds = base.recipients.map(function (r) { return r.clientId; });
+    }
+    if (!Array.isArray(base.targetIds)) base.targetIds = [];
+    return base;
+  }
+
   /* ───────────────────────────────────────────
    * Step 1: DOMContentLoaded 인터셉트 설정
    * ─────────────────────────────────────────── */
@@ -376,7 +430,7 @@
         // (합계 reduce 시 `+` 문자열 연결로 NaN→₩0 되는 버그 클래스 근본 차단)
         const normPayments = (bs.payments || []).map(p => ({ ...p, amount: Number(p.amount) || 0 }));
         const normLedgers  = bs.ledgers  || [];
-        const normNotices  = bs.notices  || [];
+        const normNotices  = (bs.notices || []).map(normalizeNotice);
 
         // window.* 노출 (외부 코드/디버깅용)
         window.CLIENTS = normClient;
@@ -539,7 +593,7 @@
       const _normInvoices = invoices  ? (Array.isArray(invoices) ? invoices : (invoices.data ?? [])) : [];
       const _normPayments = (payments  ? (Array.isArray(payments) ? payments : (payments.data ?? [])) : []).map(p => ({ ...p, amount: Number(p.amount) || 0 }));
       const _normLedger   = ledger    ? (Array.isArray(ledger)   ? ledger   : (ledger.data   ?? [])) : [];
-      const _normNotices  = notices   ? (Array.isArray(notices)  ? notices  : (notices.data  ?? [])) : [];
+      const _normNotices  = (notices   ? (Array.isArray(notices)  ? notices  : (notices.data  ?? [])) : []).map(normalizeNotice);
       const _normUdi      = udi       ? (Array.isArray(udi)      ? udi      : (udi.data      ?? [])) : [];
       const _normSettings = settings  ? (Array.isArray(settings) ? settings : (settings.data ?? [])) : [];
       const _normManuals  = manuals   ? (Array.isArray(manuals)  ? manuals  : (manuals.data  ?? [])) : [];
