@@ -907,6 +907,7 @@
  <tbody></tbody>
  </table>
  </div>
+ <div id="ledger-pager"></div>
 
  <!-- Actions -->
  <div class="grid-actions mt-16" style="display:flex;gap:8px;justify-content:flex-end;">
@@ -1335,6 +1336,7 @@
  <tbody id="client-ledger-body"></tbody>
  </table>
  </div>
+ <div id="client-ledger-pager"></div>
  <div class="grid-actions mt-16">
  <button class="btn btn-outline" onclick="showToast('인쇄 준비 중...', 'info')"> 인쇄</button>
  <button class="btn btn-outline" onclick="showToast('엑셀 파일이 다운로드되었습니다', 'success')"> 엑셀 다운로드</button>
@@ -1397,6 +1399,7 @@
  <tfoot id="journal-foot"></tfoot>
  </table>
  </div>
+ <div id="journal-pager"></div>
  <div class="grid-actions mt-16">
  <button class="btn btn-outline" onclick="showToast('엑셀 파일이 다운로드되었습니다', 'success')"> 엑셀 다운로드</button>
  </div>
@@ -3064,6 +3067,11 @@ function sendInvoiceEmail(clientId) {
 // ── P10: Ledger (고도화) ──
 let ledgerMemos = {}; // { clientName: memoText }
 
+// 2026-06: 마감원장 페이지네이션 (거래처 수가 많아 스크롤이 길어지는 문제)
+let _ledgerPage = 1;
+const LEDGER_PER_PAGE = 20;
+function gotoLedgerPage(p) { _ledgerPage = p; renderLedger(); }
+
 function renderLedger() {
  const sortBy = document.getElementById('ledger-sort')?.value || 'name';
 
@@ -3122,9 +3130,15 @@ function renderLedger() {
  </div>
  `;
 
- // Table with memo column
+ // Table with memo column — 페이지 슬라이스 (합계 행은 전체 기준이라 매 페이지 하단에 표시)
  const tbody = document.querySelector('#ledger-table tbody');
- tbody.innerHTML = ledgerData.map(d => `
+ const _total = ledgerData.length;
+ const _totalPages = Math.max(1, Math.ceil(_total / LEDGER_PER_PAGE));
+ if (_ledgerPage > _totalPages) _ledgerPage = _totalPages;
+ if (_ledgerPage < 1) _ledgerPage = 1;
+ const _start = (_ledgerPage - 1) * LEDGER_PER_PAGE;
+ const _pageRows = ledgerData.slice(_start, _start + LEDGER_PER_PAGE);
+ tbody.innerHTML = _pageRows.map(d => `
  <tr>
  <td>${d.name}</td>
  <td class="text-right">${formatCurrency(d.carryOver)}</td>
@@ -3137,7 +3151,7 @@ function renderLedger() {
  </tr>
  `).join('') + `
  <tr class="totals-row">
- <td>합 계</td>
+ <td>합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_total.toLocaleString()}곳)</span></td>
  <td class="text-right">${formatCurrency(totals.carryOver)}</td>
  <td class="text-right">${formatCurrency(totals.monthlySales)}</td>
  <td class="text-right" style="color:var(--success);">${formatCurrency(totals.collected)}</td>
@@ -3145,11 +3159,14 @@ function renderLedger() {
  <td></td>
  </tr>
  `;
+ const _pagerEl = document.getElementById('ledger-pager');
+ if (_pagerEl) _pagerEl.innerHTML = buildPagerBar(_ledgerPage, _total, LEDGER_PER_PAGE, 'gotoLedgerPage');
 }
 
 function ledgerSortBy(sortVal) {
  const sel = document.getElementById('ledger-sort');
  if (sel) sel.value = sortVal;
+ _ledgerPage = 1; // 정렬 변경 시 1페이지로
  renderLedger();
 }
 
@@ -4428,12 +4445,18 @@ function cancelTaxInvoice(no) {
 
 // ── P15: Client Ledger ──
 // 경영지원팀 #3 (2026-04-21): 카테고리 select → 거래처 검색 자동완성으로 전환
-function renderClientLedger(clientId) {
+// 2026-06: 거래처원장 페이지네이션
+let _clientLedgerPage = 1;
+const CLIENT_LEDGER_PER_PAGE = 20;
+function gotoClientLedgerPage(p) { _clientLedgerPage = p; renderClientLedger(undefined, true); }
+
+function renderClientLedger(clientId, keepPage) {
  // 호출 인자/hidden input/기본값 순서로 결정
  if (typeof clientId === 'undefined' || clientId === null) {
  clientId = document.getElementById('client-ledger-select')?.value || 'C001';
  }
  if (!clientId) clientId = 'C001';
+ if (!keepPage) _clientLedgerPage = 1; // 거래처/필터 변경 시 1페이지로 (페이저 클릭만 유지)
 
  // hidden input 동기화
  const sel = document.getElementById('client-ledger-select');
@@ -4511,12 +4534,18 @@ function renderClientLedger(clientId) {
 
  // Running ledger table
  // 경영지원팀 #3 (2026-04-21): 적요 클릭 시 발주내역 상세 조회
- document.getElementById('client-ledger-body').innerHTML = ledgerEntries.map(e => {
- if (e.type === '이월') {
- balance = carryOver;
- } else {
- balance = balance + e.debit - e.credit;
- }
+ // 2026-06: 러닝 잔액은 전체 기준으로 먼저 계산한 뒤 페이지 슬라이스 (페이지가 바뀌어도 잔액 정확)
+ ledgerEntries.forEach(e => {
+   if (e.type === '이월') balance = carryOver;
+   else balance = balance + e.debit - e.credit;
+   e._bal = balance;
+ });
+ const _clTotal = ledgerEntries.length;
+ const _clPages = Math.max(1, Math.ceil(_clTotal / CLIENT_LEDGER_PER_PAGE));
+ if (_clientLedgerPage > _clPages) _clientLedgerPage = _clPages;
+ const _clStart = (_clientLedgerPage - 1) * CLIENT_LEDGER_PER_PAGE;
+ const _clPage = ledgerEntries.slice(_clStart, _clStart + CLIENT_LEDGER_PER_PAGE);
+ document.getElementById('client-ledger-body').innerHTML = _clPage.map(e => {
  const typeBadge = e.type === '매출' ? '<span class="badge badge-confirmed">매출</span>'
  : e.type === '수금' ? '<span class="badge badge-complete">수금</span>'
  : '<span class="badge badge-pending">이월</span>';
@@ -4534,17 +4563,19 @@ function renderClientLedger(clientId) {
  <td>${descCell}</td>
  <td class="text-right">${e.debit > 0 ? formatCurrency(e.debit) : ''}</td>
  <td class="text-right" style="color:var(--success);">${e.credit > 0 ? formatCurrency(e.credit) : ''}</td>
- <td class="text-right fw-600">${formatCurrency(balance)}</td>
+ <td class="text-right fw-600">${formatCurrency(e._bal)}</td>
  </tr>
  `;
  }).join('') + `
  <tr class="totals-row">
- <td colspan="3" class="text-right">합 계</td>
+ <td colspan="3" class="text-right">합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_clTotal.toLocaleString()}건)</span></td>
  <td class="text-right">${formatCurrency(totalDebit)}</td>
  <td class="text-right" style="color:var(--success);">${formatCurrency(totalCredit)}</td>
  <td class="text-right" style="color:var(--danger);">${formatCurrency(endBalance)}</td>
  </tr>
  `;
+ const _clp = document.getElementById('client-ledger-pager');
+ if (_clp) _clp.innerHTML = buildPagerBar(_clientLedgerPage, _clTotal, CLIENT_LEDGER_PER_PAGE, 'gotoClientLedgerPage');
 }
 
 // ── 거래처원장 검색 (경영지원팀 #3) ──
@@ -4679,8 +4710,14 @@ document.addEventListener('click', function(e) {
 
 // ── P16: Journal ──
 let currentJournalTab = 'sales';
-function renderJournal(tab) {
+// 2026-06: 매입매출장 페이지네이션
+let _journalPage = 1;
+const JOURNAL_PER_PAGE = 20;
+function gotoJournalPage(p) { _journalPage = p; renderJournal(currentJournalTab, true); }
+
+function renderJournal(tab, keepPage) {
  currentJournalTab = tab || 'sales';
+ if (!keepPage) _journalPage = 1; // 탭/필터/조회 시 1페이지로 (페이저 클릭만 유지)
 
  // Update tab active states
  document.querySelectorAll('#journal-tab-bar .tab-btn').forEach(btn => {
@@ -4751,20 +4788,30 @@ function renderJournal(tab) {
  return `<span class="badge">${st}</span>`;
  };
 
+ // 합계는 전체(필터 적용) 기준으로 계산 — 페이지 슬라이스 전에
  let totalSupply = 0, totalTax = 0;
+ salesData.forEach(s => {
+   const supply = s.qty * s.price;
+   totalSupply += supply;
+   totalTax += Math.round(supply * 0.1);
+ });
  // 2026-05-12 미팅: 발주별 수정 이력 카운트
  const editCountMap = {};
  (window.ORDER_EDIT_HISTORY || []).forEach(h => {
    editCountMap[h.orderId] = (editCountMap[h.orderId] || 0) + 1;
  });
- // 발주별 그룹화 (수정/이력 버튼은 orderId 단위)
+ // 발주별 그룹화 (수정/이력 버튼은 orderId 단위 — 전체 기준)
  const salesByOrder = {};
  salesData.forEach(s => { salesByOrder[s.orderId] = (salesByOrder[s.orderId] || []).concat(s); });
- tbody.innerHTML = salesData.map((s, idx) => {
+ // 페이지 슬라이스
+ const _salesTotal = salesData.length;
+ const _salesPages = Math.max(1, Math.ceil(_salesTotal / JOURNAL_PER_PAGE));
+ if (_journalPage > _salesPages) _journalPage = _salesPages;
+ const _salesStart = (_journalPage - 1) * JOURNAL_PER_PAGE;
+ const _salesPage = salesData.slice(_salesStart, _salesStart + JOURNAL_PER_PAGE);
+ tbody.innerHTML = _salesPage.map((s, idx) => {
  const supply = s.qty * s.price;
  const tax = Math.round(supply * 0.1);
- totalSupply += supply;
- totalTax += tax;
  const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[s.clientId])?.name || '-';
  // 같은 orderId 의 첫번째 행에만 관리 버튼 표시 (rowspan 효과)
  const isFirstOfOrder = salesByOrder[s.orderId][0] === s;
@@ -4798,12 +4845,14 @@ function renderJournal(tab) {
  }
 
  tfoot.innerHTML = `<tr>
- <td colspan="7" class="text-right">합 계</td>
+ <td colspan="7" class="text-right">합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_salesTotal.toLocaleString()}건)</span></td>
  <td class="text-right">${formatCurrency(totalSupply)}</td>
  <td class="text-right">${formatCurrency(totalTax)}</td>
  <td class="text-right" style="font-size:15px;">${formatCurrency(totalSupply + totalTax)}</td>
  <td></td>
  </tr>`;
+ const _jp = document.getElementById('journal-pager');
+ if (_jp) _jp.innerHTML = buildPagerBar(_journalPage, _salesTotal, JOURNAL_PER_PAGE, 'gotoJournalPage');
  } else {
  thead.innerHTML = `<tr>
  <th>일자</th><th>공급처</th><th>품목</th><th class="text-right">수량</th>
@@ -4820,12 +4869,22 @@ function renderJournal(tab) {
  { date: '2026-04-10', supplier: '글로벌메드', item: '어깨 보조기 (원자재)', qty: 15, price: 28000 },
  ];
 
+ // 합계는 전체 기준
  let totalPurchase = 0, totalTax = 0;
- tbody.innerHTML = purchaseData.map(p => {
+ purchaseData.forEach(p => {
+   const amt = p.qty * p.price;
+   totalPurchase += amt;
+   totalTax += Math.round(amt * 0.1);
+ });
+ // 페이지 슬라이스
+ const _purTotal = purchaseData.length;
+ const _purPages = Math.max(1, Math.ceil(_purTotal / JOURNAL_PER_PAGE));
+ if (_journalPage > _purPages) _journalPage = _purPages;
+ const _purStart = (_journalPage - 1) * JOURNAL_PER_PAGE;
+ const _purPage = purchaseData.slice(_purStart, _purStart + JOURNAL_PER_PAGE);
+ tbody.innerHTML = _purPage.map(p => {
  const purchaseAmt = p.qty * p.price;
  const tax = Math.round(purchaseAmt * 0.1);
- totalPurchase += purchaseAmt;
- totalTax += tax;
  return `
  <tr>
  <td>${p.date}</td><td>${p.supplier}</td><td>${p.item}</td>
@@ -4835,14 +4894,16 @@ function renderJournal(tab) {
  <td class="text-right fw-600">${formatCurrency(purchaseAmt + tax)}</td>
  </tr>
  `;
- }).join('');
+ }).join('') || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">매입 기록이 없습니다</td></tr>`;
 
  tfoot.innerHTML = `<tr>
- <td colspan="5" class="text-right">합 계</td>
+ <td colspan="5" class="text-right">합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_purTotal.toLocaleString()}건)</span></td>
  <td class="text-right">${formatCurrency(totalPurchase)}</td>
  <td class="text-right">${formatCurrency(totalTax)}</td>
  <td class="text-right" style="font-size:15px;">${formatCurrency(totalPurchase + totalTax)}</td>
  </tr>`;
+ const _jp2 = document.getElementById('journal-pager');
+ if (_jp2) _jp2.innerHTML = buildPagerBar(_journalPage, _purTotal, JOURNAL_PER_PAGE, 'gotoJournalPage');
  }
 }
 
