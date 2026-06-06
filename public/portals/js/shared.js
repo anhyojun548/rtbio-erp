@@ -87,6 +87,38 @@ function getTimeInfo() {
   };
 }
 
+// ── 페이저 바 (기존 테이블 tbody 페이지네이션용) ──
+// 2026-06: thead/tfoot(합계)·러닝잔액이 있는 기존 원장 테이블은 renderListPanel 로
+//   교체하기 어려워, tbody 만 페이지 슬라이스하고 이 바를 테이블 아래에 그린다.
+//   버튼은 gotoFnName(page) 전역 함수를 호출한다.
+function buildPagerBar(page, total, perPage, gotoFnName) {
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  if (page > totalPages) page = totalPages;
+  if (page < 1) page = 1;
+  const start = (page - 1) * perPage;
+  const info = total > 0
+    ? `총 <b>${total.toLocaleString()}</b>건 · ${(start + 1).toLocaleString()}–${Math.min(start + perPage, total).toLocaleString()} / ${page}p of ${totalPages}p`
+    : '총 0건';
+  let btns = '';
+  if (totalPages > 1) {
+    btns += `<button class="btn btn-outline btn-sm" ${page === 1 ? 'disabled' : ''} onclick="${gotoFnName}(${page - 1})">←</button>`;
+    const set = new Set([1, totalPages]);
+    for (let i = Math.max(2, page - 2); i <= Math.min(totalPages - 1, page + 2); i++) set.add(i);
+    const keys = Array.from(set).sort((a, b) => a - b);
+    let prev = 0;
+    keys.forEach(p => {
+      if (p - prev > 1) btns += '<span style="padding:6px;color:var(--text-muted);">…</span>';
+      btns += `<button class="btn ${p === page ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="${gotoFnName}(${p})">${p}</button>`;
+      prev = p;
+    });
+    btns += `<button class="btn btn-outline btn-sm" ${page === totalPages ? 'disabled' : ''} onclick="${gotoFnName}(${page + 1})">→</button>`;
+  }
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;margin-top:10px;">
+    <span style="font-size:12px;color:var(--text-muted);">${info}</span>
+    <span style="display:flex;gap:4px;">${btns}</span>
+  </div>`;
+}
+
 // ── Default Date Range (모든 포털 공통) ──
 // 2026-06: 새로 페이지 열 때 기본 기간은 "최근 7일 (KST)" — 사용자가 직접 바꾼 값은 보존.
 //   from = 오늘 - 6일,  to = 오늘  (총 7일 포함)
