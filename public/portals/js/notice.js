@@ -259,12 +259,38 @@
         pinned: document.getElementById('notice-new-pinned').checked,
       };
 
+      // 2026-06 fix: 낙관적 인메모리 행은 "표시 계약"(createdBy=팀명, targetIds=배열, KST 날짜)
+      //   으로 직접 구성. POST 응답은 { id } 만 주므로 saved 를 그대로 쓰면 title/body/
+      //   createdBy/createdAt 가 전부 undefined → 목록에 "undefined ⚪ undefined" 로 표시됐음.
+      //   noticePayload 는 API 필드명(authorTeam/targetClientIds)이라 그대로 spread 하면 안 됨.
+      function _kstNowStr() {
+        var d = new Date();
+        var date = d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+        var time = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour12: false }).slice(0, 5);
+        return date + ' ' + time;
+      }
+      function _buildDisplayNotice(savedId) {
+        return {
+          id: savedId || ('N' + String(Date.now()).slice(-6)),
+          title: title,
+          body: body,
+          target: noticePayload.target,
+          targetIds: noticePayload.targetClientIds || [],   // 표시 계약 (targetLabel/count 가 참조)
+          priority: noticePayload.priority,
+          createdBy: _authorTeam,                            // 표시 계약 (팀명 → 색상/아이콘 매칭)
+          createdAt: _kstNowStr(),
+          expiresAt: noticePayload.expiresAt || null,        // date input → 이미 'YYYY-MM-DD'
+          pinned: noticePayload.pinned,
+          readBy: [],
+        };
+      }
+
       // ── API 호출 (서버 저장) → 성공 시 인메모리 반영 ──────────
       var _doSave = function() {
         if (global.apiClient && typeof global.apiClient.post === 'function') {
           return global.apiClient.post('/api/notices', noticePayload)
             .then(function(saved) {
-              var newNotice = saved || Object.assign({ id: 'N' + String(Date.now()).slice(-6), createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '), readBy: [] }, noticePayload);
+              var newNotice = _buildDisplayNotice(saved && saved.id);
               (global.NOTICES = global.NOTICES || []).unshift(newNotice);
               render();
               if (typeof pushNotification === 'function') {
@@ -277,7 +303,7 @@
             });
         } else {
           // apiClient 미로딩 시 mock fallback
-          var newNotice = Object.assign({ id: 'N' + String(Date.now()).slice(-6), createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '), readBy: [] }, noticePayload);
+          var newNotice = _buildDisplayNotice(null);
           (global.NOTICES = global.NOTICES || []).unshift(newNotice);
           render();
           if (typeof showToast === 'function') showToast('공지사항이 발송되었습니다', 'success');
