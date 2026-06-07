@@ -547,13 +547,13 @@
  <!-- STAFF-E: 팀 관리자 지정 — 메타관리자(ADMIN·TENANT_OWNER)만 노출 -->
  <div class="nav-item" id="nav-team-admins" data-page="page-team-admins" onclick="goTo('page-team-admins')" style="display:none">팀 관리자 지정</div>
  <div class="nav-section">팀 포탈 이동</div>
- <a class="nav-item" href="qc-portal.html" style="text-decoration:none;">
+ <a class="nav-item" onclick="navigateToPortal('/qc')" style="text-decoration:none;cursor:pointer;">
  품질관리팀
  </a>
- <a class="nav-item" href="admin-portal.html" style="text-decoration:none;">
+ <a class="nav-item" onclick="navigateToPortal('/admin')" style="text-decoration:none;cursor:pointer;">
  경영지원팀
  </a>
- <a class="nav-item" href="exec-portal.html" style="text-decoration:none;">
+ <a class="nav-item" onclick="navigateToPortal('/exec')" style="text-decoration:none;cursor:pointer;">
  영업팀
  </a>
  </nav>
