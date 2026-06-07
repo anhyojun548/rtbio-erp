@@ -14,7 +14,15 @@ import { getAuthSecret } from "@/lib/auth-secret";
 import type { UserRole } from "@prisma/client";
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt", maxAge: 60 * 60 * 8 /* 8h */ },
+  session: {
+    strategy: "jwt",
+    // 슬라이딩 세션: 사용 중이면 만료 시점이 계속 연장됨(요즘 서비스처럼 "로그인 유지").
+    //  - maxAge: 마지막 활동 후 만료까지의 비활동 타임아웃(30일)
+    //  - updateAge: 토큰 재발급 주기(24h). 이 주기로 JWT 를 다시 찍어 만료를 연장한다.
+    //    ※ 과거엔 maxAge(8h) < 기본 updateAge(24h) 라 갱신 전에 죽어버려 '8h 하드 만료'였음.
+    maxAge: 60 * 60 * 24 * 30 /* 30일(비활동 만료) */,
+    updateAge: 60 * 60 * 24 /* 24h */,
+  },
   secret: getAuthSecret(),
   pages: { signIn: "/login", error: "/login" },
 

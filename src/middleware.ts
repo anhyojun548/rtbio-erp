@@ -57,6 +57,12 @@ export async function middleware(req: NextRequest) {
   //     쿠키로 주입해 기존 getServerSession 기반 핸들러가 정상 ADMIN 세션으로 인식.
   const authz = req.headers.get("authorization");
   if (authz && authz.startsWith("Bearer ")) {
+    // 어시스턴트 스코프드 토큰(/api/assistant/*)은 라우트 핸들러가 자체 검증한다.
+    // WIDGET_API_TOKEN 게이트를 건너뛰고 통과 — 원본 Authorization 헤더는
+    // requestHeaders(req.headers 복제)에 보존되어 핸들러로 전달된다.
+    if (pathname.startsWith("/api/assistant/")) {
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
     if (!pathname.startsWith("/api/")) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
