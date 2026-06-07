@@ -1323,10 +1323,17 @@ function getOrderItemsSummary(order) {
  return order.items.map(item => {
  const name = getProductName(item.productId);
  const product = PRODUCTS.find(p => p.id === item.productId);
- const stock = product ? product.stock : 0;
+ // 주문 라인은 qty/quantity 별칭이 섞이고, 제품 데이터엔 사이즈코드가 없어(백엔드 보강 전)
+ // 사이즈 라벨은 가능한 값만, 재고는 제품 가용재고 합으로 근사 표시 (undefined 방지).
+ const qty = item.qty != null ? item.qty : (item.quantity != null ? item.quantity : 0);
+ const size = item.size || item.sizeCode || '';
+ const stock = product && Array.isArray(product.sizes)
+   ? product.sizes.reduce((s, z) => s + (Number(z.availableStock != null ? z.availableStock : z.physicalStock) || 0), 0)
+   : (product && product.stock != null ? Number(product.stock) : 0);
  const stockLevel = stock < 30 ? 'danger' : stock < 60 ? 'warning' : 'safe';
- const stockAfter = stock - item.qty;
- return { text: `${name} ${item.size} x${item.qty}`, name, size: item.size, qty: item.qty, subtotal: item.unitPrice * item.qty, stock, stockLevel, stockAfter, productId: item.productId };
+ const stockAfter = stock - qty;
+ const unit = Number(item.unitPrice) || 0;
+ return { text: `${name} ${size} x${qty}`.replace(/\s{2,}/g, ' ').trim(), name, size, qty, subtotal: unit * qty, stock, stockLevel, stockAfter, productId: item.productId };
  });
 }
 
@@ -1438,7 +1445,7 @@ function renderConfirmPage() {
  ${statusBadge(order.status)}
  </div>
  <div class="order-card-info">
- <span class="order-id">${order.id}</span>
+ <span class="order-id">${order.orderNumber || order.id}</span>
  <span> ${order.time}</span>
  <span>${order.items.length}건</span>
  <span class="fw-600" style="color:var(--primary);">${formatCurrency(total)}</span>
@@ -1488,20 +1495,39 @@ function toggleOrderDetail(orderId) {
  if (arrow) arrow.classList.toggle('open');
 }
 
-function showConfirmModal(orderId) {
+// 확정 모달 담당자 — 실제 직원(/api/users?active=true) 우선, 실패 시 mock(QC_STAFF) 폴백. 모듈 캐시.
+let _assignableStaffCache = null;
+async function loadAssignableStaff() {
+ if (_assignableStaffCache) return _assignableStaffCache;
+ try {
+ const r = await fetch('/api/users?active=true', { credentials: 'same-origin' });
+ if (r.ok) {
+ const rows = await r.json();
+ const list = (Array.isArray(rows) ? rows : (rows.data || []))
+ .filter(u => u && u.id && u.role !== 'CLIENT')   // 담당자 = 내부 직원만 (거래처 유저 제외)
+ .map(u => ({ id: u.id, name: u.name || u.email || u.id }));
+ if (list.length) { _assignableStaffCache = list; return list; }
+ }
+ } catch (e) { /* 네트워크/권한 실패 → 폴백 */ }
+ _assignableStaffCache = (typeof QC_STAFF !== 'undefined' ? QC_STAFF : []);
+ return _assignableStaffCache;
+}
+
+async function showConfirmModal(orderId) {
  const order = ORDERS.find(o => o.id === orderId);
  if (!order) return;
 
  const client = getClient(order.clientId);
  const total = calcOrderTotal(order);
- const staffOptions = QC_STAFF.map(s =>
+ const staffList = await loadAssignableStaff();
+ const staffOptions = staffList.map(s =>
  `<option value="${s.id}">${s.name}</option>`
  ).join('');
 
  const bodyHTML = `
  <div class="detail-row">
  <span class="detail-label">발주번호</span>
- <span class="detail-value" style="font-family:Consolas,monospace;">${order.id}</span>
+ <span class="detail-value" style="font-family:Consolas,monospace;">${order.orderNumber || order.id}</span>
  </div>
  <div class="detail-row">
  <span class="detail-label">거래처</span>
@@ -1525,11 +1551,14 @@ function showConfirmModal(orderId) {
  `;
 
  showModal('발주 확정', bodyHTML, async () => {
- const staffId = document.getElementById('modal-staff-select')?.value;
+ const _staffSel = document.getElementById('modal-staff-select');
+ const staffId = _staffSel?.value;
  if (!staffId) {
  showToast('담당자를 배정해주세요', 'error');
  return;
  }
+ // note 에는 가짜 id 가 아니라 실제 담당자 이름을 기록 (DB shipment note 영구 저장).
+ const staffName = (_staffSel.options[_staffSel.selectedIndex]?.text || staffId).trim();
  // 1) DB 전이: SUBMITTED → CONFIRMED (재고 RESERVE 자동)
  const ok = await _qcTransitionOrder(order, 'CONFIRMED');
  if (!ok) return;
@@ -1538,7 +1567,7 @@ function showConfirmModal(orderId) {
   const r = await fetch(`/api/shipments/${order.id}/transition`, {
    method: 'POST', credentials: 'same-origin',
    headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({ to: 'START', note: `확정 자동시작 — 담당 ${staffId}` }),
+   body: JSON.stringify({ to: 'START', note: `확정 자동시작 — 담당 ${staffName}` }),
   });
   if (r.ok) {
    const res = await r.json();
@@ -1606,7 +1635,7 @@ function showRejectModal(orderId) {
  const bodyHTML = `
  <div class="detail-row">
  <span class="detail-label">발주번호</span>
- <span class="detail-value" style="font-family:Consolas,monospace;">${order.id}</span>
+ <span class="detail-value" style="font-family:Consolas,monospace;">${order.orderNumber || order.id}</span>
  </div>
  <div class="detail-row">
  <span class="detail-label">거래처</span>
@@ -1655,7 +1684,7 @@ function showHoldModal(orderId) {
  const bodyHTML = `
  <div class="detail-row">
  <span class="detail-label">발주번호</span>
- <span class="detail-value" style="font-family:Consolas,monospace;">${order.id}</span>
+ <span class="detail-value" style="font-family:Consolas,monospace;">${order.orderNumber || order.id}</span>
  </div>
  <div class="detail-row">
  <span class="detail-label">거래처</span>
@@ -2630,7 +2659,7 @@ function showKanbanDetail(orderId) {
  const bodyHTML = `
  <div class="detail-row">
  <span class="detail-label">발주번호</span>
- <span class="detail-value" style="font-family:Consolas,monospace;">${order.id}</span>
+ <span class="detail-value" style="font-family:Consolas,monospace;">${order.orderNumber || order.id}</span>
  </div>
  <div class="detail-row">
  <span class="detail-label">거래처</span>

@@ -412,6 +412,9 @@
           }
           if (!norm.time) norm.time = '00:00';
           if (!norm.shippingType) norm.shippingType = '택배';
+          // 칸반 stage 매핑 (admin 브랜치와 동일) — 거래처 진행상태 뱃지/타임라인이 stage 로 단계 판정.
+          // 확정→waiting(접수), 출고중→packing(준비중), 완료→done(출고완료). 미설정 시 항상 '접수'로 보이던 버그 차단.
+          if (!norm.stage) norm.stage = ({ '확정': 'waiting', '출고중': 'packing', '완료': 'done' })[norm.status] || null;
           if (Array.isArray(norm.items)) {
             norm.items = norm.items.map(it => Object.assign({}, it, {
               qty: it.qty != null ? _num(it.qty) : _num(it.quantity),

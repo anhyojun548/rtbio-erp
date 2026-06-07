@@ -33,7 +33,9 @@ export async function POST(req: Request) {
   if (!session?.user) return unauthorized();
 
   const body = await req.json().catch(() => ({}));
-  const res = await createInvoiceFromOrder(body);
+  // createInvoiceFromOrder(orderId: string, input) — body.orderId 를 첫 인자로 전달.
+  // (이전: createInvoiceFromOrder(body) 로 객체 전체를 orderId 자리에 넘겨 Prisma where 오류 → 500)
+  const res = await createInvoiceFromOrder(body?.orderId, body ?? {});
 
   if (!res.ok) {
     return Response.json(

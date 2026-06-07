@@ -389,6 +389,14 @@ export async function issueInvoice(
         select: { id: true, invoiceNumber: true },
       });
 
+      // 주문 invoiceIssued 플래그 동기화 — 명세서 발행 = 해당 주문이 청구됨.
+      if (cur.orderId) {
+        await tx.order.update({
+          where: { id: cur.orderId },
+          data: { invoiceIssued: true },
+        });
+      }
+
       return {
         id: updated.id,
         invoiceNumber: updated.invoiceNumber,
