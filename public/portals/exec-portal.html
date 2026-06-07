@@ -538,6 +538,9 @@
  <!-- 영업팀 #1 (2026-04): 월 수금액 + 월 미수금 + 거래처/주문 KPI -->
  <div class="stats-grid" id="exec-monthly-kpi" style="margin-bottom:20px;"></div>
 
+ <!-- 2026-06-08: 매출 요약 — 월/주간/일 + 목표 대비 + 대리점/병원 + 최근 7일 추이(금액/수량/종류) -->
+ <div id="exec-sales-summary" style="margin-bottom:20px;"></div>
+
  <!-- Grid -->
  <div class="grid-stack" id="gridStack"></div>
 
@@ -2043,6 +2046,70 @@ const CAT_LABELS = { knee: '무릎', upper: '상지', lower: '하지', sprint: '
 const CLIENT_COLORS = ['#1B3A5C', '#00A8B5', '#F57C00', '#7C3AED', '#D32F2F'];
 
 // ══════════════════════════════════════
+// 2026-06-08: 매출 요약 (영업 대시보드) — /api/exec/sales-summary 실데이터
+// ══════════════════════════════════════
+async function renderExecSalesSummary() {
+  const host = document.getElementById('exec-sales-summary');
+  if (!host) return;
+  let d;
+  try {
+    d = await fetch('/api/exec/sales-summary', { credentials: 'same-origin' }).then(r => r.json());
+  } catch (e) { return; }
+  if (!d || d.ok === false) return;
+  const fmt = typeof formatCurrency === 'function' ? formatCurrency : (n => '₩' + Math.round(n || 0).toLocaleString());
+  const rateBadge = (r) => r == null
+    ? '<span style="color:#9aa;">목표 미설정</span>'
+    : `목표 대비 <b style="color:${r >= 100 ? '#2e7d32' : (r >= 80 ? '#F57C00' : '#d32f2f')};">${r}%</b>`;
+
+  const cards = `
+   <div class="stats-grid" style="margin-bottom:14px;">
+     <div class="stat-card stat-primary">
+       <div class="stat-label">이번 달 매출 (${d.month})</div>
+       <div class="stat-value">${fmt(d.monthSales)}</div>
+       <div class="stat-sub">${rateBadge(d.rate && d.rate.total)}</div>
+     </div>
+     <div class="stat-card stat-accent">
+       <div class="stat-label">주간 매출 (최근 7일)</div>
+       <div class="stat-value">${fmt(d.weekSales)}</div>
+       <div class="stat-sub">~ ${d.anchorDate}</div>
+     </div>
+     <div class="stat-card stat-success">
+       <div class="stat-label">일 매출 (${d.anchorDate})</div>
+       <div class="stat-value">${fmt(d.daySales)}</div>
+       <div class="stat-sub">최근 거래일 기준</div>
+     </div>
+     <div class="stat-card">
+       <div class="stat-label">대리점 / 병원 (이달)</div>
+       <div class="stat-value" style="font-size:17px;">${fmt(d.agencySales)} <span style="color:#9aa;">/</span> ${fmt(d.hospitalSales)}</div>
+       <div class="stat-sub" style="font-size:11px;">대리점 ${rateBadge(d.rate && d.rate.agency)} · 병원 ${rateBadge(d.rate && d.rate.hospital)}</div>
+     </div>
+   </div>`;
+
+  const last7 = d.last7 || [];
+  const maxAmt = Math.max(1, ...last7.map(p => p.amount || 0));
+  const bars = last7.map(p => {
+    const h = Math.max(3, Math.round((p.amount / maxAmt) * 110));
+    const isLast = p.date === d.anchorDate;
+    const amtLabel = p.amount > 0 ? (p.amount >= 10000 ? Math.round(p.amount / 10000) + '만' : p.amount) : '-';
+    const tip = `₩${(p.amount || 0).toLocaleString()} · ${p.count}건 · ${(p.qty || 0).toLocaleString()}개 · ${p.kinds}종`;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;">
+        <div style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${amtLabel}</div>
+        <div title="${tip}" style="width:62%;background:${isLast ? '#00A8B5' : '#cfd8e3'};border-radius:4px 4px 0 0;height:${h}px;"></div>
+        <div style="font-size:11px;color:var(--text-secondary);">${(p.date || '').slice(5)}</div>
+        <div style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${p.qty > 0 ? p.qty.toLocaleString() + '개' : ''}</div>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = cards + `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;">최근 7일 매출 추이
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(막대=금액 · 하단=수량 · 호버 시 건수/종류)</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:150px;">${bars}</div>
+    </div>`;
+}
+
+// ══════════════════════════════════════
 // Screen 1: P18 경영 대시보드
 // ══════════════════════════════════════
 function renderExecDashboard() {
@@ -2125,6 +2192,9 @@ function renderExecDashboard() {
  </div>
  `;
  }
+
+ // 2026-06-08: 매출 요약 섹션 (월/주간/일 + 목표대비 + 대리점/병원 + 7일추이) — 실데이터 fetch
+ renderExecSalesSummary();
 
  // legacy exec-stats (구 dashboard 버전 호환 — 요소 없으면 skip)
  const execStats = document.getElementById('exec-stats');
