@@ -30,7 +30,19 @@ export default function LoginPage() {
       setErr("이메일 또는 비밀번호가 올바르지 않습니다.");
       return;
     }
-    router.push(res.url ?? callbackUrl);
+    // res.url 은 NEXTAUTH_URL(예: http://localhost:3000) 기준 절대 URL 일 수 있다.
+    // 호스트를 떼고 현재 origin(터널/실서버) 기준 상대경로로만 이동해야,
+    // Cloudflare 터널·리버스프록시 등 외부 접속에서 localhost 로 튕기지 않는다.
+    let dest = callbackUrl;
+    if (res.url) {
+      try {
+        const u = new URL(res.url, window.location.origin);
+        dest = u.pathname + u.search;
+      } catch {
+        dest = res.url;
+      }
+    }
+    router.push(dest);
     router.refresh();
   }
 

@@ -25,6 +25,19 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+/**
+ * 리다이렉트 URL 을 "외부에서 본 호스트" 기준으로 구성한다.
+ * Cloudflare 터널·리버스프록시는 원본 도메인을 x-forwarded-host 로 전달하고
+ * 오리진(Next)의 Host 는 localhost 로 바뀔 수 있다 → req.url 그대로 쓰면 localhost 로 튕김.
+ * 따라서 x-forwarded-host 가 있으면 그것을 우선 사용한다.
+ */
+function externalRedirectUrl(path: string, req: NextRequest): URL {
+  const fwdHost = req.headers.get("x-forwarded-host");
+  const fwdProto = req.headers.get("x-forwarded-proto") || "https";
+  if (fwdHost) return new URL(path, `${fwdProto}://${fwdHost}`);
+  return new URL(path, req.url);
+}
+
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const pathname = url.pathname;
@@ -35,7 +48,7 @@ export async function middleware(req: NextRequest) {
     /^\/portals\/(admin|qc|exec|ceo|client)-portal\.html$/,
   );
   if (portalMatch) {
-    const clean = new URL("/" + portalMatch[1], req.url);
+    const clean = externalRedirectUrl("/" + portalMatch[1], req);
     clean.search = url.search;
     return NextResponse.redirect(clean);
   }
@@ -117,7 +130,7 @@ export async function middleware(req: NextRequest) {
   });
 
   if (!token) {
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = externalRedirectUrl("/login", req);
     loginUrl.searchParams.set("callbackUrl", pathname + url.search);
     return NextResponse.redirect(loginUrl);
   }
@@ -125,7 +138,7 @@ export async function middleware(req: NextRequest) {
   // ── 3) RBAC — 포털별 접근 제한 ────────────────────────────
   const role = token.role;
   if (role && !canAccessPath(role, pathname)) {
-    return NextResponse.redirect(new URL("/403", req.url));
+    return NextResponse.redirect(externalRedirectUrl("/403", req));
   }
 
   // 세션에 tenantId 가 있으면 우선 적용 (구독자별 격리)
