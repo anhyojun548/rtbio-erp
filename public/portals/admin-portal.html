@@ -4761,17 +4761,35 @@ function renderJournal(tab, keepPage) {
  <th class="text-center" title="2026-05-12 미팅: 마감 전 발주 수정 / 마감 후 반품 처리">관리</th>
  </tr>`;
 
- // 경영지원팀 #6d: 행 클릭 시 발주 상세 → orderId 필드 추가 (mock)
- let salesData = [
- { date: '2026-04-02', client: '메디팜 의료기', clientId:'C001', orderId:'ORD-0402-001', status:'출고완료', item: '리코탭플러스 무릎 숏', qty: 10, price: 20900 },
- { date: '2026-04-03', client: '한빛정형외과', clientId:'C003', orderId:'ORD-0403-002', status:'출고완료', item: '리깁스 무릎 숏', qty: 5, price: 24500 },
- { date: '2026-04-05', client: '대한메디칼', clientId:'C002', orderId:'ORD-0405-002', status:'출고완료', item: '리코탭플러스 무릎 롱', qty: 8, price: 23250 },
- { date: '2026-04-07', client: '세종재활의학과', clientId:'C005', orderId:'ORD-0407-003', status:'출고완료', item: '리코탭플러스 손목', qty: 20, price: 18050 },
- { date: '2026-04-08', client: '한빛정형외과', clientId:'C003', orderId:'ORD-0408-005', status:'확정', item: '리스프린트 쇄골', qty: 20, price: 15520 },
- { date: '2026-04-09', client: '미래의료기', clientId:'C004', orderId:'ORD-0409-004', status:'확정', item: '리코탭플러스 발목', qty: 15, price: 19400 },
- { date: '2026-04-10', client: '메디팜 의료기', clientId:'C001', orderId:'ORD-0410-001', status:'출고중', item: '워커 (단족)', qty: 3, price: 63050 },
- { date: '2026-04-11', client: '대한메디칼', clientId:'C002', orderId:'ORD-0411-003', status:'접수', item: '리깁스 팔꿈치', qty: 5, price: 24440 },
- ];
+ // 매출장 = ISSUED/SENT 거래명세서가 발급된 주문의 라인 (실데이터).
+ //   매출 인식 기준은 대시보드 '이번 달 매출'·매출보고서·거래처원장과 동일하게 거래명세서(Invoice) 발급.
+ //   → 발주/출고만으로는 안 잡히고, 거래명세서 발행(ISSUED) 시점에 매출장에 나타난다.
+ const _issuedOrderIds = new Set(
+   (window.INVOICE_HISTORY || [])
+     .filter(v => v.status === 'ISSUED' || v.status === 'SENT')
+     .map(v => v.orderId).filter(Boolean)
+ );
+ let salesData = [];
+ (window.ORDERS || []).forEach(o => {
+   if (!_issuedOrderIds.has(o.id)) return;
+   const _cname = (o.client && o.client.name)
+     || (typeof getClient === 'function' ? ((getClient(o.clientId) || {}).name || '') : '')
+     || o.clientId;
+   const _date = o.date || String(o.orderDate || '').slice(0, 10);
+   (o.items || []).forEach(it => {
+     salesData.push({
+       date: _date,
+       client: _cname,
+       clientId: o.clientId,
+       orderId: o.id,
+       status: o.status,
+       item: (typeof getProductName === 'function' ? getProductName(it.productId) : it.productId),
+       qty: (it.qty != null ? it.qty : it.quantity),
+       price: Number(it.unitPrice) || 0,
+     });
+   });
+ });
+ salesData.sort((a, b) => String(b.date).localeCompare(String(a.date)));
  // Apply filters (B-3)
  if (clientFilter !== 'all') salesData = salesData.filter(s => s.client === clientFilter);
  if (mgrFilter !== 'all') salesData = salesData.filter(s => CLIENT_REP_MAP[s.clientId] === mgrFilter);
