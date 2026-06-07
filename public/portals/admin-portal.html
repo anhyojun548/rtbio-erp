@@ -4713,9 +4713,11 @@ let currentJournalTab = 'sales';
 // 2026-06: 매입매출장 페이지네이션
 let _journalPage = 1;
 const JOURNAL_PER_PAGE = 20;
+// 매출장 서버 조회 캐시 — 날짜(시작/종료) 키가 같으면 재조회 없이 클라이언트측 필터/페이지만 갱신.
+let _salesJournalCache = { key: null, lines: [], truncated: false };
 function gotoJournalPage(p) { _journalPage = p; renderJournal(currentJournalTab, true); }
 
-function renderJournal(tab, keepPage) {
+async function renderJournal(tab, keepPage) {
  currentJournalTab = tab || 'sales';
  if (!keepPage) _journalPage = 1; // 탭/필터/조회 시 1페이지로 (페이저 클릭만 유지)
 
@@ -4761,36 +4763,31 @@ function renderJournal(tab, keepPage) {
  <th class="text-center" title="2026-05-12 미팅: 마감 전 발주 수정 / 마감 후 반품 처리">관리</th>
  </tr>`;
 
- // 매출장 = ISSUED/SENT 거래명세서가 발급된 주문의 라인 (실데이터).
- //   매출 인식 기준은 대시보드 '이번 달 매출'·매출보고서·거래처원장과 동일하게 거래명세서(Invoice) 발급.
- //   → 발주/출고만으로는 안 잡히고, 거래명세서 발행(ISSUED) 시점에 매출장에 나타난다.
- const _issuedOrderIds = new Set(
-   (window.INVOICE_HISTORY || [])
-     .filter(v => v.status === 'ISSUED' || v.status === 'SENT')
-     .map(v => v.orderId).filter(Boolean)
- );
- let salesData = [];
- (window.ORDERS || []).forEach(o => {
-   if (!_issuedOrderIds.has(o.id)) return;
-   const _cname = (o.client && o.client.name)
-     || (typeof getClient === 'function' ? ((getClient(o.clientId) || {}).name || '') : '')
-     || o.clientId;
-   const _date = o.date || String(o.orderDate || '').slice(0, 10);
-   (o.items || []).forEach(it => {
-     salesData.push({
-       date: _date,
-       client: _cname,
-       clientId: o.clientId,
-       orderId: o.id,
-       status: o.status,
-       item: (typeof getProductName === 'function' ? getProductName(it.productId) : it.productId),
-       qty: (it.qty != null ? it.qty : it.quantity),
-       price: Number(it.unitPrice) || 0,
-     });
-   });
- });
- salesData.sort((a, b) => String(b.date).localeCompare(String(a.date)));
- // Apply filters (B-3)
+ // 매출장 = ISSUED/SENT 거래명세서 기준 (서버 조회). 매출 인식 = 거래명세서 발급(대시보드/보고서/원장과 동일).
+ //   - 기간(시작일~종료일)은 매출 발생일 = 명세서 발급일(issueDate) 기준으로 서버에서 필터
+ //     → 클라이언트 200건 로드 한계 없이 전체 기간 조회.
+ //   - 거래처/담당자/검색은 가져온 라인에서 클라이언트측 필터(같은 기간이면 재조회 없음).
+ const _jFrom = (document.getElementById('journal-date-from') || {}).value || '';
+ const _jTo = (document.getElementById('journal-date-to') || {}).value || '';
+ const _jKey = _jFrom + '|' + _jTo;
+ if (_salesJournalCache.key !== _jKey) {
+   tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">불러오는 중…</td></tr>`;
+   try {
+     const _qs = new URLSearchParams();
+     if (_jFrom) _qs.set('from', _jFrom);
+     if (_jTo) _qs.set('to', _jTo);
+     const _r = await fetch('/api/admin/sales-journal?' + _qs.toString(), { credentials: 'same-origin' });
+     const _d = await _r.json();
+     _salesJournalCache = { key: _jKey, lines: (_d && _d.lines) || [], truncated: !!(_d && _d.truncated) };
+   } catch (e) {
+     _salesJournalCache = { key: _jKey, lines: [], truncated: false };
+   }
+ }
+ let salesData = _salesJournalCache.lines.map(l => ({
+   date: l.date, client: l.client, clientId: l.clientId, orderId: l.orderId,
+   status: '완료', item: l.item, qty: l.qty, price: l.unitPrice, rep: l.rep,
+ }));
+ // Apply filters (B-3) — 클라이언트측
  if (clientFilter !== 'all') salesData = salesData.filter(s => s.client === clientFilter);
  if (mgrFilter !== 'all') salesData = salesData.filter(s => CLIENT_REP_MAP[s.clientId] === mgrFilter);
  if (searchTerm) salesData = salesData.filter(s => s.item.toLowerCase().includes(searchTerm) || s.client.toLowerCase().includes(searchTerm));
@@ -4830,7 +4827,7 @@ function renderJournal(tab, keepPage) {
  tbody.innerHTML = _salesPage.map((s, idx) => {
  const supply = s.qty * s.price;
  const tax = Math.round(supply * 0.1);
- const repName = SALES_REPS.find(r => r.id === CLIENT_REP_MAP[s.clientId])?.name || '-';
+ const repName = s.rep || (SALES_REPS.find(r => r.id === CLIENT_REP_MAP[s.clientId]) || {}).name || '-';
  // 같은 orderId 의 첫번째 행에만 관리 버튼 표시 (rowspan 효과)
  const isFirstOfOrder = salesByOrder[s.orderId][0] === s;
  const editCount = editCountMap[s.orderId] || 0;
