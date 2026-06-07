@@ -460,6 +460,10 @@
  <div class="nav-item" data-page="page-rep-master" onclick="navigateTo('page-rep-master')">
  영업사원 계정
  </div>
+ <!-- 2026-06-08: 담당자별 매출 목표(대리점/병원) 입력 + 실적·달성률 -->
+ <div class="nav-item" data-page="page-rep-metrics" onclick="navigateTo('page-rep-metrics')">
+ 직원별 지표
+ </div>
  <div class="nav-section">기타</div>
  <!-- 2026-05-22: 영업팀도 거래처로 공지 발송 가능 (자료/혜택 안내 등) -->
  <div class="nav-item" data-page="page-notices" onclick="navigateTo('page-notices')">
@@ -846,6 +850,49 @@
  </div>
 
  <!-- ────────────────────────────────────────
+ 2026-06-08: 직원별 지표 — 담당자별 월 매출 목표(대리점/병원) + 실적·달성률
+ ──────────────────────────────────────── -->
+ <div class="page" id="page-rep-metrics">
+   <div class="page-inner">
+     <div class="main-header">
+       <div>
+         <div class="main-title">직원별 지표</div>
+         <div class="main-subtitle">담당자별 월 매출 목표(대리점/병원) 입력 + 실적·달성률</div>
+       </div>
+     </div>
+     <div class="filter-row mb-16" style="align-items:flex-end;gap:12px;">
+       <div class="form-group" style="margin-bottom:0;">
+         <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">기준 월</label>
+         <input type="month" id="rep-metrics-month" class="form-input" style="max-width:160px;" onchange="renderRepMetrics()">
+       </div>
+       <button class="btn btn-outline btn-sm" onclick="renderRepMetrics()">새로고침</button>
+     </div>
+     <div class="table-wrap">
+       <table class="data-table" id="rep-metrics-table">
+         <thead>
+           <tr>
+             <th rowspan="2">담당자</th><th rowspan="2" class="text-center">거래처</th>
+             <th colspan="3" class="text-center" style="border-left:1px solid var(--border);">대리점</th>
+             <th colspan="3" class="text-center" style="border-left:1px solid var(--border);">병원</th>
+             <th colspan="3" class="text-center" style="border-left:1px solid var(--border);">합계</th>
+           </tr>
+           <tr>
+             <th class="text-right" style="border-left:1px solid var(--border);">목표</th><th class="text-right">실적</th><th class="text-right">달성</th>
+             <th class="text-right" style="border-left:1px solid var(--border);">목표</th><th class="text-right">실적</th><th class="text-right">달성</th>
+             <th class="text-right" style="border-left:1px solid var(--border);">목표</th><th class="text-right">실적</th><th class="text-right">달성</th>
+           </tr>
+         </thead>
+         <tbody id="rep-metrics-body"></tbody>
+         <tfoot id="rep-metrics-foot"></tfoot>
+       </table>
+     </div>
+     <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+       목표 칸에 입력 후 Enter 또는 포커스 아웃 시 자동 저장됩니다. 실적 = 거래명세서(발행/발송) 매출 기준.
+     </div>
+   </div>
+ </div>
+
+ <!-- ────────────────────────────────────────
  2026-05-12 미팅: 영업사원 마스터 계정 페이지
  ──────────────────────────────────────── -->
  <div class="page" id="page-rep-master">
@@ -1080,6 +1127,7 @@ function navigateTo(pageId) {
  if (pageId === 'page-sales-status') renderSalesStatus();
  if (pageId === 'page-assignments') renderAssignments();
  if (pageId === 'page-conference') renderConferences();
+ if (pageId === 'page-rep-metrics') renderRepMetrics();
  // 2026-05-22: 공지사항 공통 모듈 (영업팀 발송자)
  if (pageId === 'page-notices') {
    const host = document.getElementById('page-notices');
@@ -2504,6 +2552,86 @@ document.addEventListener('DOMContentLoaded', function() {
  } catch(e) { console.warn('staff-mgmt init failed', e); }
  goTo('page-exec-dashboard');
 });
+
+// ── 2026-06-08: 직원별 지표 (담당자별 목표·실적·달성률) ──
+function _repMetricsKstMonth() { return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7); }
+function _repEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function _repWon(n) { return '₩' + Math.round(n || 0).toLocaleString(); }
+function _repToast(msg, type) { if (typeof showToast === 'function') showToast(msg, type); }
+function _repRate(r) {
+  if (r == null) return '<span style="color:var(--text-muted);">—</span>';
+  const color = r >= 100 ? '#2e7d32' : (r >= 80 ? '#F57C00' : '#d32f2f');
+  return `<span style="color:${color};font-weight:600;">${r}%</span>`;
+}
+
+async function renderRepMetrics() {
+  const monthEl = document.getElementById('rep-metrics-month');
+  if (monthEl && !monthEl.value) monthEl.value = _repMetricsKstMonth();
+  const month = (monthEl && monthEl.value) || _repMetricsKstMonth();
+  const body = document.getElementById('rep-metrics-body');
+  const foot = document.getElementById('rep-metrics-foot');
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">불러오는 중…</td></tr>`;
+  if (foot) foot.innerHTML = '';
+
+  let rows = [];
+  try {
+    const d = await fetch('/api/exec/targets?month=' + encodeURIComponent(month), { credentials: 'same-origin' }).then(r => r.json());
+    rows = (d && d.rows) || [];
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:#d32f2f;">로드 실패</td></tr>`;
+    return;
+  }
+  if (rows.length === 0) {
+    body.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-muted);">표시할 담당자가 없습니다</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td><div style="font-weight:600;">${_repEsc(r.name)}</div><div style="font-size:11px;color:var(--text-muted);">${_repEsc(r.role)}</div></td>
+      <td class="text-center">${r.clientCount}<div style="font-size:11px;color:var(--text-muted);">대리점 ${r.agencyCount} / 병원 ${r.hospitalCount}</div></td>
+      <td class="text-right" style="border-left:1px solid var(--border);"><input type="number" min="0" class="form-input" style="width:118px;text-align:right;" value="${r.targetAgency || ''}" placeholder="0" onchange="saveTarget('${r.salesRepId}','${month}','AGENCY',this)"></td>
+      <td class="text-right">${_repWon(r.actualAgency)}</td>
+      <td class="text-right">${_repRate(r.rateAgency)}</td>
+      <td class="text-right" style="border-left:1px solid var(--border);"><input type="number" min="0" class="form-input" style="width:118px;text-align:right;" value="${r.targetHospital || ''}" placeholder="0" onchange="saveTarget('${r.salesRepId}','${month}','HOSPITAL',this)"></td>
+      <td class="text-right">${_repWon(r.actualHospital)}</td>
+      <td class="text-right">${_repRate(r.rateHospital)}</td>
+      <td class="text-right fw-600" style="border-left:1px solid var(--border);">${_repWon(r.targetTotal)}</td>
+      <td class="text-right fw-600">${_repWon(r.actualTotal)}</td>
+      <td class="text-right">${_repRate(r.rateTotal)}</td>
+    </tr>
+  `).join('');
+
+  if (foot) {
+    const sum = (k) => rows.reduce((s, r) => s + (r[k] || 0), 0);
+    const tA = sum('targetAgency'), aA = sum('actualAgency'), tH = sum('targetHospital'), aH = sum('actualHospital'), tT = sum('targetTotal'), aT = sum('actualTotal');
+    const pct = (a, t) => t > 0 ? Math.round(a / t * 1000) / 10 : null;
+    foot.innerHTML = `<tr style="font-weight:700;background:#fafafa;">
+      <td colspan="2" class="text-right">합 계 (${rows.length}명)</td>
+      <td class="text-right" style="border-left:1px solid var(--border);">${_repWon(tA)}</td><td class="text-right">${_repWon(aA)}</td><td class="text-right">${_repRate(pct(aA, tA))}</td>
+      <td class="text-right" style="border-left:1px solid var(--border);">${_repWon(tH)}</td><td class="text-right">${_repWon(aH)}</td><td class="text-right">${_repRate(pct(aH, tH))}</td>
+      <td class="text-right" style="border-left:1px solid var(--border);">${_repWon(tT)}</td><td class="text-right">${_repWon(aT)}</td><td class="text-right">${_repRate(pct(aT, tT))}</td>
+    </tr>`;
+  }
+}
+
+async function saveTarget(salesRepId, month, clientType, el) {
+  const amount = parseFloat(el.value) || 0;
+  el.disabled = true;
+  try {
+    const r = await fetch('/api/exec/targets', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ salesRepId, month, clientType, amount }),
+    });
+    const d = await r.json();
+    if (!r.ok) { _repToast(d.error || '목표 저장 실패', 'error'); el.disabled = false; return; }
+    _repToast('목표 저장됨', 'success');
+    renderRepMetrics(); // 달성률 갱신
+  } catch (e) {
+    _repToast('저장 오류: ' + e.message, 'error'); el.disabled = false;
+  }
+}
 
 // 2026-05-12 미팅: 영업사원 마스터 계정 페이지
 function renderRepMaster() {

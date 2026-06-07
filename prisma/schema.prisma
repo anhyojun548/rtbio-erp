@@ -684,6 +684,24 @@ model SalesAssignment {
   @@schema("tenant_altibio")
 }
 
+// 영업 매출 목표 — 담당자 × 월 × 거래처유형(대리점/병원). 총액 = 유형별 합.
+//   salesRepId 는 public.User.id (크로스스키마 FK 회피, 앱-레벨 참조).
+//   실적(actual)은 Invoice(ISSUED+SENT) 매출을 거래처 type 으로 분리 집계해 달성률 산출.
+model SalesTarget {
+  id         String     @id @default(cuid())
+  salesRepId String // public.User.id
+  month      String // YYYY-MM
+  clientType ClientType // AGENCY(대리점) | HOSPITAL(병원)
+  amount     Decimal    @db.Decimal(15, 2)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  createdBy  String
+
+  @@unique([salesRepId, month, clientType])
+  @@index([month])
+  @@schema("tenant_altibio")
+}
+
 // R23: 학회
 model Conference {
   id        String    @id @default(cuid())
