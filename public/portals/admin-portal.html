@@ -982,11 +982,6 @@
  </div>
  </div>
 
- <!-- 2026-05: Purchase 도메인 미구현 — 이 페이지는 mock UI 입니다 -->
- <div style="margin-bottom:16px;padding:14px 18px;background:#fff3e0;border-left:4px solid #F57C00;border-radius:4px;color:#5d4037;">
-   <strong>안내</strong> — 매입관리 모듈은 정식 도메인 구현 전 단계입니다. 아래 입력 폼은 시연용 UI 이며, "임시저장/확정 저장" 클릭 시 데이터가 영구 저장되지 않습니다.
- </div>
-
  <!-- Top Filters -->
  <div class="filter-row mb-16">
  <div class="form-group" style="margin-bottom:0;">
@@ -994,14 +989,20 @@
  <input type="date" id="purchase-date" class="form-input" style="max-width:180px;">
  </div>
  <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">공급업체</label>
- <select class="form-select" id="purchase-supplier" style="max-width:220px;">
- <option value="메디텍코리아">메디텍코리아</option>
- <option value="한국의료기">한국의료기</option>
- <option value="글로벌메드">글로벌메드</option>
+ <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">공급처</label>
+ <input class="form-input" id="purchase-supplier" list="purchase-supplier-list" placeholder="공급처명" autocomplete="off" style="max-width:220px;">
+ <datalist id="purchase-supplier-list"></datalist>
+ </div>
+ <div class="form-group" style="margin-bottom:0;">
+ <label style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">과세구분</label>
+ <select class="form-select" id="purchase-taxtype" style="max-width:120px;">
+ <option value="과세">과세</option>
+ <option value="면세">면세</option>
+ <option value="영세">영세</option>
  </select>
  </div>
  </div>
+ <datalist id="purchase-product-list"></datalist>
 
  <!-- Excel-like Grid -->
  <div class="section-header">매입 입력</div>
@@ -1021,16 +1022,15 @@
  </div>
  <div class="grid-actions">
  <button class="btn btn-outline btn-sm" onclick="addPurchaseRow()">+ 행 추가</button>
- <button class="btn btn-outline" onclick="showToast('임시 저장되었습니다', 'info')">임시저장</button>
- <button class="btn btn-primary" onclick="showToast('매입이 확정 저장되었습니다', 'success')">확정 저장</button>
+ <button class="btn btn-primary" id="purchase-save-btn" onclick="savePurchase()">확정 저장</button>
  </div>
 
  <!-- Purchase History -->
- <div class="section-header mt-24">매입 이력 <span class="count">최근 5건</span></div>
+ <div class="section-header mt-24">매입 이력 <span class="count">최근 입력</span></div>
  <div class="table-wrap">
  <table class="data-table" id="purchase-history-table">
  <thead><tr>
- <th>매입일</th><th>공급업체</th><th>품목수</th><th class="text-right">매입금액</th><th>상태</th>
+ <th>매입일</th><th>전표번호</th><th>공급처</th><th>품목수</th><th class="text-right">매입금액</th><th>상태</th><th>관리</th>
  </tr></thead>
  <tbody id="purchase-history-body"></tbody>
  </table>
@@ -3546,94 +3546,155 @@ function sendReportEmail() {
  });
 }
 
-// ── P12: Purchases ──
-let purchaseRowCount = 0;
-function renderPurchases() {
- const dummyRows = [
- { product: '리코탭플러스 무릎 숏', spec: 'M / 편측', qty: 50, price: 11000 },
- { product: '리깁스 발목', spec: 'L / 편측', qty: 30, price: 13000 },
- { product: '리스프린트 손가락', spec: 'S / -', qty: 100, price: 6000 },
- ];
- purchaseRowCount = dummyRows.length;
-
- const tbody = document.getElementById('purchase-grid-body');
- tbody.innerHTML = dummyRows.map((r, i) => `
- <tr>
- <td class="text-center text-muted">${i + 1}</td>
- <td><select class="form-select" style="min-width:180px;">
- <option>${r.product}</option>
- <option>리코탭플러스 무릎 롱</option><option>리깁스 팔꿈치</option>
- <option>워커 (단족)</option><option>어깨 보조기</option>
- </select></td>
- <td><input type="text" value="${r.spec}" style="max-width:120px;"></td>
- <td><input type="number" value="${r.qty}" onchange="calcPurchaseRow(this)"></td>
- <td><input type="number" value="${r.price}" onchange="calcPurchaseRow(this)"></td>
- <td><div class="auto-calc">${formatCurrency(r.qty * r.price)}</div></td>
- </tr>
- `).join('') + `
- <tr>
- <td class="text-center text-muted">${dummyRows.length + 1}</td>
- <td><select class="form-select" style="min-width:180px;">
- <option value="">-- 제품 선택 --</option>
- <option>리코탭플러스 무릎 숏</option><option>리코탭플러스 무릎 롱</option>
- <option>리깁스 팔꿈치</option><option>워커 (단족)</option>
- </select></td>
- <td><input type="text" placeholder="규격"></td>
- <td><input type="number" placeholder="0"></td>
- <td><input type="number" placeholder="0"></td>
+// ── P12: Purchases (실데이터 — TransactionLedger kind=PURCHASE) ──
+function _purEsc(s) {
+ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function _purKstToday() {
+ return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+}
+function _purBlankRow(idx) {
+ return `<tr>
+ <td class="text-center text-muted">${idx}</td>
+ <td><input class="pur-name form-input" list="purchase-product-list" placeholder="품목명" autocomplete="off" style="min-width:200px;"></td>
+ <td><input class="pur-spec form-input" placeholder="규격" style="max-width:100px;"></td>
+ <td><input class="pur-qty form-input" type="number" min="0" placeholder="0" onchange="calcPurchaseRow(this)" oninput="_purRecalcTotal()"></td>
+ <td><input class="pur-price form-input" type="number" min="0" placeholder="0" onchange="calcPurchaseRow(this)" oninput="_purRecalcTotal()"></td>
  <td><div class="auto-calc">₩0</div></td>
- </tr>
- `;
+ </tr>`;
+}
+function _purFillProducts() {
+ const dl = document.getElementById('purchase-product-list');
+ if (!dl || !Array.isArray(window.PRODUCTS)) return;
+ const names = new Set();
+ window.PRODUCTS.forEach(p => { if (p && p.name) names.add(p.name); });
+ dl.innerHTML = Array.from(names).map(n => `<option value="${_purEsc(n)}">`).join('');
+}
 
- const total = dummyRows.reduce((s, r) => s + r.qty * r.price, 0);
- document.getElementById('purchase-grid-foot').innerHTML = `
- <tr><td colspan="5" class="text-right">합 계</td>
- <td class="text-right" style="font-size:15px;">${formatCurrency(total)}</td></tr>
- `;
-
- // History table
- const history = [
- { date: '2026-04-10', supplier: '메디텍코리아', items: 4, amount: 2850000, status: '확정' },
- { date: '2026-04-08', supplier: '한국의료기', items: 3, amount: 1920000, status: '확정' },
- { date: '2026-04-05', supplier: '글로벌메드', items: 5, amount: 3150000, status: '확정' },
- { date: '2026-04-03', supplier: '메디텍코리아', items: 2, amount: 980000, status: '확정' },
- { date: '2026-04-01', supplier: '한국의료기', items: 6, amount: 4200000, status: '임시저장' },
- ];
- document.getElementById('purchase-history-body').innerHTML = history.map(h => `
- <tr>
- <td>${h.date}</td><td>${h.supplier}</td><td class="text-center">${h.items}건</td>
- <td class="text-right fw-600">${formatCurrency(h.amount)}</td>
- <td><span class="badge ${h.status === '확정' ? 'badge-complete' : 'badge-pending'}">${h.status}</span></td>
- </tr>
- `).join('');
+function renderPurchases() {
+ const dateEl = document.getElementById('purchase-date');
+ if (dateEl && !dateEl.value) dateEl.value = _purKstToday();
+ _purFillProducts();
+ // 빈 입력 그리드 3행
+ const tbody = document.getElementById('purchase-grid-body');
+ tbody.innerHTML = [1, 2, 3].map(i => _purBlankRow(i)).join('');
+ document.getElementById('purchase-grid-foot').innerHTML =
+ `<tr><td colspan="5" class="text-right">합 계</td><td class="text-right" id="purchase-grid-total" style="font-size:15px;">₩0</td></tr>`;
+ loadPurchaseHistory();
 }
 
 function calcPurchaseRow(el) {
  const row = el.closest('tr');
- const inputs = row.querySelectorAll('input[type="number"]');
- const qty = parseInt(inputs[0].value) || 0;
- const price = parseInt(inputs[1].value) || 0;
- row.querySelector('.auto-calc').textContent = formatCurrency(qty * price);
+ const qty = parseFloat((row.querySelector('.pur-qty') || {}).value) || 0;
+ const price = parseFloat((row.querySelector('.pur-price') || {}).value) || 0;
+ const cell = row.querySelector('.auto-calc');
+ if (cell) cell.textContent = formatCurrency(qty * price);
+ _purRecalcTotal();
+}
+
+function _purRecalcTotal() {
+ let total = 0;
+ document.querySelectorAll('#purchase-grid-body tr').forEach(row => {
+ const qty = parseFloat((row.querySelector('.pur-qty') || {}).value) || 0;
+ const price = parseFloat((row.querySelector('.pur-price') || {}).value) || 0;
+ total += qty * price;
+ });
+ const el = document.getElementById('purchase-grid-total');
+ if (el) el.textContent = formatCurrency(total);
 }
 
 function addPurchaseRow() {
- purchaseRowCount++;
  const tbody = document.getElementById('purchase-grid-body');
- const newRow = document.createElement('tr');
- newRow.innerHTML = `
- <td class="text-center text-muted">${purchaseRowCount + 1}</td>
- <td><select class="form-select" style="min-width:180px;">
- <option value="">-- 제품 선택 --</option>
- <option>리코탭플러스 무릎 숏</option><option>리코탭플러스 무릎 롱</option>
- <option>리깁스 팔꿈치</option><option>워커 (단족)</option>
- </select></td>
- <td><input type="text" placeholder="규격"></td>
- <td><input type="number" placeholder="0"></td>
- <td><input type="number" placeholder="0"></td>
- <td><div class="auto-calc">₩0</div></td>
- `;
- tbody.appendChild(newRow);
- showToast('행이 추가되었습니다', 'info');
+ tbody.insertAdjacentHTML('beforeend', _purBlankRow(tbody.children.length + 1));
+}
+
+function _purCollectLines() {
+ const lines = [];
+ document.querySelectorAll('#purchase-grid-body tr').forEach(row => {
+ const name = ((row.querySelector('.pur-name') || {}).value || '').trim();
+ const spec = ((row.querySelector('.pur-spec') || {}).value || '').trim();
+ const qty = parseFloat((row.querySelector('.pur-qty') || {}).value) || 0;
+ const priceRaw = parseFloat((row.querySelector('.pur-price') || {}).value);
+ if (!name || qty <= 0) return; // 빈/불완전 행 스킵
+ lines.push({ productName: name, spec: spec || undefined, qty, unitPrice: isNaN(priceRaw) ? 0 : priceRaw });
+ });
+ return lines;
+}
+
+async function savePurchase() {
+ const date = (document.getElementById('purchase-date') || {}).value;
+ const supplier = ((document.getElementById('purchase-supplier') || {}).value || '').trim();
+ const taxType = (document.getElementById('purchase-taxtype') || {}).value || '과세';
+ const lines = _purCollectLines();
+ if (!date) { showToast('매입일자를 선택하세요', 'error'); return; }
+ if (!supplier) { showToast('공급처를 입력하세요', 'error'); return; }
+ if (lines.length === 0) { showToast('매입 품목을 1개 이상 입력하세요', 'error'); return; }
+
+ const btn = document.getElementById('purchase-save-btn');
+ if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
+ try {
+ const r = await fetch('/api/admin/purchases', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ credentials: 'same-origin',
+ body: JSON.stringify({ date, supplier, taxType, lines }),
+ });
+ const d = await r.json();
+ if (!r.ok) { showToast(d.error || '저장 실패', 'error'); return; }
+ showToast(`매입 ${d.lineCount}건 저장됨 (${d.voucherNo})`, 'success');
+ renderPurchases(); // 그리드 초기화 + 이력 갱신
+ } catch (e) {
+ showToast('저장 중 오류: ' + e.message, 'error');
+ } finally {
+ if (btn) { btn.disabled = false; btn.textContent = '확정 저장'; }
+ }
+}
+
+async function loadPurchaseHistory() {
+ const body = document.getElementById('purchase-history-body');
+ if (!body) return;
+ body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--text-muted);">불러오는 중…</td></tr>`;
+ try {
+ const r = await fetch('/api/admin/purchases?mode=history&limit=20', { credentials: 'same-origin' });
+ const d = await r.json();
+ const entries = (d && d.entries) || [];
+ // 공급처 datalist 갱신
+ const sdl = document.getElementById('purchase-supplier-list');
+ if (sdl) {
+ const sup = Array.from(new Set(entries.map(e => e.supplier).filter(s => s && s !== '-')));
+ sdl.innerHTML = sup.map(s => `<option value="${_purEsc(s)}">`).join('');
+ }
+ if (entries.length === 0) {
+ body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--text-muted);">매입 입력 내역이 없습니다</td></tr>`;
+ return;
+ }
+ body.innerHTML = entries.map(e => `
+ <tr>
+ <td>${e.date}</td>
+ <td>${e.voucherNo === '-' ? '<span class="text-muted">-</span>' : _purEsc(e.voucherNo)}</td>
+ <td>${_purEsc(e.supplier)}</td>
+ <td class="text-center">${e.itemCount}건</td>
+ <td class="text-right fw-600">${formatCurrency(e.totalAmount)}</td>
+ <td><span class="badge badge-complete">확정</span></td>
+ <td>${e.manual && e.voucherNo !== '-' ? `<button class="btn btn-outline btn-sm" onclick="deletePurchaseVoucher('${_purEsc(e.voucherNo)}')">삭제</button>` : '<span class="text-muted" style="font-size:11px;">—</span>'}</td>
+ </tr>
+ `).join('');
+ } catch (e) {
+ body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;color:#d32f2f;">이력 로드 실패</td></tr>`;
+ }
+}
+
+async function deletePurchaseVoucher(voucherNo) {
+ if (!confirm(`전표 ${voucherNo} 의 매입 내역을 삭제할까요?`)) return;
+ try {
+ const r = await fetch('/api/admin/purchases?voucherNo=' + encodeURIComponent(voucherNo), { method: 'DELETE', credentials: 'same-origin' });
+ const d = await r.json();
+ if (!r.ok) { showToast(d.error || '삭제 실패', 'error'); return; }
+ showToast(`전표 ${voucherNo} 삭제됨`, 'success');
+ loadPurchaseHistory();
+ } catch (e) {
+ showToast('삭제 중 오류: ' + e.message, 'error');
+ }
 }
 
 // ── P13: Payments ──
@@ -4715,6 +4776,8 @@ let _journalPage = 1;
 const JOURNAL_PER_PAGE = 20;
 // 매출장 서버 조회 캐시 — 날짜(시작/종료) 키가 같으면 재조회 없이 클라이언트측 필터/페이지만 갱신.
 let _salesJournalCache = { key: null, lines: [], truncated: false };
+// 매입장 서버 조회 캐시 (TransactionLedger kind=PURCHASE)
+let _purchaseJournalCache = { key: null, lines: [], truncated: false };
 function gotoJournalPage(p) { _journalPage = p; renderJournal(currentJournalTab, true); }
 
 async function renderJournal(tab, keepPage) {
@@ -4870,49 +4933,60 @@ async function renderJournal(tab, keepPage) {
  if (_jp) _jp.innerHTML = buildPagerBar(_journalPage, _salesTotal, JOURNAL_PER_PAGE, 'gotoJournalPage');
  } else {
  thead.innerHTML = `<tr>
- <th>일자</th><th>공급처</th><th>품목</th><th class="text-right">수량</th>
+ <th>일자</th><th>전표번호</th><th>공급처</th><th>품목</th><th class="text-right">수량</th>
  <th class="text-right">단가</th><th class="text-right">매입가</th>
  <th class="text-right">세액</th><th class="text-right">합계</th>
  </tr>`;
 
- const purchaseData = [
- { date: '2026-04-01', supplier: '메디텍코리아', item: '리코탭플러스 무릎 숏 (원자재)', qty: 100, price: 11000 },
- { date: '2026-04-01', supplier: '한국의료기', item: '리깁스 발목 (원자재)', qty: 60, price: 13000 },
- { date: '2026-04-03', supplier: '글로벌메드', item: '리스프린트 손가락 (원자재)', qty: 200, price: 6000 },
- { date: '2026-04-05', supplier: '메디텍코리아', item: '리코탭플러스 손목 (원자재)', qty: 80, price: 9500 },
- { date: '2026-04-08', supplier: '한국의료기', item: '워커 (단족) (원자재)', qty: 20, price: 32000 },
- { date: '2026-04-10', supplier: '글로벌메드', item: '어깨 보조기 (원자재)', qty: 15, price: 28000 },
- ];
+ // 매입장 = TransactionLedger(kind=PURCHASE) 서버 조회. 기간(시작/종료)=txnDate(매입일) 기준.
+ //   매출장과 동일한 날짜키 캐시 — 같은 기간이면 재조회 없이 검색/페이지만 갱신.
+ const _pFrom = (document.getElementById('journal-date-from') || {}).value || '';
+ const _pTo = (document.getElementById('journal-date-to') || {}).value || '';
+ const _pKey = 'P|' + _pFrom + '|' + _pTo;
+ if (_purchaseJournalCache.key !== _pKey) {
+   tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">불러오는 중…</td></tr>`;
+   try {
+     const _qs = new URLSearchParams();
+     _qs.set('mode', 'journal');
+     if (_pFrom) _qs.set('from', _pFrom);
+     if (_pTo) _qs.set('to', _pTo);
+     const _r = await fetch('/api/admin/purchases?' + _qs.toString(), { credentials: 'same-origin' });
+     const _d = await _r.json();
+     _purchaseJournalCache = { key: _pKey, lines: (_d && _d.lines) || [], truncated: !!(_d && _d.truncated) };
+   } catch (e) {
+     _purchaseJournalCache = { key: _pKey, lines: [], truncated: false };
+   }
+ }
+ let purchaseData = _purchaseJournalCache.lines.map(l => ({
+   date: l.date, voucherNo: l.voucherNo, supplier: l.supplier,
+   item: l.item + (l.spec ? ` (${l.spec})` : ''),
+   qty: l.qty, price: l.unitPrice, supply: l.supply, vat: l.vat, total: l.total,
+ }));
+ // 검색 필터 (클라이언트측)
+ if (searchTerm) purchaseData = purchaseData.filter(p => (p.item || '').toLowerCase().includes(searchTerm) || (p.supplier || '').toLowerCase().includes(searchTerm));
 
- // 합계는 전체 기준
+ // 합계는 (필터 적용된) 전체 기준
  let totalPurchase = 0, totalTax = 0;
- purchaseData.forEach(p => {
-   const amt = p.qty * p.price;
-   totalPurchase += amt;
-   totalTax += Math.round(amt * 0.1);
- });
+ purchaseData.forEach(p => { totalPurchase += p.supply; totalTax += p.vat; });
+
  // 페이지 슬라이스
  const _purTotal = purchaseData.length;
  const _purPages = Math.max(1, Math.ceil(_purTotal / JOURNAL_PER_PAGE));
  if (_journalPage > _purPages) _journalPage = _purPages;
  const _purStart = (_journalPage - 1) * JOURNAL_PER_PAGE;
  const _purPage = purchaseData.slice(_purStart, _purStart + JOURNAL_PER_PAGE);
- tbody.innerHTML = _purPage.map(p => {
- const purchaseAmt = p.qty * p.price;
- const tax = Math.round(purchaseAmt * 0.1);
- return `
+ tbody.innerHTML = _purPage.map(p => `
  <tr>
- <td>${p.date}</td><td>${p.supplier}</td><td>${p.item}</td>
+ <td>${p.date}</td><td>${p.voucherNo}</td><td>${p.supplier}</td><td>${p.item}</td>
  <td class="text-right">${p.qty}</td><td class="text-right">${formatCurrency(p.price)}</td>
- <td class="text-right">${formatCurrency(purchaseAmt)}</td>
- <td class="text-right">${formatCurrency(tax)}</td>
- <td class="text-right fw-600">${formatCurrency(purchaseAmt + tax)}</td>
+ <td class="text-right">${formatCurrency(p.supply)}</td>
+ <td class="text-right">${formatCurrency(p.vat)}</td>
+ <td class="text-right fw-600">${formatCurrency(p.total)}</td>
  </tr>
- `;
- }).join('') || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">매입 기록이 없습니다</td></tr>`;
+ `).join('') || `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);">조건에 해당하는 매입 기록이 없습니다</td></tr>`;
 
  tfoot.innerHTML = `<tr>
- <td colspan="5" class="text-right">합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_purTotal.toLocaleString()}건)</span></td>
+ <td colspan="6" class="text-right">합 계 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(전체 ${_purTotal.toLocaleString()}건)</span></td>
  <td class="text-right">${formatCurrency(totalPurchase)}</td>
  <td class="text-right">${formatCurrency(totalTax)}</td>
  <td class="text-right" style="font-size:15px;">${formatCurrency(totalPurchase + totalTax)}</td>
